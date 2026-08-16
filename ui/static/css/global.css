@@ -7761,6 +7761,7 @@ details.faq-item summary:focus-visible {
 .side-dot {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 10px;
   cursor: pointer;
   padding: 3px 0;
