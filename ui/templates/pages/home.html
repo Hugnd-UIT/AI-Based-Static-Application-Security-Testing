@@ -1,0 +1,991 @@
+html
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta content="width=device-width, initial-scale=1.0" name="viewport" />
+    <title>
+      Sinful SAST — World's Most Advanced AI-Powered Static Application Security
+      Testing
+    </title>
+
+    <link
+      data-rocket-prefetch=""
+      href="https://fonts.googleapis.com"
+      rel="dns-prefetch"
+    />
+
+    <link
+      data-rocket-prefetch=""
+      href="https://www.gstatic.com"
+      rel="dns-prefetch"
+    />
+
+    <link
+      data-rocket-prefetch=""
+      href="https://www.google.com"
+      rel="dns-prefetch"
+    />
+
+    <link
+      as="style"
+      data-rocket-preload=""
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700;800&amp;family=Inter:wght@300;400;500;600;700;800;900&amp;family=Orbitron:wght@400;500;600;700;800;900&amp;display=swap"
+      rel="preload"
+    />
+
+    <link
+      href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700;800&amp;family=Inter:wght@300;400;500;600;700;800;900&amp;family=Orbitron:wght@400;500;600;700;800;900&amp;display=swap"
+      media="print"
+      onload="this.media = 'all'"
+      rel="stylesheet"
+    />
+    <noscript data-wpr-hosted-gf-parameters="">
+      <link
+        href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@300;400;500;600;700&amp;family=JetBrains+Mono:wght@400;500;600;700;800&amp;family=Inter:wght@300;400;500;600;700;800;900&amp;family=Orbitron:wght@400;500;600;700;800;900&amp;display=swap"
+        rel="stylesheet"
+      />
+    </noscript>
+
+    <link
+      data-rocket-prefetch=""
+      href="https://fonts.googleapis.com"
+      rel="dns-prefetch"
+    />
+
+    <link
+      data-rocket-prefetch=""
+      href="https://www.gstatic.com"
+      rel="dns-prefetch"
+    />
+
+    <link
+      data-rocket-prefetch=""
+      href="https://www.google.com"
+      rel="dns-prefetch"
+    />
+    <noscript data-wpr-hosted-gf-parameters=""></noscript>
+    <meta
+      content="Sinful SAST: The only AI-native SAST with Agentic AI auto-remediation. Blazing fast scans. 97% fewer false positives. CVE Numbering Authority. Free scan — no signup."
+      name="description"
+    />
+    <meta
+      content="SAST, static application security testing, AI code security, DevSecOps, agentic AI, vulnerability scanner, application security, code scanning, secure code"
+      name="keywords"
+    />
+
+    <link href="https://sec1.io/products/sast-scanner/" rel="canonical" />
+    <meta
+      content="Sinful SAST — AI-Native Code Security That Actually Works"
+      property="og:title"
+    />
+    <meta
+      content="60x faster. 97% fewer false positives. Agentic AI auto-fix. Free scan — no signup required."
+      property="og:description"
+    />
+    <meta content="website" property="og:type" />
+
+    <link href="https://fonts.googleapis.com" rel="preconnect" />
+
+    <link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect" />
+
+    <style id="rocket-lazyrender-inline-css">
+      [data-wpr-lazyrender] {
+        content-visibility: visible !important;
+      }
+    </style>
+    <meta
+      content="WP Rocket 3.20.3"
+      data-wpr-features="wpr_defer_js wpr_minify_concatenate_js wpr_lazyload_images wpr_preconnect_external_domains wpr_automatic_lazy_rendering wpr_preload_links wpr_desktop"
+      name="generator"
+    />
+    <meta
+      content="WP Rocket 3.23.1.1"
+      data-wpr-features="wpr_defer_js wpr_minify_concatenate_js wpr_lazyload_images wpr_preconnect_external_domains wpr_cdn wpr_preload_links wpr_desktop"
+      name="generator"
+    />
+
+    <link rel="stylesheet" href="/static/css/global.css" />
+  </head>
+  <body data-theme="dark">
+    
+    
+
+    <div class="demo-modal-overlay" id="demoModal">
+      <div
+        class="demo-modal"
+        style="background: #0a0606; padding: 32px 28px; max-width: 480px"
+      >
+        <button class="demo-modal__close" id="demoModalClose">×</button>
+
+        <div style="text-align: center; margin-bottom: 1.25rem">
+          <span
+            style="
+              display: inline-block;
+              padding: 6px 18px;
+              border: 1px solid #ff5722;
+              border-radius: 999px;
+              color: #ff5722;
+              font-size: 11px;
+              font-weight: 500;
+              letter-spacing: 1.5px;
+            "
+            >GET IN TOUCH</span
+          >
+        </div>
+
+        <h2
+          style="
+            text-align: center;
+            color: #fff;
+            font-size: 32px;
+            font-weight: 500;
+            margin: 0 0 2rem;
+            font-family: var(--f-head);
+          "
+        >
+          
+        </h2>
+
+        
+
+        <a
+          href="https://cal.com/sinful/30min"
+          onmouseout="this.style.filter = 'brightness(1)'"
+          onmouseover="this.style.filter = 'brightness(1.1)'"
+          rel="noopener noreferrer"
+          style="
+            display: block;
+            text-decoration: none;
+            background: #ff5722;
+            border: 1px solid #ff5722;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            margin-bottom: 1.25rem;
+            transition: filter 0.2s ease;
+          "
+          target="_blank"
+        >
+          <span
+            style="
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+            "
+          >
+            <svg
+              fill="none"
+              height="18"
+              stroke="#fff"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewbox="0 0 24 24"
+              width="18"
+            >
+              <rect height="18" rx="2" ry="2" width="18" x="3" y="4"></rect>
+
+              <line x1="16" x2="16" y1="2" y2="6"></line>
+
+              <line x1="8" x2="8" y1="2" y2="6"></line>
+
+              <line x1="3" x2="21" y1="10" y2="10"></line>
+            </svg>
+            <span style="color: #fff; font-size: 15px; font-weight: 500"
+              >Book a 30-min demo</span
+            >
+            <svg
+              fill="none"
+              height="18"
+              stroke="#fff"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewbox="0 0 24 24"
+              width="18"
+            >
+              <line x1="5" x2="19" y1="12" y2="12"></line>
+
+              <polyline points="12 5 19 12 12 19"></polyline>
+            </svg>
+          </span>
+        </a>
+        
+
+        <div
+          style="
+            display: flex;
+            align-items: center;
+            gap: 14px;
+            margin: 1.25rem 0;
+          "
+        >
+          <div
+            style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.18)"
+          ></div>
+
+          <span
+            style="
+              color: #d4cfcd;
+              font-size: 14px;
+              font-weight: 500;
+              letter-spacing: 3px;
+            "
+            >OR</span
+          >
+
+          <div
+            style="flex: 1; height: 1px; background: rgba(255, 255, 255, 0.18)"
+          ></div>
+        </div>
+
+        
+
+        <a
+          href="https://sec1.io/sastng/#"
+          id="ub-form-toggle"
+          style="
+            display: block;
+            text-decoration: none;
+            background: transparent;
+            border: 1px solid #ff5722;
+            border-radius: 8px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+          "
+        >
+          <span
+            style="
+              display: inline-flex;
+              align-items: center;
+              justify-content: center;
+              gap: 10px;
+            "
+          >
+            <svg
+              fill="none"
+              height="18"
+              stroke="#ff5722"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              viewbox="0 0 24 24"
+              width="18"
+            >
+              <path
+                d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"
+              ></path>
+
+              <polyline points="22 6 12 13 2 6"></polyline>
+            </svg>
+            <span style="color: #ff5722; font-size: 15px; font-weight: 500"
+              >Send us a message</span
+            >
+            <svg
+              fill="none"
+              height="18"
+              id="ub-form-arrow"
+              stroke="#ff5722"
+              stroke-linecap="round"
+              stroke-linejoin="round"
+              stroke-width="2"
+              style="transition: transform 0.2s ease"
+              viewbox="0 0 24 24"
+              width="18"
+            >
+              <polyline points="6 9 12 15 18 9"></polyline>
+            </svg>
+          </span>
+        </a>
+        
+
+        <div id="ub-form-panel" style="display: none; margin-top: 1rem">
+          <form
+            id="modalLeadForm"
+            onsubmit="submitCF7Form(event, 'modalLeadForm')"
+          >
+            <input
+              class="ub-field"
+              name="text-962"
+              placeholder="Full name*"
+              required=""
+              type="text"
+            />
+
+            <input
+              class="ub-field"
+              name="email-73"
+              placeholder="Business email*"
+              required=""
+              type="email"
+            />
+
+            <input
+              class="ub-field"
+              name="text-217"
+              placeholder="Company*"
+              required=""
+              type="text"
+            />
+
+            <input
+              class="ub-field"
+              name="text-219"
+              placeholder="Phone"
+              type="tel"
+            />
+            <textarea
+              class="ub-field ub-textarea"
+              name="textarea-312"
+              placeholder="How can we help?"
+              rows="3"
+            ></textarea>
+
+            <input name="_wpcf7_recaptcha_response" type="hidden" value="" />
+
+            <button class="ub-submit" type="submit">Submit request →</button>
+          </form>
+        </div>
+      </div>
+    </div>
+
+    
+
+    <div class="thankyou-modal-overlay" id="thankYouModal">
+      <div class="thankyou-modal">
+        <button class="thankyou-modal__close" id="thankYouModalClose">×</button>
+
+        <div class="thankyou-modal__icon">
+          <svg
+            fill="none"
+            height="36"
+            stroke="var(--emerald)"
+            stroke-linecap="round"
+            stroke-linejoin="round"
+            stroke-width="2.5"
+            viewbox="0 0 24 24"
+            width="36"
+          >
+            <polyline points="20 6 9 17 4 12"></polyline>
+          </svg>
+        </div>
+
+        <h2 class="thankyou-modal__title">Thank <span>You!</span></h2>
+
+        <p class="thankyou-modal__msg">
+          Your demo request has been received successfully. One of our security
+          experts will contact you shortly.
+        </p>
+
+        <button class="thankyou-modal__btn" id="thankYouModalBtn">
+          Got it
+        </button>
+      </div>
+    </div>
+
+    
+    <nav class="nav" id="nav">
+      <div class="nav-in">
+        <a class="logo" href="https://sec1.io">
+          <div class="logo-m">
+            <svg fill="none" viewbox="0 0 24 24">
+              <path
+                d="M12 2L3 7v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V7l-9-5z"
+                fill="rgba(255,255,255,.2)"
+                stroke="#fff"
+                stroke-width="1.5"
+              ></path>
+
+              <path
+                d="M9 12l2 2 4-4"
+                stroke="#fff"
+                stroke-linecap="round"
+                stroke-linejoin="round"
+                stroke-width="2"
+              ></path>
+            </svg>
+          </div>
+
+          Sinful <span class="badge">SAST</span>
+        </a>
+
+        <div class="nav-r">
+          <a class="nl" href="https://sec1.io/sastng/#arch">AI Engine</a
+          ><a class="nl" href="https://sec1.io/sastng/#pricing">Pricing</a>
+
+          <a
+            class="btn btn-ghost"
+            href="https://sec1.io/sinful-scanner/?scan=sast"
+            style="padding: 10px 20px; font-size: 0.8rem"
+            target="_blank"
+            >Free Scan</a
+          >
+
+          <a
+            class="js-open-demo btn btn-fire"
+            onclick="return window.openDemo && window.openDemo();"
+            style="padding: 10px 22px; font-size: 0.8rem"
+            >Book Demo</a
+          >
+
+          <a
+            class="js-open-contact btn btn-ember"
+            onclick="return window.openDemo && window.openDemo();"
+            style="padding: 10px 22px; font-size: 0.8rem"
+            >Contact Us</a
+          >
+        </div>
+
+        <button
+          aria-controls="navMobile"
+          aria-expanded="false"
+          aria-label="Open menu"
+          class="nav-burger"
+          id="navBurger"
+        >
+          <span></span><span></span><span></span>
+        </button>
+
+        <div class="nav-mobile" id="navMobile">
+          <a class="nav-mobile-link" href="https://sec1.io/sastng/#arch"
+            >AI Engine</a
+          >
+
+          <a class="nav-mobile-link" href="https://sec1.io/sastng/#pricing"
+            >Pricing</a
+          >
+
+          <a
+            class="btn btn-ghost nav-mobile-btn"
+            href="https://sec1.io/sinful-scanner/?scan=sast"
+            target="_blank"
+            >Free Scan</a
+          >
+
+          <a
+            class="js-open-demo btn btn-fire nav-mobile-btn"
+            onclick="return window.openDemo && window.openDemo();"
+            >Book Demo</a
+          >
+
+          <a
+            class="js-open-contact btn btn-ember nav-mobile-btn"
+            onclick="return window.openDemo && window.openDemo();"
+            >Contact Us</a
+          >
+        </div>
+      </div>
+    </nav>
+    
+
+    <div class="nav-overlay" id="navOverlay"></div>
+
+    
+    
+    
+    {% include 'components/home/hero.html' %}
+    
+    
+    
+    {% include 'components/home/trust.html' %}
+    
+    
+    
+    {% include 'components/home/live-scan.html' %}
+    
+    
+    
+    {% include 'components/home/speed.html' %}
+
+    
+    
+    
+    {% include 'components/home/arch.html' %}
+    
+    
+    
+    {% include 'components/home/exploitability.html' %}
+    
+    
+    
+    {% include 'components/home/auto-fix.html' %}
+    
+    
+    
+
+    
+    
+    
+    {% include 'components/home/how-it-works.html' %}
+    
+    
+    
+    {% include 'components/home/agentic.html' %}
+    
+    
+    
+    {% include 'components/home/devx.html' %}
+
+    
+    
+    
+
+    
+    
+    
+    {% include 'components/home/code-vault.html' %}
+    
+    
+    
+    {% include 'components/home/compliance.html' %}
+    
+    
+    
+    {% include 'components/home/audit.html' %}
+    
+    
+    
+    {% include 'components/home/outsource.html' %}
+    
+    
+    
+    {% include 'components/home/testimonials.html' %}
+    
+    
+    
+    {% include 'components/home/pricing.html' %}
+    
+
+    
+    {% include 'components/home/footer.html' %}
+    
+    <nav class="side-dots" id="sideDots">
+      <a class="side-dot" href="https://sec1.io/sastng/#hero"
+        ><span class="side-dot-label">Home</span></a
+      >
+
+      <a class="side-dot" href="https://sec1.io/sastng/#livescan"
+        ><span class="side-dot-label">Live Scan</span></a
+      >
+
+      <a class="side-dot" href="https://sec1.io/sastng/#speed"
+        ><span class="side-dot-label">Speed</span></a
+      >
+
+      <a class="side-dot" href="https://sec1.io/sastng/#arch"
+        ><span class="side-dot-label">Engine</span></a
+      >
+
+      <a class="side-dot" href="https://sec1.io/sastng/#exploitability"
+        ><span class="side-dot-label">Exploitability</span></a
+      >
+
+      <a class="side-dot" href="https://sec1.io/sastng/#howitworks"
+        ><span class="side-dot-label">How It Works</span></a
+      >
+
+      <a class="side-dot" href="https://sec1.io/sastng/#agentic"
+        ><span class="side-dot-label">Agentic SAST</span></a
+      >
+
+      <a class="side-dot" href="https://sec1.io/sastng/#devx"
+        ><span class="side-dot-label">Developers</span></a
+      >
+
+      <a class="side-dot" href="https://sec1.io/sastng/#compliance"
+        ><span class="side-dot-label">Compliance</span></a
+      >
+
+      <a class="side-dot" href="https://sec1.io/sastng/#pricing"
+        ><span class="side-dot-label">Pricing</span></a
+      >
+    </nav>
+    
+
+    <div class="float-cta" id="floatCta">
+      <a
+        class="js-open-demo fl-b fl-sc"
+        onclick="return window.openDemo && window.openDemo();"
+        >Book Demo</a
+      >
+
+      <a class="fl-b fl-ag" href="https://sec1.io/sastng/#agentic"
+        >Agentic SAST</a
+      >
+    </div>
+
+    
+    
+
+    <div
+      id="dashModal"
+      style="
+        display: none;
+        position: fixed;
+        inset: 0;
+        z-index: 9999;
+        background: rgba(4, 6, 11, 0.85);
+        backdrop-filter: blur(16px);
+        align-items: center;
+        justify-content: center;
+        padding: 24px;
+      "
+    >
+      <div
+        style="
+          background: var(--black);
+          border: 1px solid rgba(255, 255, 255, 0.06);
+          border-radius: 24px;
+          max-width: 720px;
+          width: 100%;
+          max-height: 90vh;
+          overflow-y: auto;
+          padding: 48px 40px;
+          position: relative;
+        "
+      >
+        <button
+          id="dashClose"
+          style="
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: var(--g400);
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 8px;
+            line-height: 1;
+          "
+        >
+          ×
+        </button>
+
+        <h3
+          style="
+            font-family: var(--f-head);
+            font-size: 1.8rem;
+            font-weight: 800;
+            color: #fff;
+            margin-bottom: 8px;
+          "
+        >
+          5 Dashboards
+        </h3>
+
+        <p style="color: var(--g400); font-size: 0.88rem; margin-bottom: 32px">
+          Real-time visibility across your entire security posture.
+        </p>
+
+        <div style="display: flex; flex-direction: column; gap: 16px">
+          <div
+            style="
+              display: flex;
+              align-items: flex-start;
+              gap: 16px;
+              padding: 20px;
+              border-radius: 16px;
+              background: rgba(255, 74, 20, 0.04);
+              border: 1px solid rgba(255, 74, 20, 0.08);
+            "
+          >
+            <div
+              style="
+                width: 44px;
+                height: 44px;
+                border-radius: 12px;
+                background: rgba(255, 74, 20, 0.08);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              "
+            >
+              <svg
+                fill="none"
+                height="20"
+                stroke="var(--fire)"
+                stroke-width="2"
+                viewbox="0 0 24 24"
+                width="20"
+              >
+                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path>
+              </svg>
+            </div>
+
+            <div>
+              <h4
+                style="
+                  font-family: var(--f-head);
+                  font-weight: 700;
+                  color: #fff;
+                  margin-bottom: 4px;
+                "
+              >
+                Security Overview
+              </h4>
+
+              <p
+                style="font-size: 0.8rem; color: var(--g400); line-height: 1.5"
+              >
+                Organization-wide vulnerability trends severity distribution and
+                risk score over time.
+              </p>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              align-items: flex-start;
+              gap: 16px;
+              padding: 20px;
+              border-radius: 16px;
+              background: rgba(0, 212, 255, 0.04);
+              border: 1px solid rgba(0, 212, 255, 0.08);
+            "
+          >
+            <div
+              style="
+                width: 44px;
+                height: 44px;
+                border-radius: 12px;
+                background: rgba(0, 212, 255, 0.08);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              "
+            >
+              <svg
+                fill="none"
+                height="20"
+                stroke="var(--cyan)"
+                stroke-width="2"
+                viewbox="0 0 24 24"
+                width="20"
+              >
+                <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"></path>
+                <circle cx="9" cy="7" r="4"></circle>
+
+                <path d="M23 21v-2a4 4 0 00-3-3.87"></path>
+
+                <path d="M16 3.13a4 4 0 010 7.75"></path>
+              </svg>
+            </div>
+
+            <div>
+              <h4
+                style="
+                  font-family: var(--f-head);
+                  font-weight: 700;
+                  color: #fff;
+                  margin-bottom: 4px;
+                "
+              >
+                Developer Leaderboard
+              </h4>
+
+              <p
+                style="font-size: 0.8rem; color: var(--g400); line-height: 1.5"
+              >
+                Gamified security scores per developer. Track who fixes most
+                vulns and who writes secure code.
+              </p>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              align-items: flex-start;
+              gap: 16px;
+              padding: 20px;
+              border-radius: 16px;
+              background: rgba(139, 92, 246, 0.04);
+              border: 1px solid rgba(139, 92, 246, 0.08);
+            "
+          >
+            <div
+              style="
+                width: 44px;
+                height: 44px;
+                border-radius: 12px;
+                background: rgba(139, 92, 246, 0.08);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              "
+            >
+              <svg
+                fill="none"
+                height="20"
+                stroke="var(--violet)"
+                stroke-width="2"
+                viewbox="0 0 24 24"
+                width="20"
+              >
+                <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
+
+                <polyline points="22 4 12 14.01 9 11.01"></polyline>
+              </svg>
+            </div>
+
+            <div>
+              <h4
+                style="
+                  font-family: var(--f-head);
+                  font-weight: 700;
+                  color: #fff;
+                  margin-bottom: 4px;
+                "
+              >
+                Compliance Dashboard
+              </h4>
+
+              <p
+                style="font-size: 0.8rem; color: var(--g400); line-height: 1.5"
+              >
+                OWASP CWE SOC 2 PCI DSS 4.0 ISO 27001 mapping with audit-ready
+                reports.
+              </p>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              align-items: flex-start;
+              gap: 16px;
+              padding: 20px;
+              border-radius: 16px;
+              background: rgba(16, 185, 129, 0.04);
+              border: 1px solid rgba(16, 185, 129, 0.08);
+            "
+          >
+            <div
+              style="
+                width: 44px;
+                height: 44px;
+                border-radius: 12px;
+                background: rgba(16, 185, 129, 0.08);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              "
+            >
+              <svg
+                fill="none"
+                height="20"
+                stroke="var(--emerald)"
+                stroke-width="2"
+                viewbox="0 0 24 24"
+                width="20"
+              >
+                <polyline points="22 12 18 12 15 21 9 3 6 12 2 12"></polyline>
+              </svg>
+            </div>
+
+            <div>
+              <h4
+                style="
+                  font-family: var(--f-head);
+                  font-weight: 700;
+                  color: #fff;
+                  margin-bottom: 4px;
+                "
+              >
+                Tech Debt Tracker
+              </h4>
+
+              <p
+                style="font-size: 0.8rem; color: var(--g400); line-height: 1.5"
+              >
+                Aging vulnerabilities estimated effort and priority queue for
+                technical debt reduction.
+              </p>
+            </div>
+          </div>
+
+          <div
+            style="
+              display: flex;
+              align-items: flex-start;
+              gap: 16px;
+              padding: 20px;
+              border-radius: 16px;
+              background: rgba(245, 158, 11, 0.04);
+              border: 1px solid rgba(245, 158, 11, 0.08);
+            "
+          >
+            <div
+              style="
+                width: 44px;
+                height: 44px;
+                border-radius: 12px;
+                background: rgba(245, 158, 11, 0.08);
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                flex-shrink: 0;
+              "
+            >
+              <svg
+                fill="none"
+                height="20"
+                stroke="var(--amber)"
+                stroke-width="2"
+                viewbox="0 0 24 24"
+                width="20"
+              >
+                <rect height="13" width="15" x="1" y="3"></rect>
+
+                <polygon points="16 8 20 8 20 16 8 16 8 13"></polygon>
+
+                <line x1="1" x2="16" y1="10" y2="10"></line>
+              </svg>
+            </div>
+
+            <div>
+              <h4
+                style="
+                  font-family: var(--f-head);
+                  font-weight: 700;
+                  color: #fff;
+                  margin-bottom: 4px;
+                "
+              >
+                Executive Summary
+              </h4>
+
+              <p
+                style="font-size: 0.8rem; color: var(--g400); line-height: 1.5"
+              >
+                Board-ready PDF reports with risk posture KPIs remediation
+                velocity and benchmark data.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    
+    <script src="https://www.google.com/recaptcha/api.js?render=6LdwzPQpAAAAABlVZlB18e68_1a-_ZD2V4yo2Vm9"></script>
+    
+    <script
+      data-minify="1"
+      data-rocket-defer=""
+      defer=""
+      src="https://sec1.io/wp-content/cache/min/1/fc92af27525942e3f761f7a9a031a5e6.js"
+    ></script>
+    
+    <script src="/static/js/main.js" defer></script>
+  </body>
+</html>
+

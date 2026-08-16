@@ -1,0 +1,275 @@
+<section class="sec" id="audit">
+  <div class="ctn">
+    <div class="sec-hd rv">
+      <h2 class="sec-t" style="color: #fff">
+        Reproducible. Auditable.<br /><span class="txt-fire"
+          >Legally Defensible.</span
+        >
+      </h2>
+
+      <p class="sec-sub">Every finding comes with a chain of evidence.</p>
+    </div>
+
+    <div class="audit-chain rv">
+      <div class="audit-entry" style="animation-delay: 0.2s">
+        <div
+          class="audit-dot"
+          style="background: var(--fire); border-color: var(--fire)"
+        ></div>
+
+        <div
+          class="audit-content"
+          style="
+            background: rgba(255, 74, 20, 0.02);
+            border-color: rgba(255, 74, 20, 0.08);
+          "
+        >
+          <div class="audit-ts">2026-02-24T14:32:07Z • SCAN INITIATED</div>
+
+          <div class="audit-title" style="color: #fff">
+            Full Repository Scan — main branch
+          </div>
+
+          <div
+            style="display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap"
+          >
+            <span
+              style="
+                padding: 3px 10px;
+                border-radius: 6px;
+                background: rgba(255, 74, 20, 0.04);
+                font-size: 0.78rem;
+                font-family: var(--f-mono);
+                font-weight: 700;
+                color: var(--fire);
+              "
+              >SAST</span
+            >
+            <span
+              style="
+                padding: 3px 10px;
+                border-radius: 6px;
+                background: rgba(0, 212, 255, 0.04);
+                font-size: 0.78rem;
+                font-family: var(--f-mono);
+                font-weight: 700;
+                color: var(--cyan);
+              "
+              >SCA</span
+            >
+            <span
+              style="
+                padding: 3px 10px;
+                border-radius: 6px;
+                background: rgba(16, 185, 129, 0.04);
+                font-size: 0.78rem;
+                font-family: var(--f-mono);
+                font-weight: 700;
+                color: var(--emerald);
+              "
+              >SECRETS</span
+            >
+          </div>
+
+          <div class="audit-hash">SHA-256: e3b0c44298fc1c149afb...d535c31</div>
+        </div>
+      </div>
+
+      <div class="audit-entry" style="animation-delay: 0.5s">
+        <div
+          class="audit-dot"
+          style="background: var(--rose); border-color: var(--rose)"
+        ></div>
+
+        <div
+          class="audit-content"
+          style="
+            background: rgba(244, 63, 94, 0.02);
+            border-color: rgba(244, 63, 94, 0.06);
+          "
+        >
+          <div class="audit-ts">
+            2026-02-24T14:32:41Z • VULNERABILITY DETECTED
+          </div>
+
+          <div class="audit-title" style="color: #fff">
+            SQL Injection — CWE-89 — login.js:8
+          </div>
+
+          <div style="font-size: 0.82rem; color: var(--g400); margin-top: 4px">
+            Taint source:
+            <span style="font-family: var(--f-mono); color: var(--rose)"
+              >req.body.user</span
+            >
+            → sink:
+            <span style="font-family: var(--f-mono); color: var(--rose)"
+              >db.query()</span
+            >
+          </div>
+
+          <div class="audit-hash">
+            Evidence ID: CVE-2026-Sinful-0847 • Reproducible: YES
+          </div>
+        </div>
+      </div>
+
+      <div class="audit-entry" style="animation-delay: 0.8s">
+        <div
+          class="audit-dot"
+          style="background: var(--violet); border-color: var(--violet)"
+        ></div>
+
+        <div
+          class="audit-content"
+          style="
+            background: rgba(139, 92, 246, 0.02);
+            border-color: rgba(139, 92, 246, 0.06);
+          "
+        >
+          <div class="audit-ts">
+            2026-02-24T14:32:42Z • EXPLOITABILITY ASSESSED
+          </div>
+
+          <div class="audit-title" style="color: #fff">
+            Reachable via public endpoint — Exploitable: HIGH
+          </div>
+
+          <div style="font-size: 0.82rem; color: var(--g400); margin-top: 4px">
+            Attack vector: Network • Complexity: Low • CVSS: 9.8
+          </div>
+
+          <div class="audit-hash">
+            Assessment method: AI taint analysis + reachability graph
+          </div>
+        </div>
+      </div>
+
+      <div class="audit-entry" style="animation-delay: 1.1s">
+        <div
+          class="audit-dot"
+          style="background: var(--emerald); border-color: var(--emerald)"
+        ></div>
+
+        <div
+          class="audit-content"
+          style="
+            background: rgba(16, 185, 129, 0.02);
+            border-color: rgba(16, 185, 129, 0.06);
+          "
+        >
+          <div class="audit-ts">2026-02-24T14:32:43Z • AUTO-FIX DEPLOYED</div>
+
+          <div class="audit-title" style="color: #fff">
+            PR #247 opened — Parameterized query fix
+          </div>
+
+          <div
+            style="
+              font-size: 0.82rem;
+              color: var(--emerald);
+              margin-top: 4px;
+              font-weight: 600;
+            "
+          >
+            Tests passed ✓ • Review requested ✓ • Compliance mapped ✓
+          </div>
+
+          <div class="audit-hash">
+            Fix hash: a1b2c3d4e5f6...789abc • Verified: SIGNED
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="rv"
+      style="
+        display: flex;
+        justify-content: center;
+        gap: 12px;
+        margin-top: 32px;
+        flex-wrap: wrap;
+      "
+    >
+      <span
+        style="
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 18px;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: #fff;
+          font-family: var(--f-mono);
+        "
+        ><svg
+          fill="none"
+          height="14"
+          stroke="var(--fire)"
+          stroke-width="2"
+          viewbox="0 0 24 24"
+          width="14"
+        >
+          <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"></path></svg
+        >REPRODUCIBLE</span
+      >
+      <span
+        style="
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 18px;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: #fff;
+          font-family: var(--f-mono);
+        "
+        ><svg
+          fill="none"
+          height="14"
+          stroke="var(--violet)"
+          stroke-width="2"
+          viewbox="0 0 24 24"
+          width="14"
+        >
+          <path
+            d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"
+          ></path></svg
+        >AUDITABLE</span
+      >
+      <span
+        style="
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          padding: 8px 18px;
+          border-radius: 10px;
+          background: rgba(255, 255, 255, 0.05);
+          border: 1px solid rgba(255, 255, 255, 0.1);
+          font-size: 0.82rem;
+          font-weight: 700;
+          color: #fff;
+          font-family: var(--f-mono);
+        "
+        ><svg
+          fill="none"
+          height="14"
+          stroke="var(--emerald)"
+          stroke-width="2"
+          viewbox="0 0 24 24"
+          width="14"
+        >
+          <path d="M22 11.08V12a10 10 0 11-5.93-9.14"></path>
+
+          <polyline points="22 4 12 14.01 9 11.01"></polyline></svg
+        >LEGALLY DEFENSIBLE</span
+      >
+    </div>
+  </div>
+</section>

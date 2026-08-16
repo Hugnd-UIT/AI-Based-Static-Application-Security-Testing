@@ -1,0 +1,25 @@
+rules:
+  # 'id' (Required): A unique identifier for this rule. No spaces allowed
+  - id: afl-example-rule-template
+    
+    # 'message' (Required): The text displayed when a vulnerability is found
+    message: "AFL Example: This is a template rule to demonstrate Semgrep's structure. You matched the pattern $X!"
+    
+    # 'severity' (Required): Must be INFO, WARNING, or ERROR
+    severity: INFO
+    
+    # 'languages' (Required): A list of languages this rule applies to
+    languages:
+      - python
+      - javascript
+      - typescript
+      
+    # 'patterns' (Required): This is where the core logic lives
+    patterns:
+      # 'pattern-either' means if ANY of the sub-patterns match
+      - pattern-either:
+          - pattern: afl_example_func($X)
+          - pattern: $Y = "afl example trigger"
+          - pattern: $OBJ.trigger_afl_example(...)
+      # 'pattern-not' acts as a Logical AND NOT. It filters out false positives.
+      - pattern-not: afl_example_func("safe_string")

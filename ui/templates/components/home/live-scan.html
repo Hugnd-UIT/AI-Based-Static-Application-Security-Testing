@@ -1,0 +1,569 @@
+<section
+  class="sec live-scan"
+  id="livescan"
+  style="padding: 40px 0 120px; background: #060910"
+>
+  <div class="ctn">
+    <div class="sec-hd rv">
+      <h2 class="sec-t">See It <span class="txt-fire">In Action.</span></h2>
+
+      <p class="sec-sub">
+        Watch our AI engine scan detect and fix vulnerabilities in real time.
+      </p>
+    </div>
+
+    <div class="live-scan-canvas rv">
+      
+
+      <div class="ls-bar">
+        <span class="ls-title">Sinful-sast — live-scan-demo</span>
+
+        <div class="ls-status">
+          <div class="ls-status-dot"></div>
+
+          <span class="ls-status-text">SCANNING</span>
+        </div>
+      </div>
+
+      
+
+      <div class="ls-beam"></div>
+
+      
+
+      <div class="ls-main">
+        
+
+        <div class="ls-code">
+          <div class="ls-code-label">source — app/auth/login.js</div>
+
+          <div class="ls-code-lines" id="lsCodeLines">
+            <div class="ls-line safe">
+              <span class="ls-line-num">1</span
+              ><span style="color: rgba(139, 92, 246, 0.5)">import</span>
+              express <span style="color: rgba(139, 92, 246, 0.5)">from</span>
+              <span style="color: rgba(16, 185, 129, 0.5)">'express'</span>;
+            </div>
+
+            <div class="ls-line safe">
+              <span class="ls-line-num">2</span
+              ><span style="color: rgba(139, 92, 246, 0.5)">import</span> db
+              <span style="color: rgba(139, 92, 246, 0.5)">from</span>
+              <span style="color: rgba(16, 185, 129, 0.5)">'./database'</span>;
+            </div>
+
+            <div class="ls-line"><span class="ls-line-num">3</span></div>
+
+            <div class="ls-line scanning">
+              <span class="ls-line-num">4</span
+              ><span style="color: rgba(0, 212, 255, 0.4)">const</span> router =
+              express.Router();
+            </div>
+
+            <div class="ls-line"><span class="ls-line-num">5</span></div>
+
+            <div class="ls-line scanning">
+              <span class="ls-line-num">6</span>router.<span
+                style="color: rgba(255, 74, 20, 0.5)"
+                >post</span
+              >(<span style="color: rgba(16, 185, 129, 0.5)">'/login'</span>,
+              (req, res) =&gt; {
+            </div>
+
+            <div class="ls-line">
+              <span class="ls-line-num">7</span>
+              <span style="color: rgba(0, 212, 255, 0.4)">const</span> { user,
+              pass } = req.body;
+            </div>
+
+            <div class="ls-line vuln">
+              <span class="ls-line-num">8</span>
+              <span style="color: rgba(0, 212, 255, 0.4)">const</span> q =
+              <span style="color: rgba(244, 63, 94, 0.5)"
+                >`SELECT * WHERE u='${user}'`</span
+              >;
+            </div>
+
+            <div class="ls-line vuln">
+              <span class="ls-line-num">9</span> db.<span
+                style="color: rgba(255, 74, 20, 0.5)"
+                >query</span
+              >(q, (err, rows) =&gt; {
+            </div>
+
+            <div class="ls-line">
+              <span class="ls-line-num">10</span>
+              <span style="color: rgba(139, 92, 246, 0.5)">if</span>
+              (rows.length) {
+            </div>
+
+            <div class="ls-line vuln">
+              <span class="ls-line-num">11</span> res.cookie(<span
+                style="color: rgba(16, 185, 129, 0.5)"
+                >'token'</span
+              >, rows[0].id);
+            </div>
+
+            <div class="ls-line">
+              <span class="ls-line-num">12</span> res.json({ ok:
+              <span style="color: rgba(0, 212, 255, 0.4)">true</span> });
+            </div>
+
+            <div class="ls-line"><span class="ls-line-num">13</span> }</div>
+
+            <div class="ls-line"><span class="ls-line-num">14</span> });</div>
+
+            <div class="ls-line"><span class="ls-line-num">15</span>});</div>
+
+            <div class="ls-line"><span class="ls-line-num">16</span></div>
+
+            <div class="ls-line scanning">
+              <span class="ls-line-num">17</span>router.<span
+                style="color: rgba(255, 74, 20, 0.5)"
+                >get</span
+              >(<span style="color: rgba(16, 185, 129, 0.5)">'/profile'</span>,
+              (req, res) =&gt; {
+            </div>
+
+            <div class="ls-line">
+              <span class="ls-line-num">18</span>
+              <span style="color: rgba(0, 212, 255, 0.4)">const</span> id =
+              req.query.id;
+            </div>
+
+            <div class="ls-line vuln">
+              <span class="ls-line-num">19</span> db.<span
+                style="color: rgba(255, 74, 20, 0.5)"
+                >query</span
+              >(<span style="color: rgba(244, 63, 94, 0.5)"
+                >`SELECT * WHERE id=${id}`</span
+              >);
+            </div>
+
+            <div class="ls-line">
+              <span class="ls-line-num">20</span> res.send(data);
+            </div>
+
+            <div class="ls-line"><span class="ls-line-num">21</span>});</div>
+
+            <div class="ls-line"><span class="ls-line-num">22</span></div>
+
+            <div class="ls-line safe">
+              <span class="ls-line-num">23</span
+              ><span style="color: rgba(139, 92, 246, 0.5)"
+                >export default</span
+              >
+              router;
+            </div>
+          </div>
+        </div>
+
+        
+
+        <div class="ls-center">
+          
+
+          <div
+            class="ls-particle ls-p-in"
+            style="
+              left: calc(50% - 4px);
+              top: calc(50% - 4px);
+              width: 8px;
+              height: 8px;
+              background: var(--fire);
+              --sx: -200px;
+              --sy: -60px;
+              --dur: 3s;
+              --delay: 0s;
+              opacity: 0.6;
+              filter: blur(1px);
+            "
+          ></div>
+
+          <div
+            class="ls-particle ls-p-in"
+            style="
+              left: calc(50% - 3px);
+              top: calc(50% - 3px);
+              width: 6px;
+              height: 6px;
+              background: var(--rose);
+              --sx: -180px;
+              --sy: 40px;
+              --dur: 3.5s;
+              --delay: 0.8s;
+              opacity: 0.5;
+              filter: blur(1px);
+            "
+          ></div>
+
+          <div
+            class="ls-particle ls-p-in"
+            style="
+              left: calc(50% - 3px);
+              top: calc(50% - 3px);
+              width: 6px;
+              height: 6px;
+              background: var(--amber);
+              --sx: -160px;
+              --sy: -30px;
+              --dur: 2.8s;
+              --delay: 1.5s;
+              opacity: 0.5;
+              filter: blur(1px);
+            "
+          ></div>
+
+          <div
+            class="ls-particle ls-p-in"
+            style="
+              left: calc(50% - 2px);
+              top: calc(50% - 2px);
+              width: 5px;
+              height: 5px;
+              background: var(--fire);
+              --sx: -190px;
+              --sy: 70px;
+              --dur: 4s;
+              --delay: 2.2s;
+              opacity: 0.4;
+              filter: blur(1px);
+            "
+          ></div>
+
+          
+
+          <div
+            class="ls-particle ls-p-out"
+            style="
+              left: calc(50% - 4px);
+              top: calc(50% - 4px);
+              width: 8px;
+              height: 8px;
+              background: var(--emerald);
+              --ex: 200px;
+              --ey: -40px;
+              --dur: 3.2s;
+              --delay: 0.5s;
+              opacity: 0.6;
+              filter: blur(1px);
+            "
+          ></div>
+
+          <div
+            class="ls-particle ls-p-out"
+            style="
+              left: calc(50% - 3px);
+              top: calc(50% - 3px);
+              width: 6px;
+              height: 6px;
+              background: var(--cyan);
+              --ex: 180px;
+              --ey: 50px;
+              --dur: 3.8s;
+              --delay: 1.3s;
+              opacity: 0.5;
+              filter: blur(1px);
+            "
+          ></div>
+
+          <div
+            class="ls-particle ls-p-out"
+            style="
+              left: calc(50% - 3px);
+              top: calc(50% - 3px);
+              width: 6px;
+              height: 6px;
+              background: var(--emerald);
+              --ex: 170px;
+              --ey: -20px;
+              --dur: 3s;
+              --delay: 2s;
+              opacity: 0.5;
+              filter: blur(1px);
+            "
+          ></div>
+
+          <div
+            class="ls-particle ls-p-out"
+            style="
+              left: calc(50% - 2px);
+              top: calc(50% - 2px);
+              width: 5px;
+              height: 5px;
+              background: var(--cyan);
+              --ex: 190px;
+              --ey: 60px;
+              --dur: 4.2s;
+              --delay: 3s;
+              opacity: 0.4;
+              filter: blur(1px);
+            "
+          ></div>
+
+          
+
+          <div class="ls-orb-wrap">
+            <div class="ls-orb-glow"></div>
+
+            <div class="ls-orb-ring1"></div>
+
+            <div class="ls-orb-ring2"></div>
+
+            <div class="ls-orb-ring3"></div>
+
+            <div class="ls-orb-core">
+              <div class="ls-orb-label">AI</div>
+
+              <div class="ls-orb-sub">ENGINE</div>
+            </div>
+          </div>
+
+          
+          <svg
+            preserveaspectratio="none"
+            style="
+              position: absolute;
+              left: 0;
+              top: 50%;
+              transform: translateY(-50%);
+              width: calc(50% - 80px);
+              height: 200px;
+              pointer-events: none;
+              overflow: visible;
+            "
+            viewbox="0 0 200 200"
+          >
+            <path
+              d="M0 40 Q100 40 200 100"
+              fill="none"
+              stroke="rgba(255,74,20,.06)"
+              stroke-dasharray="4 6"
+              stroke-width="1.5"
+            >
+              <animate
+                attributename="stroke-dashoffset"
+                dur="2s"
+                from="20"
+                repeatcount="indefinite"
+                to="0"
+              ></animate>
+            </path>
+
+            <path
+              d="M0 100 Q80 100 200 100"
+              fill="none"
+              stroke="rgba(255,74,20,.08)"
+              stroke-dasharray="3 5"
+              stroke-width="1"
+            >
+              <animate
+                attributename="stroke-dashoffset"
+                dur="2.5s"
+                from="16"
+                repeatcount="indefinite"
+                to="0"
+              ></animate>
+            </path>
+
+            <path
+              d="M0 160 Q100 160 200 100"
+              fill="none"
+              stroke="rgba(255,74,20,.06)"
+              stroke-dasharray="4 6"
+              stroke-width="1.5"
+            >
+              <animate
+                attributename="stroke-dashoffset"
+                dur="3s"
+                from="20"
+                repeatcount="indefinite"
+                to="0"
+              ></animate>
+            </path>
+          </svg>
+          
+          <svg
+            preserveaspectratio="none"
+            style="
+              position: absolute;
+              right: 0;
+              top: 50%;
+              transform: translateY(-50%);
+              width: calc(50% - 80px);
+              height: 200px;
+              pointer-events: none;
+              overflow: visible;
+            "
+            viewbox="0 0 200 200"
+          >
+            <path
+              d="M0 100 Q100 40 200 40"
+              fill="none"
+              stroke="rgba(16,185,129,.06)"
+              stroke-dasharray="4 6"
+              stroke-width="1.5"
+            >
+              <animate
+                attributename="stroke-dashoffset"
+                dur="2s"
+                from="20"
+                repeatcount="indefinite"
+                to="0"
+              ></animate>
+            </path>
+
+            <path
+              d="M0 100 Q120 100 200 100"
+              fill="none"
+              stroke="rgba(16,185,129,.08)"
+              stroke-dasharray="3 5"
+              stroke-width="1"
+            >
+              <animate
+                attributename="stroke-dashoffset"
+                dur="2.5s"
+                from="16"
+                repeatcount="indefinite"
+                to="0"
+              ></animate>
+            </path>
+
+            <path
+              d="M0 100 Q100 160 200 160"
+              fill="none"
+              stroke="rgba(16,185,129,.06)"
+              stroke-dasharray="4 6"
+              stroke-width="1.5"
+            >
+              <animate
+                attributename="stroke-dashoffset"
+                dur="3s"
+                from="20"
+                repeatcount="indefinite"
+                to="0"
+              ></animate>
+            </path>
+          </svg>
+        </div>
+
+        
+
+        <div class="ls-results">
+          <div class="ls-results-label">findings — real-time</div>
+
+          <div class="ls-results-body" id="lsResults">
+            <div class="ls-finding crit" style="animation-delay: 0.3s">
+              <div class="ls-f-sev">CRITICAL</div>
+
+              <div class="ls-f-name">SQL Injection — CWE-89</div>
+
+              <div class="ls-f-loc">
+                login.js:8 — Unsanitized user input in query
+              </div>
+
+              <div class="ls-f-fix">AI FIX READY</div>
+            </div>
+
+            <div class="ls-finding crit" style="animation-delay: 0.8s">
+              <div class="ls-f-sev">CRITICAL</div>
+
+              <div class="ls-f-name">SQL Injection — CWE-89</div>
+
+              <div class="ls-f-loc">
+                login.js:19 — Direct interpolation in query
+              </div>
+
+              <div class="ls-f-fix">AI FIX READY</div>
+            </div>
+
+            <div class="ls-finding high" style="animation-delay: 1.4s">
+              <div class="ls-f-sev">HIGH</div>
+
+              <div class="ls-f-name">Insecure Cookie — CWE-614</div>
+
+              <div class="ls-f-loc">
+                login.js:11 — Missing secure/httpOnly flags
+              </div>
+
+              <div class="ls-f-fix">AI FIX READY</div>
+            </div>
+
+            <div class="ls-finding med" style="animation-delay: 2s">
+              <div class="ls-f-sev">MEDIUM</div>
+
+              <div class="ls-f-name">Missing Rate Limit — CWE-307</div>
+
+              <div class="ls-f-loc">login.js:6 — No brute-force protection</div>
+
+              <div class="ls-f-fix">AI FIX READY</div>
+            </div>
+
+            <div class="ls-finding fixed" style="animation-delay: 2.8s">
+              <div class="ls-f-sev">AUTO-FIXED</div>
+
+              <div class="ls-f-name">SQL Injection → Parameterized</div>
+
+              <div class="ls-f-loc">PR #247 opened — validated ✓</div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      
+
+      <div class="ls-stats">
+        <div class="ls-stat">
+          <div class="ls-stat-v txt-fire" id="lsFiles">0</div>
+
+          <div class="ls-stat-l">Files Scanned</div>
+        </div>
+
+        <div class="ls-stat">
+          <div class="ls-stat-v" id="lsVulns" style="color: var(--rose)">0</div>
+
+          <div class="ls-stat-l">Vulns Found</div>
+        </div>
+
+        <div class="ls-progress">
+          <div class="ls-progress-bar">
+            <div class="ls-progress-fill"></div>
+          </div>
+
+          <div class="ls-progress-text" id="lsPhase">
+            DEEP TAINT ANALYSIS IN PROGRESS
+          </div>
+        </div>
+
+        <div class="ls-stat">
+          <div class="ls-stat-v" id="lsFixes" style="color: var(--emerald)">
+            0
+          </div>
+
+          <div class="ls-stat-l">AI Auto-Fixed</div>
+        </div>
+
+        <div class="ls-stat">
+          <div class="ls-stat-v" id="lsTime" style="color: var(--amber)">
+            0.0<span style="font-size: 0.6em; opacity: 0.6">s</span>
+          </div>
+
+          <div class="ls-stat-l">Scan Time</div>
+        </div>
+      </div>
+    </div>
+
+    <div
+      class="rv"
+      style="
+        display: flex;
+        justify-content: center;
+        gap: 16px;
+        margin-top: 32px;
+        flex-wrap: wrap;
+      "
+    >
+      <a class="js-open-demo btn btn-fire btn-lg">Book a Demo</a>
+    </div>
+  </div>
+</section>

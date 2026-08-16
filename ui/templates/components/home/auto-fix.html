@@ -1,0 +1,115 @@
+<section class="sec" id="autofix">
+  <div class="ctn">
+    <div class="sec-hd rv">
+      <h2 class="sec-t" style="color: #1e2235">
+        <span class="txt-fire">Auto Fix.</span>
+      </h2>
+
+      <p class="sec-sub">AI writes the fix. Opens the PR. You ship.</p>
+    </div>
+
+    <div class="af-split rv">
+      <div class="af-panel af-before">
+        <h3
+          style="
+            font-weight: 900;
+            color: var(--rose);
+            font-size: 1.3rem;
+            font-family: var(--f-head);
+          "
+        >
+          Before
+        </h3>
+
+        <p style="font-size: 0.85rem; color: var(--g400)">
+          SQL Injection — CWE-89 — Critical
+        </p>
+
+        <div class="code-b">
+          <span style="color: var(--g500)">1</span> app.get('/users', (req, res)
+          =&gt; {<br /><span style="color: var(--g500)">2</span> const id =
+          req.query.id;<br /><span class="code-bad"
+            ><span style="color: var(--g500)">3</span> const q = `SELECT * FROM
+            users WHERE id = '${id}'`;</span
+          ><span class="af-spacer" style="display: block"> </span
+          ><span class="af-spacer" style="display: block"> </span
+          ><span class="code-bad"
+            ><span style="color: var(--g500)">4</span> db.query(q, (err, rows)
+            =&gt; {</span
+          ><span class="af-spacer" style="display: block"> </span
+          ><span class="af-spacer" style="display: block"> </span
+          ><span style="color: var(--g500)">5</span> res.json(rows);<br /><span
+            style="color: var(--g500)"
+            >6</span
+          >
+          });<br /><span style="color: var(--g500)">7</span> });
+        </div>
+      </div>
+
+      <div class="af-arrow">
+        <svg fill="none" stroke="#fff" stroke-width="2.5" viewbox="0 0 24 24">
+          <path d="M5 12h14M12 5l7 7-7 7"></path>
+        </svg>
+      </div>
+
+      <div class="af-panel af-after">
+        <h3
+          style="
+            font-weight: 900;
+            color: var(--emerald);
+            font-size: 1.3rem;
+            font-family: var(--f-head);
+          "
+        >
+          After — AI Fixed
+        </h3>
+
+        <p style="font-size: 0.85rem; color: var(--g400)">
+          Watch the AI rewrite in real time
+        </p>
+
+        <div class="code-b">
+          <span style="color: var(--g500)">1</span> app.get('/users', (req, res)
+          =&gt; {<br /><span style="color: var(--g500)">2</span> const id =
+          req.query.id;<br /><span
+            class="code-bad"
+            style="text-decoration: none"
+            ><span style="color: var(--g500)">3</span>
+            <span class="af-out"
+              >const q = `SELECT * FROM users WHERE id = '${id}'`;</span
+            ></span
+          ><span class="code-good af-in af-d1"
+            ><span style="color: var(--g500)"> </span>
+            <span style="color: var(--g500); font-style: italic"
+              >// Parameterized query prevents SQL injection</span
+            ></span
+          ><span class="code-good af-in af-d2"
+            ><span style="color: var(--g500)"> </span> const q = 'SELECT * FROM
+            users WHERE id = ?';</span
+          ><span class="code-bad" style="text-decoration: none"
+            ><span style="color: var(--g500)">4</span>
+            <span class="af-out af-d1"
+              >db.query(q, (err, rows) =&gt; {</span
+            ></span
+          ><span class="code-good af-in af-d3"
+            ><span style="color: var(--g500)"> </span>
+            <span style="color: var(--g500); font-style: italic"
+              >// Bind user input as parameter</span
+            ></span
+          ><span class="code-good af-in af-d4"
+            ><span style="color: var(--g500)"> </span> db.query(q, [id], (err,
+            rows) =&gt; {</span
+          ><span style="color: var(--g500)">5</span> res.json(rows);<br /><span
+            style="color: var(--g500)"
+            >6</span
+          >
+          });<br /><span style="color: var(--g500)">7</span> });
+        </div>
+      </div>
+    </div>
+
+    <div class="rv" style="text-align: center; margin-top: 48px">
+      <a class="js-open-demo btn btn-dark btn-lg">See AI Auto-Fix Live</a>
+    </div>
+  </div>
+</section>
