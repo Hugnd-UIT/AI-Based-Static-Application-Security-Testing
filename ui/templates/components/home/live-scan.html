@@ -1,8 +1,4 @@
-<section
-  class="sec live-scan"
-  id="livescan"
-  style="padding: 40px 0 120px; background: #060910"
->
+<section class="sec live-scan" id="livescan" style="padding: 40px 0 120px; background: #060910">
   <div class="ctn">
     <div class="sec-hd rv">
       <h2 class="sec-t">See It <span class="txt-fire">In Action.</span></h2>
@@ -13,10 +9,9 @@
     </div>
 
     <div class="live-scan-canvas rv">
-      
 
       <div class="ls-bar">
-        <span class="ls-title">Sinful-sast — live-scan-demo</span>
+        <span class="ls-title">Sinful SAST — Live Scan Demo</span>
 
         <div class="ls-status">
           <div class="ls-status-dot"></div>
@@ -25,29 +20,22 @@
         </div>
       </div>
 
-      
-
       <div class="ls-beam"></div>
 
-      
-
       <div class="ls-main">
-        
 
         <div class="ls-code">
           <div class="ls-code-label">source — app/auth/login.js</div>
 
           <div class="ls-code-lines" id="lsCodeLines">
             <div class="ls-line safe">
-              <span class="ls-line-num">1</span
-              ><span style="color: rgba(139, 92, 246, 0.5)">import</span>
+              <span class="ls-line-num">1</span><span style="color: rgba(139, 92, 246, 0.5)">import</span>
               express <span style="color: rgba(139, 92, 246, 0.5)">from</span>
               <span style="color: rgba(16, 185, 129, 0.5)">'express'</span>;
             </div>
 
             <div class="ls-line safe">
-              <span class="ls-line-num">2</span
-              ><span style="color: rgba(139, 92, 246, 0.5)">import</span> db
+              <span class="ls-line-num">2</span><span style="color: rgba(139, 92, 246, 0.5)">import</span> db
               <span style="color: rgba(139, 92, 246, 0.5)">from</span>
               <span style="color: rgba(16, 185, 129, 0.5)">'./database'</span>;
             </div>
@@ -55,18 +43,15 @@
             <div class="ls-line"><span class="ls-line-num">3</span></div>
 
             <div class="ls-line scanning">
-              <span class="ls-line-num">4</span
-              ><span style="color: rgba(0, 212, 255, 0.4)">const</span> router =
+              <span class="ls-line-num">4</span><span style="color: rgba(0, 212, 255, 0.4)">const</span> router =
               express.Router();
             </div>
 
             <div class="ls-line"><span class="ls-line-num">5</span></div>
 
             <div class="ls-line scanning">
-              <span class="ls-line-num">6</span>router.<span
-                style="color: rgba(255, 74, 20, 0.5)"
-                >post</span
-              >(<span style="color: rgba(16, 185, 129, 0.5)">'/login'</span>,
+              <span class="ls-line-num">6</span>router.<span style="color: rgba(255, 74, 20, 0.5)">post</span>(<span
+                style="color: rgba(16, 185, 129, 0.5)">'/login'</span>,
               (req, res) =&gt; {
             </div>
 
@@ -79,16 +64,12 @@
             <div class="ls-line vuln">
               <span class="ls-line-num">8</span>
               <span style="color: rgba(0, 212, 255, 0.4)">const</span> q =
-              <span style="color: rgba(244, 63, 94, 0.5)"
-                >`SELECT * WHERE u='${user}'`</span
-              >;
+              <span style="color: rgba(244, 63, 94, 0.5)">`SELECT * WHERE u='${user}'`</span>;
             </div>
 
             <div class="ls-line vuln">
-              <span class="ls-line-num">9</span> db.<span
-                style="color: rgba(255, 74, 20, 0.5)"
-                >query</span
-              >(q, (err, rows) =&gt; {
+              <span class="ls-line-num">9</span> db.<span style="color: rgba(255, 74, 20, 0.5)">query</span>(q, (err,
+              rows) =&gt; {
             </div>
 
             <div class="ls-line">
@@ -99,9 +80,7 @@
 
             <div class="ls-line vuln">
               <span class="ls-line-num">11</span> res.cookie(<span
-                style="color: rgba(16, 185, 129, 0.5)"
-                >'token'</span
-              >, rows[0].id);
+                style="color: rgba(16, 185, 129, 0.5)">'token'</span>, rows[0].id);
             </div>
 
             <div class="ls-line">
@@ -118,10 +97,8 @@
             <div class="ls-line"><span class="ls-line-num">16</span></div>
 
             <div class="ls-line scanning">
-              <span class="ls-line-num">17</span>router.<span
-                style="color: rgba(255, 74, 20, 0.5)"
-                >get</span
-              >(<span style="color: rgba(16, 185, 129, 0.5)">'/profile'</span>,
+              <span class="ls-line-num">17</span>router.<span style="color: rgba(255, 74, 20, 0.5)">get</span>(<span
+                style="color: rgba(16, 185, 129, 0.5)">'/profile'</span>,
               (req, res) =&gt; {
             </div>
 
@@ -132,12 +109,8 @@
             </div>
 
             <div class="ls-line vuln">
-              <span class="ls-line-num">19</span> db.<span
-                style="color: rgba(255, 74, 20, 0.5)"
-                >query</span
-              >(<span style="color: rgba(244, 63, 94, 0.5)"
-                >`SELECT * WHERE id=${id}`</span
-              >);
+              <span class="ls-line-num">19</span> db.<span style="color: rgba(255, 74, 20, 0.5)">query</span>(<span
+                style="color: rgba(244, 63, 94, 0.5)">`SELECT * WHERE id=${id}`</span>);
             </div>
 
             <div class="ls-line">
@@ -149,23 +122,15 @@
             <div class="ls-line"><span class="ls-line-num">22</span></div>
 
             <div class="ls-line safe">
-              <span class="ls-line-num">23</span
-              ><span style="color: rgba(139, 92, 246, 0.5)"
-                >export default</span
-              >
+              <span class="ls-line-num">23</span><span style="color: rgba(139, 92, 246, 0.5)">export default</span>
               router;
             </div>
           </div>
         </div>
 
-        
-
         <div class="ls-center">
-          
 
-          <div
-            class="ls-particle ls-p-in"
-            style="
+          <div class="ls-particle ls-p-in" style="
               left: calc(50% - 4px);
               top: calc(50% - 4px);
               width: 8px;
@@ -177,12 +142,9 @@
               --delay: 0s;
               opacity: 0.6;
               filter: blur(1px);
-            "
-          ></div>
+            "></div>
 
-          <div
-            class="ls-particle ls-p-in"
-            style="
+          <div class="ls-particle ls-p-in" style="
               left: calc(50% - 3px);
               top: calc(50% - 3px);
               width: 6px;
@@ -194,12 +156,9 @@
               --delay: 0.8s;
               opacity: 0.5;
               filter: blur(1px);
-            "
-          ></div>
+            "></div>
 
-          <div
-            class="ls-particle ls-p-in"
-            style="
+          <div class="ls-particle ls-p-in" style="
               left: calc(50% - 3px);
               top: calc(50% - 3px);
               width: 6px;
@@ -211,12 +170,9 @@
               --delay: 1.5s;
               opacity: 0.5;
               filter: blur(1px);
-            "
-          ></div>
+            "></div>
 
-          <div
-            class="ls-particle ls-p-in"
-            style="
+          <div class="ls-particle ls-p-in" style="
               left: calc(50% - 2px);
               top: calc(50% - 2px);
               width: 5px;
@@ -228,14 +184,9 @@
               --delay: 2.2s;
               opacity: 0.4;
               filter: blur(1px);
-            "
-          ></div>
+            "></div>
 
-          
-
-          <div
-            class="ls-particle ls-p-out"
-            style="
+          <div class="ls-particle ls-p-out" style="
               left: calc(50% - 4px);
               top: calc(50% - 4px);
               width: 8px;
@@ -247,12 +198,9 @@
               --delay: 0.5s;
               opacity: 0.6;
               filter: blur(1px);
-            "
-          ></div>
+            "></div>
 
-          <div
-            class="ls-particle ls-p-out"
-            style="
+          <div class="ls-particle ls-p-out" style="
               left: calc(50% - 3px);
               top: calc(50% - 3px);
               width: 6px;
@@ -264,12 +212,9 @@
               --delay: 1.3s;
               opacity: 0.5;
               filter: blur(1px);
-            "
-          ></div>
+            "></div>
 
-          <div
-            class="ls-particle ls-p-out"
-            style="
+          <div class="ls-particle ls-p-out" style="
               left: calc(50% - 3px);
               top: calc(50% - 3px);
               width: 6px;
@@ -281,12 +226,9 @@
               --delay: 2s;
               opacity: 0.5;
               filter: blur(1px);
-            "
-          ></div>
+            "></div>
 
-          <div
-            class="ls-particle ls-p-out"
-            style="
+          <div class="ls-particle ls-p-out" style="
               left: calc(50% - 2px);
               top: calc(50% - 2px);
               width: 5px;
@@ -298,10 +240,7 @@
               --delay: 3s;
               opacity: 0.4;
               filter: blur(1px);
-            "
-          ></div>
-
-          
+            "></div>
 
           <div class="ls-orb-wrap">
             <div class="ls-orb-glow"></div>
@@ -319,10 +258,8 @@
             </div>
           </div>
 
-          
-          <svg
-            preserveaspectratio="none"
-            style="
+
+          <svg preserveaspectratio="none" style="
               position: absolute;
               left: 0;
               top: 50%;
@@ -331,61 +268,24 @@
               height: 200px;
               pointer-events: none;
               overflow: visible;
-            "
-            viewbox="0 0 200 200"
-          >
-            <path
-              d="M0 40 Q100 40 200 100"
-              fill="none"
-              stroke="rgba(255,74,20,.06)"
-              stroke-dasharray="4 6"
-              stroke-width="1.5"
-            >
-              <animate
-                attributename="stroke-dashoffset"
-                dur="2s"
-                from="20"
-                repeatcount="indefinite"
-                to="0"
-              ></animate>
+            " viewbox="0 0 200 200">
+            <path d="M0 40 Q100 40 200 100" fill="none" stroke="rgba(255,74,20,.06)" stroke-dasharray="4 6"
+              stroke-width="1.5">
+              <animate attributename="stroke-dashoffset" dur="2s" from="20" repeatcount="indefinite" to="0"></animate>
             </path>
 
-            <path
-              d="M0 100 Q80 100 200 100"
-              fill="none"
-              stroke="rgba(255,74,20,.08)"
-              stroke-dasharray="3 5"
-              stroke-width="1"
-            >
-              <animate
-                attributename="stroke-dashoffset"
-                dur="2.5s"
-                from="16"
-                repeatcount="indefinite"
-                to="0"
-              ></animate>
+            <path d="M0 100 Q80 100 200 100" fill="none" stroke="rgba(255,74,20,.08)" stroke-dasharray="3 5"
+              stroke-width="1">
+              <animate attributename="stroke-dashoffset" dur="2.5s" from="16" repeatcount="indefinite" to="0"></animate>
             </path>
 
-            <path
-              d="M0 160 Q100 160 200 100"
-              fill="none"
-              stroke="rgba(255,74,20,.06)"
-              stroke-dasharray="4 6"
-              stroke-width="1.5"
-            >
-              <animate
-                attributename="stroke-dashoffset"
-                dur="3s"
-                from="20"
-                repeatcount="indefinite"
-                to="0"
-              ></animate>
+            <path d="M0 160 Q100 160 200 100" fill="none" stroke="rgba(255,74,20,.06)" stroke-dasharray="4 6"
+              stroke-width="1.5">
+              <animate attributename="stroke-dashoffset" dur="3s" from="20" repeatcount="indefinite" to="0"></animate>
             </path>
           </svg>
-          
-          <svg
-            preserveaspectratio="none"
-            style="
+
+          <svg preserveaspectratio="none" style="
               position: absolute;
               right: 0;
               top: 50%;
@@ -394,60 +294,23 @@
               height: 200px;
               pointer-events: none;
               overflow: visible;
-            "
-            viewbox="0 0 200 200"
-          >
-            <path
-              d="M0 100 Q100 40 200 40"
-              fill="none"
-              stroke="rgba(16,185,129,.06)"
-              stroke-dasharray="4 6"
-              stroke-width="1.5"
-            >
-              <animate
-                attributename="stroke-dashoffset"
-                dur="2s"
-                from="20"
-                repeatcount="indefinite"
-                to="0"
-              ></animate>
+            " viewbox="0 0 200 200">
+            <path d="M0 100 Q100 40 200 40" fill="none" stroke="rgba(16,185,129,.06)" stroke-dasharray="4 6"
+              stroke-width="1.5">
+              <animate attributename="stroke-dashoffset" dur="2s" from="20" repeatcount="indefinite" to="0"></animate>
             </path>
 
-            <path
-              d="M0 100 Q120 100 200 100"
-              fill="none"
-              stroke="rgba(16,185,129,.08)"
-              stroke-dasharray="3 5"
-              stroke-width="1"
-            >
-              <animate
-                attributename="stroke-dashoffset"
-                dur="2.5s"
-                from="16"
-                repeatcount="indefinite"
-                to="0"
-              ></animate>
+            <path d="M0 100 Q120 100 200 100" fill="none" stroke="rgba(16,185,129,.08)" stroke-dasharray="3 5"
+              stroke-width="1">
+              <animate attributename="stroke-dashoffset" dur="2.5s" from="16" repeatcount="indefinite" to="0"></animate>
             </path>
 
-            <path
-              d="M0 100 Q100 160 200 160"
-              fill="none"
-              stroke="rgba(16,185,129,.06)"
-              stroke-dasharray="4 6"
-              stroke-width="1.5"
-            >
-              <animate
-                attributename="stroke-dashoffset"
-                dur="3s"
-                from="20"
-                repeatcount="indefinite"
-                to="0"
-              ></animate>
+            <path d="M0 100 Q100 160 200 160" fill="none" stroke="rgba(16,185,129,.06)" stroke-dasharray="4 6"
+              stroke-width="1.5">
+              <animate attributename="stroke-dashoffset" dur="3s" from="20" repeatcount="indefinite" to="0"></animate>
             </path>
           </svg>
         </div>
-
-        
 
         <div class="ls-results">
           <div class="ls-results-label">findings — real-time</div>
@@ -510,8 +373,6 @@
         </div>
       </div>
 
-      
-
       <div class="ls-stats">
         <div class="ls-stat">
           <div class="ls-stat-v txt-fire" id="lsFiles">0</div>
@@ -553,16 +414,13 @@
       </div>
     </div>
 
-    <div
-      class="rv"
-      style="
+    <div class="rv" style="
         display: flex;
         justify-content: center;
         gap: 16px;
         margin-top: 32px;
         flex-wrap: wrap;
-      "
-    >
+      ">
       <a class="js-open-demo btn btn-fire btn-lg">Book a Demo</a>
     </div>
   </div>
