@@ -4857,7 +4857,7 @@ details.faq-item .faq-body {
   position: relative;
   max-width: 1100px;
   margin: 0 auto;
-  height: 520px;
+  height: 605px;
   border-radius: var(--rl);
   background: #06080e;
   border: 1px solid rgba(255, 255, 255, 0.06);
@@ -5393,6 +5393,7 @@ details.faq-item .faq-body {
   align-items: center;
 
   border-top: 1px solid rgba(255, 255, 255, 0.03);
+  background: rgba(6, 8, 14, 0.95);
   backdrop-filter: blur(8px);
 }
 

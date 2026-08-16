@@ -196,10 +196,10 @@ window.addEventListener(
   var doneEl = document.getElementById("qscDone");
   var raf = null;
   var totalFiles = 10247,
-    totalTime = 2.8,
-    totalVulns = 23;
+    totalTime = 3.6,
+    totalVulns = 18;
   function runCount() {
-    var dur = 2800,
+    var dur = 3600,
       start = performance.now();
     function tick(now) {
       var p = Math.min((now - start) / dur, 1);
@@ -920,18 +920,9 @@ document.querySelectorAll(".btn-fire,.btn-lg").forEach((btn) => {
           startPhaseCycle();
         }
 
-        if (!e.isIntersecting && animated) {
-          animated = !1;
-          document.getElementById("lsFiles").textContent = "0";
-          document.getElementById("lsVulns").textContent = "0";
-          document.getElementById("lsFixes").textContent = "0";
-          document.getElementById("lsTime").innerHTML =
-            '0.0<span style="font-size:.6em;opacity:.6">s</span>';
-          stopPhaseCycle();
-        }
       });
     },
-    { threshold: 0.3 },
+    { threshold: 0 },
   );
   lsObs.observe(lsSection);
   function animateCounter(id, start, end, duration) {
