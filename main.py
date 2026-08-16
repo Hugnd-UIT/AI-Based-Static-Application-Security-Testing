@@ -9,6 +9,10 @@ import json
 from pathlib import Path
 import importlib.util
 import time
+
+from dotenv import load_dotenv
+load_dotenv()
+
 from cli.views import logger
 
 def load_tree_sitter():
@@ -107,7 +111,7 @@ def run_sast(target_path, rule_list=None):
                         for ref_url in ref_links[:2]:
                             display_ref = ref_url if len(ref_url) <= 60 else ref_url[:57] + "..."
                             from cli.views.logger import console
-                            console.print(f"  [dim]Scraping PoC via Firecrawl: [link={ref_url}]{display_ref}[/link][/dim]")
+                            console.print(f"  [dim]Scraping PoC via [bold green]Firecrawl[/bold green]: [link={ref_url}]{display_ref}[/link][/dim]")
                             scraped_md = firecrawl.scrape(ref_url)
                             
                             if scraped_md:
@@ -217,9 +221,9 @@ def run_sast(target_path, rule_list=None):
     summary_table.add_row("", "")
     summary_table.add_row("Findings", f"[bold]{count_findings}[/bold]")
     if count_errors > 0:
-        summary_table.add_row("  [red]✖ ERROR[/red]", str(count_errors))
+        summary_table.add_row("[red]✖ ERROR[/red]", str(count_errors))
     if count_warnings > 0:
-        summary_table.add_row("  [yellow]⚠ WARNING[/yellow]", str(count_warnings))
+        summary_table.add_row("[yellow]⚠ WARNING[/yellow]", str(count_warnings))
     summary_table.add_row("", "")
     summary_table.add_row("Status", status_str)
 

@@ -11,3 +11,8 @@ tree-sitter-c-sharp
 tree-sitter-c
 tree-sitter-cpp
 semgrep
+typer
+rich
+prompt_toolkit
+google-genai
+python-dotenv

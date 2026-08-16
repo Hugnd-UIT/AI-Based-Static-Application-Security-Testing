@@ -1,5 +1,8 @@
 import typer
 import os
+from dotenv import load_dotenv
+load_dotenv()
+
 from rich.panel import Panel
 from rich.text import Text
 from cli.views.console import console
