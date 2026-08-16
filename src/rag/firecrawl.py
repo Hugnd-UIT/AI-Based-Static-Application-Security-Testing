@@ -26,13 +26,13 @@ def scrape(target_url: str) -> Optional[str]:
             if json_data.get("success"):
                 return json_data.get("data", {}).get("markdown")
             else:
-                print(f"[!] Firecrawl failed to scrape: {target_url}")
+                print(f"    [!] Firecrawl failed to scrape: {target_url}")
                 return None
 
     except urllib.error.HTTPError as http_err:
-        print(f"[!] HTTP Error {http_err.code} when scraping {target_url}")
+        print(f"    [!] HTTP Error {http_err.code} when scraping {target_url}")
         return None
 
     except Exception as scrape_err:
-        print(f"[!] Error connecting to Firecrawl: {scrape_err}")
+        print(f"    [!] Error connecting to Firecrawl: {scrape_err}")
         return None

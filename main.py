@@ -111,7 +111,11 @@ def run_sast(target_path, rule_list=None):
                         for ref_url in ref_links[:2]:
                             display_ref = ref_url if len(ref_url) <= 60 else ref_url[:57] + "..."
                             from cli.views.logger import console
-                            console.print(f"  [dim]Scraping PoC via [bold green]Firecrawl[/bold green]: [link={ref_url}]{display_ref}[/link][/dim]")
+                            console.print(
+                                f"  [dim]Scraping PoC via[/dim] "
+                                f"[bold green]Firecrawl[/bold green]: "
+                                f"[dim][link={ref_url}]{display_ref}[/link][/dim]"
+                            )
                             scraped_md = firecrawl.scrape(ref_url)
                             
                             if scraped_md:
@@ -211,6 +215,7 @@ def run_sast(target_path, rule_list=None):
     count_findings = len(scan_findings)
     count_errors = len([find_item for find_item in scan_findings if find_item["severity"] == "ERROR"])
     count_warnings = len([find_item for find_item in scan_findings if find_item["severity"] == "WARNING"])
+    count_info = len([find_item for find_item in scan_findings if find_item["severity"] == "INFO"])
     
     is_vulnerable = scan_result.get("is_vulnerable", False) or count_errors > 0
     status_str = "[bold red]✖ VULNERABLE[/bold red]" if is_vulnerable else "[bold green]✓ SAFE[/bold green]"
@@ -224,6 +229,8 @@ def run_sast(target_path, rule_list=None):
         summary_table.add_row("[red]✖ ERROR[/red]", str(count_errors))
     if count_warnings > 0:
         summary_table.add_row("[yellow]⚠ WARNING[/yellow]", str(count_warnings))
+    if count_info > 0:
+        summary_table.add_row("[green]✓ INFO[/green]", str(count_info))
     summary_table.add_row("", "")
     summary_table.add_row("Status", status_str)
 
