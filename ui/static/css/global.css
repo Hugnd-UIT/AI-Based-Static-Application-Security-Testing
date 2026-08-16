@@ -4252,6 +4252,7 @@ details.faq-item .faq-body {
 
 .devx-pipe-stage {
   flex: 1;
+  min-width: 0;
   text-align: center;
   padding: 10px 4px;
   position: relative;
