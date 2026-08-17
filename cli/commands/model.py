@@ -7,7 +7,7 @@ from prompt_toolkit.layout.layout import Layout
 from prompt_toolkit.styles import Style
 from cli.views.console import console
 from cli.views import logger
-from src.review.agents import MODELS  
+from main import MODELS
 
 DESCRIPTIONS = {
     "deepseek/deepseek-v4-flash": "Balanced vulnerability analysis model for everyday security scanning.",

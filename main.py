@@ -15,6 +15,14 @@ load_dotenv()
 
 from cli.views import logger
 
+MODELS = [
+    "deepseek/deepseek-v4-flash",      # DeepSeek V4 Flash 
+    "mistralai/codestral-2508",        # Codestral
+    "qwen/qwen3.8-max",                # Alibaba Qwen
+    "xiaomi/mimo-v2.5-pro",            # Xiaomi MiMo 
+    "mistralai/mistral-large-2512"     # Mistral Large
+]
+
 def load_tree_sitter():
     # Load tree sitter module dynamically
     ts_path = Path("src/review/tree-sitter.py").resolve()

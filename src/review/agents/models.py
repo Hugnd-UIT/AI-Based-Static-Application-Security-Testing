@@ -2,13 +2,6 @@ import os
 
 from src.review.agents.prompts import PROMPT
 
-MODELS = [
-    "deepseek/deepseek-v4-flash",      # DeepSeek V4 Flash 
-    "mistralai/codestral-2508",        # Codestral
-    "qwen/qwen3.8-max",                # Alibaba Qwen
-    "xiaomi/mimo-v2.5-pro",            # Xiaomi MiMo 
-    "mistralai/mistral-large-2512"     # Mistral Large
-]
 
 def fetch(finding_item: dict, source_code: str, cve_context: str = "None", model: str = None) -> str:
     from openai import OpenAI
@@ -31,6 +24,7 @@ def fetch(finding_item: dict, source_code: str, cve_context: str = "None", model
         cve=cve_context,
     )
 
+    from main import MODELS
     fallback = list(MODELS)
     
     if model:
