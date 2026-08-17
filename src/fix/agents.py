@@ -1,19 +1,18 @@
 import os
 import json
-from google import genai
-from google.genai import types
+
 from src.fix.prompts import SYSTEM_PROMPT, USER_PROMPT
 
-def gen_fix(finding_item: dict, source_code: str) -> dict:
+def gen_fix(finding_item: dict, source_code: str, model: str = "deepseek/deepseek-v4-flash") -> dict:
+    from openai import OpenAI
     api_key = os.environ.get("MODEL_API_KEY")
 
     if not api_key:
         raise ValueError("[!] Model api key is not set")
 
-    genai_client = genai.Client(api_key=api_key)
-
-    model_config = types.GenerateContentConfig(
-        system_instruction=SYSTEM_PROMPT, temperature=0.0, response_mime_type="application/json"
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://api.xkiro.com/v1"
     )
 
     prompt_text = USER_PROMPT.format(
@@ -24,11 +23,24 @@ def gen_fix(finding_item: dict, source_code: str) -> dict:
     )
 
     try:
-        api_resp = genai_client.models.generate_content(
-            model="gemini-2.5-flash", contents=prompt_text, config=model_config
+        response = client.chat.completions.create(
+            model=model,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": prompt_text}
+            ],
+            response_format={"type": "json_object"}
         )
 
-        json_data = json.loads(api_resp.text)
+        raw_text = response.choices[0].message.content.strip()
+        if raw_text.startswith("```json"):
+            raw_text = raw_text[7:]
+        if raw_text.startswith("```"):
+            raw_text = raw_text[3:]
+        if raw_text.endswith("```"):
+            raw_text = raw_text[:-3]
+
+        json_data = json.loads(raw_text.strip())
         return json_data
 
     except json.JSONDecodeError:

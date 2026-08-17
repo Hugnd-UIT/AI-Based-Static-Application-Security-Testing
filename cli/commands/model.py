@@ -9,7 +9,6 @@ from cli.views.console import console
 from cli.views import logger
 from src.review.agents import MODELS  
 
-# Adding descriptions to match the screenshot vibe
 DESCRIPTIONS = {
     "deepseek/deepseek-v4-flash": "Balanced vulnerability analysis model for everyday security scanning.",
     "mistralai/codestral-2508": "Fast and affordable security model for quick codebase reviews.",
@@ -109,21 +108,26 @@ def set_model(user_command: str):
         'unselected': '#cccccc',
     })
 
-    layout = Layout(HSplit([Window(content=FormattedTextControl(get_prompt_text))]))
+    layout = Layout(HSplit([Window(content=FormattedTextControl(get_prompt_text), always_hide_cursor=True)]))
     
     app = Application(
         layout=layout,
         key_bindings=bindings,
         style=style,
-        full_screen=False
+        full_screen=False,
+        erase_when_done=True
     )
     
     try:
+        import sys
+        sys.stdout.write("\x1b[0m\x1b[6A\x1b[J")
+        sys.stdout.flush()
+        
         chosen_model = app.run()
         if chosen_model:
             os.environ["MODELS"] = chosen_model
             logger.console.print(f"\n[bold green]✔[/bold green] Switched to [bold cyan]{chosen_model}[/bold cyan]\n")
         else:
-            logger.console.print("\n[dim]Model selection cancelled.[/dim]\n")
+            pass
     except Exception as e:
         logger.warning(f"Interactive UI error: {e}")

@@ -1,5 +1,5 @@
 import os
-from openai import OpenAI
+
 from src.review.prompts import PROMPT
 
 MODELS = [
@@ -11,6 +11,7 @@ MODELS = [
 ]
 
 def fetch(finding_item: dict, source_code: str, cve_context: str = "None", model: str = None) -> str:
+    from openai import OpenAI
     api_key = os.environ.get("MODEL_API_KEY")
 
     if not api_key:

@@ -17,12 +17,16 @@ def print_header():
     current_cwd = os.getcwd()
     header_text = Text()
 
-    header_text.append(">_ Sinful AI", style="bold orange1")
+    header_text.append(">_ Sinful AI", style="bold cyan")
     header_text.append(" v1.0.0\n\n", style="dim")
 
-    header_text.append("mode:      ", style="dim")
-    header_text.append("auto-fix       ", style="bold white")
-    header_text.append("/mode to change\n", style="dim orange1")
+    from src.review.agents import MODELS
+    default_model = MODELS[0]
+
+    header_text.append("model:     ", style="dim")
+    header_text.append(f"{default_model:<25}", style="bold white")
+    header_text.append(" /model", style="bold cyan")
+    header_text.append(" to change\n", style="dim")
 
     header_text.append("directory: ", style="dim")
     header_text.append(current_cwd, style="white")
@@ -80,16 +84,28 @@ def start_cli():
 
             input_buffer = Buffer(completer=CommandCompleter(), complete_while_typing=True)
 
-            # Setup layout paddings
             top_padding = Window(height=1, char=' ', style='bg:#373737')
-            prompt_window = Window(width=4, height=1, content=FormattedTextControl('  › '), style='bg:#373737 fg:#fb923c bold')
+            prompt_window = Window(width=4, height=1, content=FormattedTextControl('  › '), style='bg:#373737 fg:ansicyan bold')
             buffer_window = Window(height=1, content=BufferControl(buffer=input_buffer), style='bg:#373737 fg:#ffffff')
             bottom_padding = Window(height=1, char=' ', style='bg:#373737')
+            
+            current_model = os.environ.get("MODELS", "deepseek/deepseek-v4-flash")
+            home_dir = os.path.expanduser("~")
+            short_cwd = os.getcwd().replace(home_dir, "~") if os.getcwd().startswith(home_dir) else os.getcwd()
+            
+            status_text = [
+                ('', '\n'),
+                ('class:status-model', f"  {current_model} "),
+                ('class:status-dot', "• "),
+                ('class:status-path', f"{short_cwd}")
+            ]
+            status_window = Window(height=2, content=FormattedTextControl(status_text))
 
             root_container = HSplit([
                 top_padding,
                 VSplit([prompt_window, buffer_window], height=1),
                 bottom_padding,
+                status_window,
                 CompletionsMenu(max_height=16, scroll_offset=1)
             ])
 
@@ -112,6 +128,9 @@ def start_cli():
                 'scrollbar.background': 'bg:default fg:default',
                 'scrollbar.button': 'bg:default fg:default',
                 'scrollbar.arrow': 'bg:default fg:default',
+                'status-model': 'fg:ansicyan bold', 
+                'status-dot': 'fg:#6b7280',         
+                'status-path': 'fg:#4ade80',        
             })
 
             toolkit_app = Application(
@@ -128,7 +147,7 @@ def start_cli():
                 if target_cmd is None:
                     break
             except Exception:
-                target_cmd = input(f"\x1b[1A{grey_color}{' '*term_width}\n  \x1b[38;2;251;146;60m\x1b[1m>\x1b[22m\x1b[0m{grey_color} Enter path or command: \x1b[K\n{' '*term_width}{reset_color}\x1b[1A\x1b[25D")
+                target_cmd = input(f"\x1b[1A{grey_color}{' '*term_width}\n  \x1b[36m\x1b[1m>\x1b[22m\x1b[0m{grey_color} Enter path or command: \x1b[K\n{' '*term_width}{reset_color}\x1b[1A\x1b[25D")
                 if not target_cmd:
                     break
 

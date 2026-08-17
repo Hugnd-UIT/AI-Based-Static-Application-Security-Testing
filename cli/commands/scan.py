@@ -55,7 +55,8 @@ def run_scan(target_path: str, fix: bool = False):
                 continue
 
             def generate_fix():
-                return ai_agents.gen_fix(finding_item, ast_context)
+                model_to_use = os.environ.get("MODELS", "deepseek/deepseek-v4-flash")
+                return ai_agents.gen_fix(finding_item, ast_context, model=model_to_use)
 
             try:
                 logger.info(f"Generating patch for {finding_item.get('id', 'Unknown')}...")
