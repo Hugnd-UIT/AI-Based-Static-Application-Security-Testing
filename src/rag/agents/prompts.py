@@ -7,12 +7,14 @@ Your absolute priority is to CONSERVE CONTEXT WINDOW and ELIMINATE FALSE CLAIMS.
 
 [EXPECTED JSON]
 {
-    "cve_id": "The CVE identifier (e.g., CVE-2024-1234).",
-    "dependency": "The vulnerable dependency or package name.",
-    "severity": "Severity level (e.g., CRITICAL, HIGH, MEDIUM).",
-    "vectors": [
+    "cve_id": "The CVE identifier, e.g., CVE-2024-1234, etc...",
+    "dependency": "The name of the vulnerable package.",
+    "severity": "Severity level, e.g., CRITICAL, HIGH, MEDIUM, etc...",
+    "attack_vector": "How the attack is performed.",
+    "mitigation": "How to fix the issue.",
+    "analysis": [
         {
-            "type": "The type of attack (e.g., XSS, SQLi, RCE, Deserialization).",
+            "type": "The type of attack, e.g., XSS, SQLi, RCE, Deserialization, etc...",
             "description": "Brief, concise explanation of how the attack is executed based ONLY on the text.",
             "conditions": [
                 "Condition 1", 
@@ -34,7 +36,7 @@ Step 1: Grounding & Identification.
 - If they are not mentioned, output "Unknown". Do NOT invent them.
 
 Step 2: Attack Vector Extraction.
-- Locate how the vulnerability is exploited (e.g., via a specific URL parameter, malicious JSON payload).
+- Locate how the vulnerability is exploited, e.g., via a specific URL parameter, malicious JSON payload, etc...
 - List the required conditions. If the conditions are not stated, output "Unknown".
 
 Step 3: Affected Functions (Sinks) Identification.

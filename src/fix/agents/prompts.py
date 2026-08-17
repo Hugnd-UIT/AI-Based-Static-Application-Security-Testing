@@ -14,7 +14,7 @@ You MUST output the fix strictly in JSON format matching the exact structure bel
 }
 
 [RULES]
-1. `file_path` MUST be extracted from the context markers (e.g. [CALLER IN filename] or the main SINK file).
+1. `file_path` MUST be extracted from the context markers, e.g. [CALLER IN filename] or the main SINK file, etc...
 2. `old_code` MUST be an exact substring of the provided context. Do not truncate or modify the original whitespace.
 3. Ensure the `new_code` has the exact same indentation level as the `old_code` to prevent formatting issues when patched.
 4. If the vulnerability requires changes across multiple files, return multiple patch objects in the array.

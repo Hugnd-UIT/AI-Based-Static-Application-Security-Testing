@@ -31,7 +31,7 @@ def load_tree_sitter():
     spec_loader.loader.exec_module(ts_module)
     return ts_module
 
-def run_sast(target_path, rule_list=None, model=None):
+def run_sast(target_path, rule_list=None, model=None, fix=False):
     # Initialize scan result structure
     temp_dir = None
     scan_result = {
@@ -155,16 +155,29 @@ def run_sast(target_path, rule_list=None, model=None):
     if scan_result["cves"] or scan_result["nvd_data"]:
         cve_data_str = json.dumps({"osv": scan_result["cves"], "nvd": scan_result["nvd_data"]}, indent=2)
         from cli.views.logger import console
-        console.print("  [dim]Running RAG Agent to summarize vulnerabilities...[/dim]")
+        console.print("  [bold magenta]● RAG AGENT[/bold magenta]")
+        import textwrap
         try:
             rag_summary = rag_agents.fetch(cve_data_str, model=model)
             cve_context = json.dumps(rag_summary, indent=2)
-            console.print("  [bold green]✔ RAG Summary generated.[/bold green]")
+            if "cve_id" in rag_summary and rag_summary["cve_id"] != "None":
+                console.print(f"  ├─ [cyan]◆ Analyzing {rag_summary['cve_id']} {rag_summary.get('dependency', 'Unknown')}[/cyan]")
+            if "attack_vector" in rag_summary:
+                for w_line in textwrap.wrap(rag_summary['attack_vector'], width=95, initial_indent="Vector: ", subsequent_indent="        "):
+                    console.print(f"  │  [dim]{w_line}[/dim]")
+            if "mitigation" in rag_summary:
+                for w_line in textwrap.wrap(rag_summary['mitigation'], width=95, initial_indent="Mitigation: ", subsequent_indent="            "):
+                    console.print(f"  │  [dim]{w_line}[/dim]")
+            console.print("  └─ [bold green]✔ RAG Summary generated[/bold green]")
         except Exception as e:
-            console.print(f"  [bold red]✖ RAG Agent failed: {e}[/bold red]")
+            console.print(f"  └─ [bold red]✖ RAG Agent failed: {e}[/bold red]")
             cve_context = cve_data_str
+    else:
+        from cli.views.logger import console
+        console.print("  [bold magenta]● RAG AGENT[/bold magenta]")
+        console.print("  └─ [dim]No dependencies found! Skip![/dim]")
 
-    critical_findings = [find_item for find_item in scan_findings if find_item["severity"] == "ERROR"]
+    critical_findings = scan_findings
     
     if not critical_findings:
         pass
@@ -172,9 +185,8 @@ def run_sast(target_path, rule_list=None, model=None):
         logger.section("MULTI-AGENT")
 
         for loop_idx, finding_item in enumerate(critical_findings):
-            logger.console.print(f"  Reviewing [bold]{loop_idx+1}/{len(critical_findings)}[/bold]")
+            logger.console.print(f"  Working [bold]{loop_idx+1}/{len(critical_findings)}[/bold]")
             logger.console.print(f"  ├─ [blue]{finding_item['path']}[/blue]")
-            logger.blank()
             
             try:
                 finding_path = str(target_dir / finding_item["path"])
@@ -183,62 +195,106 @@ def run_sast(target_path, rule_list=None, model=None):
                 ast_context = f"Error extracting AST context: {ext_err}"
 
             try:
-                logger.console.print(f"  ├─ [dim]Tracing Data Flow (Agent 2)...[/dim]")
+                import textwrap
+                logger.blank()
+                logger.console.print(f"  [bold magenta]● SCANNING AGENT[/bold magenta]")
                 trace_json = scan_agents.fetch(finding_item, ast_context, model=model)
                 if trace_json and "data_flow" in trace_json:
                     finding_item["dataflow_trace"] = json.dumps(trace_json["data_flow"], indent=2)
                     hops_count = len(trace_json["data_flow"])
-                    logger.console.print(f"  ├─ [bold green]✔ Traced {hops_count} data hops.[/bold green]")
+                    
+                    if trace_json.get("source_identified"):
+                        logger.console.print(f"  ├─ [cyan]◆ Source:[/cyan] [dim]{trace_json.get('source_variable', 'Unknown')}[/dim]")
+                        logger.console.print(f"  ├─ [cyan]◆ Sink:[/cyan] [dim]{trace_json.get('sink_function', 'Unknown')}[/dim]")
+                        
+                        for hop in trace_json["data_flow"]:
+                            logger.console.print(f"  │  [dim]Hop {hop.get('step')}: {hop.get('variable')} -> {hop.get('operation')}[/dim]")
+                            
+                    logger.console.print(f"  └─ [bold green]✔ {hops_count} Hops[/bold green]")
                 else:
-                    finding_item["dataflow_trace"] = "No trace available (Scan Agent failed to identify flow)."
-                    logger.console.print(f"  ├─ [bold yellow]⚠ Data flow untraceable.[/bold yellow]")
+                    finding_item["dataflow_trace"] = "No trace available"
+                    logger.console.print(f"  └─ [bold yellow]⚠ Data flow untraceable.[/bold yellow]")
             except Exception as e:
-                logger.console.print(f"  ├─ [bold red]✖ Data Flow Tracing failed: {e}[/bold red]")
+                logger.console.print(f"  └─ [bold red]✖ Data Flow Tracing failed: {e}[/bold red]")
                 finding_item["dataflow_trace"] = f"Trace Error: {e}"
 
+            is_vuln_flag = False
+            ai_review = ""
             try:
+                logger.blank()
+                logger.console.print(f"  [bold magenta]● AUDITING AGENT[/bold magenta]")
                 fetch_result = agents.fetch(finding_item, ast_context, cve_context, model=model)
-                if isinstance(fetch_result, tuple):
-                    ai_review, model_name = fetch_result
-                    logger.console.print(f"  ├─ [magenta][AI - {model_name}][/magenta]")
-                else:
-                    ai_review = fetch_result
-            except AttributeError:
-                ai_review = agents.review_finding(finding_item, ast_context, cve_context)
-
-            is_first_line = True
-            for text_line in ai_review.split("\n"):
-                text_line = text_line.strip()
-                if not text_line:
-                    continue
+                ai_review = fetch_result if not isinstance(fetch_result, tuple) else fetch_result[0]
                 
-                line_lower = text_line.lower()
-                clean_lower = line_lower.replace("*", "").replace("#", "").strip()
-                
-                if clean_lower.startswith("step "):
-                    verdict_title = text_line.replace("*", "").replace("###", "").strip()
-                    logger.console.print(f"  [cyan]◆ {verdict_title}[/cyan]")
-                    is_first_line = True
-                elif clean_lower.startswith("final verdict") or "final verdict" in clean_lower:
-                    verdict_title = text_line.replace("*", "").replace("###", "").strip()
-                    if not verdict_title.lower().startswith("final"):
-                        verdict_title = "Final Verdict"
-                    logger.console.print(f"  [cyan]◆ {verdict_title}[/cyan]")
-                    is_first_line = True
-                elif text_line.startswith("[VULNERABLE]") or "VULNERABLE" in text_line:
-                    logger.console.print("  [bold red]✖ VULNERABLE[/bold red]")
-                    scan_result["is_vulnerable"] = True
-                elif text_line.startswith("[SAFE]") or "SAFE" in text_line:
-                    logger.console.print("  [bold green]✓ SAFE[/bold green]")
-                else:
-                    if text_line.startswith("* ") or text_line.startswith("- "):
-                        text_line = text_line[2:]
+                is_first_line = True
+                for text_line in ai_review.split("\n"):
+                    text_line = text_line.strip()
+                    if not text_line: continue
+                    clean_lower = text_line.lower().replace("*", "").replace("#", "").strip()
                     
-                    if is_first_line:
-                        logger.console.print(f"  └─ [dim]{text_line}[/dim]")
-                        is_first_line = False
+                    if clean_lower.startswith("step ") or clean_lower.startswith("final result") or "final result" in clean_lower:
+                        verdict_title = text_line.replace("*", "").replace("###", "").strip()
+                        logger.console.print(f"  ├─ [cyan]◆ {verdict_title}[/cyan]")
+                        is_first_line = True
+                    elif text_line.startswith("[VULNERABLE]") or "VULNERABLE" in text_line:
+                        logger.console.print("  └─ [bold red]✖ VULNERABLE[/bold red]")
+                        scan_result["is_vulnerable"] = True
+                        is_vuln_flag = True
+                    elif text_line.startswith("[SAFE]") or "SAFE" in text_line:
+                        logger.console.print("  └─ [bold green]✓ SAFE[/bold green]")
                     else:
-                        logger.console.print(f"     [dim]{text_line}[/dim]")
+                        if text_line.startswith("* ") or text_line.startswith("- "): text_line = text_line[2:]
+                        if text_line.endswith(".") and len(text_line) < 80:
+                            text_line = text_line[:-1]
+                        
+                        for w_line in textwrap.wrap(text_line, width=100):
+                            logger.console.print(f"  │  [dim]{w_line}[/dim]")
+            except Exception as e:
+                logger.console.print(f"  ├─ [bold red]✖ Auditor Agent failed: {e}[/bold red]")
+                ai_review = f"Error: {e}"
+
+            if is_vuln_flag:
+                try:
+                    logger.blank()
+                    logger.console.print(f"  [bold magenta]● HACKING AGENT[/bold magenta]")
+                    from src.hack.agents import models as hack_agents
+                    poc_json = hack_agents.gen_poc(finding_item, ast_context, cve_context, model=model)
+                    finding_item["poc"] = poc_json
+                    if poc_json and "poc_type" in poc_json:
+                        logger.console.print(f"  ├─ [cyan]◆ Type:[/cyan] [dim]{poc_json['poc_type']}[/dim]")
+                        if "description" in poc_json:
+                            for w_line in textwrap.wrap(poc_json['description'], width=100):
+                                logger.console.print(f"  │  [dim]{w_line}[/dim]")
+                        if "payload" in poc_json:
+                            logger.console.print(f"  │  [bold red]Payload:[/bold red]")
+                            for w_line in textwrap.wrap(poc_json['payload'], width=100):
+                                logger.console.print(f"  │    [dim]{w_line}[/dim]")
+                        logger.console.print(f"  └─ [bold green]✔ PoC: {poc_json['poc_type']}[/bold green]")
+                    else:
+                        logger.console.print(f"  └─ [bold yellow]⚠ Failed to generate PoC[/bold yellow]")
+                except Exception as e:
+                    logger.console.print(f"  └─ [bold red]✖ Hacker Agent failed: {e}[/bold red]")
+                    
+                if fix:
+                    try:
+                        logger.blank()
+                        logger.console.print(f"  [bold magenta]● FIXING AGENT[/bold magenta]")
+                        from src.fix.agents import models as fix_agents
+                        fix_json = fix_agents.gen_fix(finding_item, ast_context, cve_context, model=model)
+                        finding_item["fix"] = fix_json
+                        if fix_json and "patches" in fix_json:
+                            if "explanation" in fix_json:
+                                for w_line in textwrap.wrap(fix_json['explanation'], width=100):
+                                    logger.console.print(f"  │  [dim]{w_line}[/dim]")
+                            
+                            for p_idx, patch in enumerate(fix_json["patches"]):
+                                logger.console.print(f"  │  [dim]Patch {p_idx+1}: {patch.get('file_path')} Lines {patch.get('start_line')}-{patch.get('end_line')}[/dim]")
+                            
+                            logger.console.print(f"  └─ [bold green]✔ Generated {len(fix_json['patches'])} patch(es)[/bold green]")
+                        else:
+                            logger.console.print(f"  └─ [bold yellow]⚠ Failed to generate fix[/bold yellow]")
+                    except Exception as e:
+                        logger.console.print(f"  └─ [bold red]✖ Fixer Agent failed: {e}[/bold red]")
 
             logger.blank()
             scan_result["ai_reviews"].append({"finding": finding_item, "review": ai_review})

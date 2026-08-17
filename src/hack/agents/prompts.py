@@ -6,7 +6,7 @@ You MUST output the fix strictly in JSON format matching the exact structure bel
 
 [EXPECTED JSON]
 {
-    "poc_type": "The type of PoC (e.g., HTTP_REQUEST, PYTHON_SCRIPT, BASH_COMMAND, RAW_PAYLOAD)",
+    "poc_type": "The type of PoC, e.g., HTTP REQUEST, PYTHON SCRIPT, BASH COMMAND, RAW PAYLOAD, etc...",
     "description": "A brief explanation of how the PoC triggers the vulnerability.",
     "payload": "The actual PoC code or payload. MUST BE PROPERLY ESCAPED if it contains quotes or newlines."
 }
@@ -28,8 +28,8 @@ Description: {msg}
 
 [INSTRUCTIONS]
 Perform a rigorous Chain-of-Thought analysis to craft the payload:
-1. Identify the Sink: Where does the payload execute? (e.g., SQL query, eval(), system command).
-2. Trace the Source: What input parameter controls the Sink? (e.g., query string `?id=X`, POST body).
+1. Identify the Sink: Where does the payload execute? e.g., SQL query, eval(), system command, etc...
+2. Trace the Source: What input parameter controls the Sink? e.g., query string `?id=X`, POST body, etc...
 3. Craft the Payload: Create the malicious string or request that breaks out of the intended logic and executes arbitrary code or queries.
 4. Output raw JSON only.
 

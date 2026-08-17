@@ -4,7 +4,7 @@ from openai import OpenAI
 from main import MODELS
 
 def fetch_llm(prompt: str, model: str = None, is_json: bool = True):
-    api_key = os.environ.get("MODEL_API_KEY")
+    api_key = os.environ.get("AI_API_KEY")
     if not api_key:
         if not is_json:
             return "[!] Model api key is not set", "None"

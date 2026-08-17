@@ -212,7 +212,7 @@ def report(parsed_deps: List[Dict[str, str]]):
     logger.section("DEPENDENCIES")
 
     if not parsed_deps:
-        logger.warning("No dependencies found.")
+        logger.warning("No dependencies found!")
         return
 
     from cli.views.logger import console
