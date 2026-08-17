@@ -32,6 +32,10 @@ def load_tree_sitter():
     return ts_module
 
 def run_sast(target_path, rule_list=None, model=None, fix=False):
+    import os
+    actual_model = model or os.environ.get("MODELS", "deepseek/deepseek-v4-flash")
+    model_tag = f" \[[cyan]{actual_model}[/cyan]]"
+    
     # Initialize scan result structure
     temp_dir = None
     scan_result = {
@@ -155,7 +159,7 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
     if scan_result["cves"] or scan_result["nvd_data"]:
         cve_data_str = json.dumps({"osv": scan_result["cves"], "nvd": scan_result["nvd_data"]}, indent=2)
         from cli.views.logger import console
-        console.print("  [bold magenta]● RAG AGENT[/bold magenta]")
+        console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{model_tag}")
         import textwrap
         try:
             rag_summary = rag_agents.fetch(cve_data_str, model=model)
@@ -174,7 +178,7 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
             cve_context = cve_data_str
     else:
         from cli.views.logger import console
-        console.print("  [bold magenta]● RAG AGENT[/bold magenta]")
+        console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{model_tag}")
         console.print("  └─ [dim]No dependencies found! Skip![/dim]")
 
     critical_findings = scan_findings
@@ -186,7 +190,7 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
 
         for loop_idx, finding_item in enumerate(critical_findings):
             logger.console.print(f"  Working [bold]{loop_idx+1}/{len(critical_findings)}[/bold]")
-            logger.console.print(f"  ├─ [blue]{finding_item['path']}[/blue]")
+            logger.console.print(f"  └─ [blue]{finding_item['path']}[/blue]")
             
             try:
                 finding_path = str(target_dir / finding_item["path"])
@@ -197,7 +201,7 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
             try:
                 import textwrap
                 logger.blank()
-                logger.console.print(f"  [bold magenta]● SCANNING AGENT[/bold magenta]")
+                logger.console.print(f"  [bold magenta]● SCANNING AGENT[/bold magenta]{model_tag}")
                 trace_json = scan_agents.fetch(finding_item, ast_context, model=model)
                 if trace_json and "data_flow" in trace_json:
                     finding_item["dataflow_trace"] = json.dumps(trace_json["data_flow"], indent=2)
@@ -222,7 +226,7 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
             ai_review = ""
             try:
                 logger.blank()
-                logger.console.print(f"  [bold magenta]● AUDITING AGENT[/bold magenta]")
+                logger.console.print(f"  [bold magenta]● AUDITING AGENT[/bold magenta]{model_tag}")
                 fetch_result = agents.fetch(finding_item, ast_context, cve_context, model=model)
                 ai_review = fetch_result if not isinstance(fetch_result, tuple) else fetch_result[0]
                 
@@ -256,7 +260,7 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
             if is_vuln_flag:
                 try:
                     logger.blank()
-                    logger.console.print(f"  [bold magenta]● HACKING AGENT[/bold magenta]")
+                    logger.console.print(f"  [bold magenta]● HACKING AGENT[/bold magenta]{model_tag}")
                     from src.hack.agents import models as hack_agents
                     poc_json = hack_agents.gen_poc(finding_item, ast_context, cve_context, model=model)
                     finding_item["poc"] = poc_json
@@ -278,7 +282,7 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                 if fix:
                     try:
                         logger.blank()
-                        logger.console.print(f"  [bold magenta]● FIXING AGENT[/bold magenta]")
+                        logger.console.print(f"  [bold magenta]● FIXING AGENT[/bold magenta]{model_tag}")
                         from src.fix.agents import models as fix_agents
                         fix_json = fix_agents.gen_fix(finding_item, ast_context, cve_context, model=model)
                         finding_item["fix"] = fix_json

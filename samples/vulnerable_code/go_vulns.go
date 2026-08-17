@@ -1,48 +1,51 @@
 package main
 
 import (
+	"database/sql"
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"os"
+	"os/exec"
 )
 
-// Vulnerability 1: Server-Side Request Forgery (SSRF)
-func fetchImage(w http.ResponseWriter, r *http.Request) {
-	imageUrl := "https://example.com/" + r.URL.Query().Get("url")
-
-	// Validate and sanitize the URL
-	if !isValidURL(imageUrl) {
-		http.Error(w, "Invalid URL", http.StatusBadRequest)
-		return
-	}
-
-	// [DATA FLOW] Source -> imageUrl -> GET request
-	// SINK
-	resp, err := http.Get(imageUrl)
-	if err != nil {
-		http.Error(w, "Failed to fetch image", http.StatusInternalServerError)
-		return
-	}
-	defer resp.Body.Close()
-
-	body, _ := ioutil.ReadAll(resp.Body)
-	w.Write(body)
-}
-
-func isValidURL(url string) bool {
-	// Implement URL validation logic here
-	// For example, check if the URL is well-formed and uses HTTP/HTTPS
-	// You can use the url.Parse function from the net/url package
-	// and then check the Scheme field
-	parsedURL, err := url.Parse(url)
-	if err != nil || (parsedURL.Scheme != "http" && parsedURL.Scheme != "https") {
-		return false
-	}
-	return true
-}
+// Hardcoded Token
+const GitHubToken = "ghp_1234567890abcdefghijklmnopqrstuvwxyz"
 
 func main() {
-	http.HandleFunc("/fetch", fetchImage)
-	fmt.Println("Server listening on :8080")
-	http.ListenAndServeTLS(":8080", "/path/to/cert.pem", "/path/to/key.pem", nil)
+	http.HandleFunc("/user", func(w http.ResponseWriter, r *http.Request) {
+		db, _ := sql.Open("mysql", "user:pass@/dbname")
+		username := r.URL.Query().Get("username")
+		
+		// SQL Injection
+		query := fmt.Sprintf("SELECT * FROM users WHERE username = '%s'", username)
+		rows, _ := db.Query(query)
+		fmt.Fprintf(w, "Query executed: %v", rows)
+		
+		// XSS
+		fmt.Fprintf(w, "<div>Hello " + username + "</div>")
+	})
+
+	http.HandleFunc("/ping", func(w http.ResponseWriter, r *http.Request) {
+		ip := r.URL.Query().Get("ip")
+		
+		// Command Injection
+		cmd := exec.Command("sh", "-c", "ping -c 1 "+ip)
+		out, _ := cmd.CombinedOutput()
+		fmt.Fprintf(w, "Result: %s", out)
+	})
+
+	http.HandleFunc("/read", func(w http.ResponseWriter, r *http.Request) {
+		filename := r.URL.Query().Get("file")
+		
+		// Path Traversal
+		content, err := ioutil.ReadFile("/var/www/data/" + filename)
+		if err != nil {
+			http.Error(w, "File not found", 404)
+			return
+		}
+		w.Write(content)
+	})
+
+	http.ListenAndServe(":8080", nil)
 }

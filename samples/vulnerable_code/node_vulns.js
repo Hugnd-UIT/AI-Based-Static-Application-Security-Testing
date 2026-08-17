@@ -1,35 +1,57 @@
 const express = require('express');
+const { exec } = require('child_process');
+const mysql = require('mysql');
 const fs = require('fs');
-const path = require('path');
+const serialize = require('node-serialize');
+
 const app = express();
 
-// Vulnerability 1: Cross-Site Scripting (Reflected XSS)
-app.get('/search', (req, res) => {
-    let query = req.query.q;
-    
-    // [DATA FLOW] Source -> query -> HTML response
-    // SINK
-    res.render('search', { query: sanitizeHtml(query) });
+// Hardcoded Password
+const dbPassword = "super_secret_admin_password_123";
+
+const connection = mysql.createConnection({
+    host: 'localhost',
+    user: 'admin',
+    password: dbPassword,
+    database: 'test'
 });
 
-// Vulnerability 2: Path Traversal (LFI/Arbitrary File Read)
-app.get('/download', (req, res) => {
-    let filename = req.query.file;
-    
-    // [DATA FLOW] Source -> filename -> filePath
-    let filePath = path.join(__dirname, 'uploads', path.basename(filename));
-    if (!filePath.startsWith(path.join(__dirname, 'uploads'))) {
-        return res.status(403).send('Forbidden');
-    }
-    
-    // SINK
-    fs.readFile(filePath, 'utf8', (err, data) => {
-        if (err) {
-            res.status(500).send("Error reading file");
-        } else {
-            res.send(data);
-        }
+app.get('/search', (req, res) => {
+    let username = req.query.username;
+    // SQL Injection
+    let query = "SELECT * FROM users WHERE username = '" + username + "'";
+    connection.query(query, (err, results) => {
+        if (err) throw err;
+        // Reflected XSS
+        res.send("<div>Results for: " + username + "<br>" + JSON.stringify(results) + "</div>");
     });
 });
 
-app.listen(3000, () => console.log('Server running on port 3000'));
+app.get('/system', (req, res) => {
+    let cmd = req.query.cmd;
+    // Command Injection
+    exec("ls -l " + cmd, (error, stdout, stderr) => {
+        res.send(`<pre>${stdout}</pre>`);
+    });
+});
+
+app.get('/file', (req, res) => {
+    let file = req.query.file;
+    // Path Traversal
+    let filepath = __dirname + "/public/" + file;
+    fs.readFile(filepath, 'utf8', (err, data) => {
+        if (err) return res.send("Error");
+        res.send(data);
+    });
+});
+
+app.get('/deserialize', (req, res) => {
+    let payload = req.query.payload;
+    // Insecure Deserialization
+    let obj = serialize.unserialize(payload);
+    res.send("Deserialized object");
+});
+
+app.listen(3000, () => {
+    console.log('Server running on port 3000');
+});

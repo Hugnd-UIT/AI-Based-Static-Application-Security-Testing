@@ -140,7 +140,7 @@ def run_scan(target_path: str, fix: bool = False):
                         if patcher.patch(patch_path, old_code, new_code):
                             logger.success("Patch applied successfully.")
                         else:
-                            logger.warning(f"Patch skipped. The original code in {os.path.basename(patch_path)} could not be found. It may have already been fixed or modified by a previous patch.")
+                            logger.warning(f"Patch skipped. The original code could not be found. It may have already been fixed or modified by a previous patch.")
                     else:
                         logger.warning("Patch rejected by user.")
 

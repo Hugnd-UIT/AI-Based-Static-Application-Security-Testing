@@ -1,37 +1,29 @@
 <?php
 
-// Vulnerability 1: Remote Code Execution (RCE) via eval
-if (isset($_GET['calc'])) {
-    $expression = $_GET['calc'];
-    
-    // SINK
-    eval("return " . $expression . ";");
-}
+// Hardcoded Secret
+define('API_KEY', 'sk_live_1234567890abcdef');
 
-// Vulnerability 2: Local File Inclusion (LFI)
-if (isset($_GET['page'])) {
-    $page = $_GET['page'];
-    
-    // SINK
-    include($page . ".php");
-}
+// 1. SQL Injection
+$id = $_GET['id'];
+$conn = new mysqli('localhost', 'user', 'pass', 'test_db');
+$query = "SELECT * FROM users WHERE id = $id"; // Vulnerable
+$result = $conn->query($query);
 
-// Vulnerability 3: Insecure Deserialization
-class UserProfile {
-    public $name;
-    public $role;
-    
-    public function __wakeup() {
-        if ($this->role === 'admin') {
-            // Give admin privileges
-        }
-    }
-}
+// 2. Command Injection
+$domain = $_POST['domain'];
+$output = shell_exec("nslookup " . $domain); // Vulnerable
+echo "<pre>$output</pre>";
 
-if (isset($_COOKIE['session'])) {
-    $data = $_COOKIE['session'];
-    // SINK
-    $user = unserialize(base64_decode($data));
-}
+// 3. Cross-Site Scripting (XSS)
+$search = $_GET['q'];
+echo "<h1>You searched for: " . htmlentities($search) . "</h1>"; // Fixed
+
+// 4. Local File Inclusion (LFI)
+$page = $_GET['page'];
+include("/var/www/html/pages/" . $page); // Vulnerable
+
+// 5. PHP Object Injection (Deserialization)
+$user_data = $_COOKIE['user_data'];
+$user = unserialize($user_data); // Vulnerable
 
 ?>

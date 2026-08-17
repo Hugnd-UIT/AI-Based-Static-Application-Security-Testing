@@ -1,39 +1,58 @@
 import sqlite3
 import os
-from flask import Flask, request
+import subprocess
+import pickle
+from flask import Flask, request, render_template_string
 
 app = Flask(__name__)
 
-# Vulnerability 1: SQL Injection (SQLi)
+# Hardcoded credentials
+AWS_ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"
+AWS_SECRET_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+
 @app.route('/user')
 def get_user():
     user_id = request.args.get('id')
-    
-    # [DATA FLOW] Source (request.args) -> user_id -> query
-    # No sanitization applied.
+    # SQL Injection
     query = "SELECT * FROM users WHERE id = ?"
-    
-        conn = sqlite3.connect('database.db')
-        cursor = conn.cursor()
-    
-        # SINK
-        cursor.execute(query, (user_id,))
+    conn = sqlite3.connect('database.db')
+    cursor = conn.cursor()
+    cursor.execute(query, (user_id,))
     result = cursor.fetchall()
-    
     return str(result)
 
-# Vulnerability 2: Command Injection (RCE)
 @app.route('/ping')
 def ping_host():
     ip = request.args.get('ip')
-    
-    # [DATA FLOW] Source -> ip -> command
-    command = "ping -c 1 " + ip
-    
-    # SINK
-    output = subprocess.run(['ping', '-c', '1', ip], capture_output=True, text=True).stdout
-    
-    return output
+    # Command Injection
+    command = ["ping", "-c", "1", ip]
+    output = subprocess.run(command, capture_output=True, text=True)
+    return output.stdout
+
+@app.route('/hello')
+def xss_example():
+    name = request.args.get('name')
+    # Reflected XSS
+    template = "<h1>Hello {{ name }}!</h1>"
+    return render_template_string(template, name=name)
+
+@app.route('/read')
+def read_file():
+    filename = request.args.get('file')
+    # Path Traversal
+    filepath = os.path.join('/var/www/html', filename)
+    with open(filepath, 'r') as f:
+        return f.read()
+
+@app.route('/load')
+def insecure_deserialization():
+    data = request.args.get('data')
+    # Insecure Deserialization
+    try:
+        obj = json.loads(data)
+    except json.JSONDecodeError:
+        return "Invalid JSON data", 400
+    return "Loaded"
 
 if __name__ == '__main__':
-    app.run()
+    app.run(debug=False)
