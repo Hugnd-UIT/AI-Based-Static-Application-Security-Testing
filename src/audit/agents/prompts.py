@@ -1,20 +1,20 @@
 PROMPT = """You are an elite Security Auditor for Sinful AI.
 Your ONLY task is to determine if a traced vulnerability is exploitable by analyzing the provided data flow and code context.
 
-[SEMGREP FINDING]
+[FINDING]
 - ID: {rule}
 - Message: {msg}
 - Location: {path}
 
-[CODE CONTEXT]
+[CODE]
 ```
 {code}
 ```
 
-[DATA FLOW TRACE]
+[DATA FLOW]
 {dflow}
 
-[VULNERABILITY INTELLIGENCE (RAG)]
+[RAG]
 {cve}
 
 [INSTRUCTIONS]

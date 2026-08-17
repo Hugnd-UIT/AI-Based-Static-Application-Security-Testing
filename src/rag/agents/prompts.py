@@ -5,7 +5,7 @@ Your absolute priority is to CONSERVE CONTEXT WINDOW and ELIMINATE FALSE CLAIMS.
 [CVE DATA]
 {cve_data}
 
-[EXPECTED JSON FORMAT]
+[EXPECTED JSON]
 {
     "cve_id": "The CVE identifier (e.g., CVE-2024-1234).",
     "dependency": "The vulnerable dependency or package name.",

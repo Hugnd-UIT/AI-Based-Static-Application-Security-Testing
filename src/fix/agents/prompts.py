@@ -20,13 +20,13 @@ You MUST output the fix strictly in JSON format matching the exact structure bel
 4. If the vulnerability requires changes across multiple files, return multiple patch objects in the array.
 5. Output raw JSON only.
 
-[VULNERABILITY CONTEXT]
+[VULNERABILITY]
 Vulnerability Found: {rule}
 Description: {msg}
 
 Primary Sink File: {path}
 
-[MULTI-FILE CODE CONTEXT]
+[MULTI-FILE CODE]
 ```
 {code}
 ```

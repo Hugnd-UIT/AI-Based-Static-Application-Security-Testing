@@ -185,9 +185,9 @@ def run_sast(target_path, rule_list=None, model=None):
             try:
                 logger.console.print(f"  ├─ [dim]Tracing Data Flow (Agent 2)...[/dim]")
                 trace_json = scan_agents.fetch(finding_item, ast_context, model=model)
-                if trace_json and "data_flow_trace" in trace_json:
-                    finding_item["dataflow_trace"] = json.dumps(trace_json["data_flow_trace"], indent=2)
-                    hops_count = len(trace_json["data_flow_trace"])
+                if trace_json and "data_flow" in trace_json:
+                    finding_item["dataflow_trace"] = json.dumps(trace_json["data_flow"], indent=2)
+                    hops_count = len(trace_json["data_flow"])
                     logger.console.print(f"  ├─ [bold green]✔ Traced {hops_count} data hops.[/bold green]")
                 else:
                     finding_item["dataflow_trace"] = "No trace available (Scan Agent failed to identify flow)."
