@@ -86,12 +86,6 @@ def start_ci():
         ))
         logger.console.print()
     
-    if not os.getenv("MODEL_API_KEY"):
-        if cli_args.format != "sarif":
-            logger.console.print("[cyan]━━━ CI WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
-            logger.console.print("[red]✖ MODEL_API_KEY environment variable is not set![/red]\n")
-            logger.console.print("Please add MODEL_API_KEY to your GitHub Secrets and pass it into the workflow.")
-        sys.exit(1)
 
     target_dir = os.getcwd()
     

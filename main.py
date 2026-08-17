@@ -271,8 +271,8 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                                 logger.console.print(f"  │  [dim]{w_line}[/dim]")
                         if "payload" in poc_json:
                             logger.console.print(f"  │  [bold red]Payload:[/bold red]")
-                            for w_line in textwrap.wrap(poc_json['payload'], width=100):
-                                logger.console.print(f"  │    [dim]{w_line}[/dim]")
+                            for p_line in poc_json['payload'].split('\n'):
+                                logger.console.print(f"  │    [dim]{p_line}[/dim]")
                         logger.console.print(f"  └─ [bold green]✔ PoC: {poc_json['poc_type']}[/bold green]")
                     else:
                         logger.console.print(f"  └─ [bold yellow]⚠ Failed to generate PoC[/bold yellow]")
