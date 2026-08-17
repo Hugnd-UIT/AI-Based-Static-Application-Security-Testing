@@ -14,5 +14,5 @@ semgrep
 typer
 rich
 prompt_toolkit
-google-genai
+openai
 python-dotenv

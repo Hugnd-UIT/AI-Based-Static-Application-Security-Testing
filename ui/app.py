@@ -9,7 +9,7 @@ from pathlib import Path
 ROOT = Path(__file__).parent.parent
 sys.path.append(str(ROOT))
 
-app = FastAPI(title="Argus SAST API")
+app = FastAPI(title="Sinful SAST API")
 
 app.mount(
     "/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static"

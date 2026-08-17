@@ -23,7 +23,7 @@ def load_tree_sitter():
     spec_loader.loader.exec_module(ts_module)
     return ts_module
 
-def run_sast(target_path, rule_list=None):
+def run_sast(target_path, rule_list=None, model=None):
     # Initialize scan result structure
     temp_dir = None
     scan_result = {
@@ -147,12 +147,17 @@ def run_sast(target_path, rule_list=None):
             
             try:
                 finding_path = str(target_dir / finding_item["path"])
-                ast_context = ts_module.extract_context(finding_path, finding_item["start_line"], finding_item["end_line"], td=str(target_dir))
+                ast_context = ts_module.extract_context(finding_path, finding_item["start_line"], finding_item["end_line"], target_dir=str(target_dir))
             except Exception as ext_err:
                 ast_context = f"Error extracting AST context: {ext_err}"
 
             try:
-                ai_review = agents.fetch(finding_item, ast_context, cve_context)
+                fetch_result = agents.fetch(finding_item, ast_context, cve_context, model=model)
+                if isinstance(fetch_result, tuple):
+                    ai_review, model_name = fetch_result
+                    logger.console.print(f"  ├─ [magenta][AI - {model_name}][/magenta]")
+                else:
+                    ai_review = fetch_result
             except AttributeError:
                 ai_review = agents.review_finding(finding_item, ast_context, cve_context)
 
@@ -243,12 +248,13 @@ def run_sast(target_path, rule_list=None):
 
 def main():
     
-    arg_parser = argparse.ArgumentParser(description="Argus AI-Based SAST")
+    arg_parser = argparse.ArgumentParser(description="Sinful AI-Based SAST")
     arg_parser.add_argument("target", help="Target directory OR Git URL to scan")
     arg_parser.add_argument("--rules", nargs="+", help="Specific Semgrep rules to use")
+    arg_parser.add_argument("--model", type=str, help="Specific AI model to use for review")
     cli_args = arg_parser.parse_args()
 
-    scan_result = run_sast(cli_args.target, cli_args.rules)
+    scan_result = run_sast(cli_args.target, cli_args.rules, cli_args.model)
 
     if scan_result["status"] == "error":
         print(scan_result["message"])

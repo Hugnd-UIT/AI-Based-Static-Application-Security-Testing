@@ -16,6 +16,11 @@ def handle_command(user_command: str) -> bool:
         show_help()
         return True
 
+    if cmd_lower.startswith("/model"):
+        from cli.commands.model import set_model
+        set_model(user_command)
+        return True
+
     should_fix = True
     scan_target = user_command.strip()
 

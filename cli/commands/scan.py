@@ -11,7 +11,8 @@ def run_scan(target_path: str, fix: bool = False):
     logger.blank()
 
     def execute_scan():
-        return run_sast(target_path)
+        model = os.environ.get("MODELS")
+        return run_sast(target_path, model=model)
 
     from cli.views.spinner import run_spin
     scan_result = run_spin("Analyzing source code", execute_scan)

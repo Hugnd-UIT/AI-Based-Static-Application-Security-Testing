@@ -1,20 +1,27 @@
 import os
-from google import genai
-from google.genai import types
+from openai import OpenAI
 from src.review.prompts import PROMPT
 
-def fetch(finding_item: dict, source_code: str, cve_context: str = "None") -> str:
+MODELS = [
+    "deepseek/deepseek-v4-flash",      # DeepSeek V4 Flash 
+    "mistralai/codestral-2508",        # Codestral
+    "qwen/qwen3.8-max",                # Alibaba Qwen
+    "xiaomi/mimo-v2.5-pro",            # Xiaomi MiMo 
+    "mistralai/mistral-large-2512"     # Mistral Large
+]
+
+def fetch(finding_item: dict, source_code: str, cve_context: str = "None", model: str = None) -> str:
     api_key = os.environ.get("MODEL_API_KEY")
 
     if not api_key:
         return "[!] Model api key is not set"
 
-    genai_client = genai.Client(api_key=api_key)
-    model_config = types.GenerateContentConfig(
-        tools=[{"google_search": {}}],
+    client = OpenAI(
+        api_key=api_key,
+        base_url="https://api.xkiro.com/v1"
     )
 
-    prompt_text = PROMPT.format(
+    prompt = PROMPT.format(
         rule=finding_item.get("id"),
         msg=finding_item.get("message"),
         path=finding_item.get("path"),
@@ -23,11 +30,23 @@ def fetch(finding_item: dict, source_code: str, cve_context: str = "None") -> st
         cve=cve_context,
     )
 
-    try:
-        api_resp = genai_client.models.generate_content(
-            model="gemini-2.5-flash", contents=prompt_text, config=model_config
-        )
-        return api_resp.text
+    fallback = list(MODELS)
+    
+    if model:
+        if model in fallback:
+            fallback.remove(model)
+        fallback.insert(0, model)
 
-    except Exception as api_err:
-        return f"[!] Error: {str(api_err)}"
+    error = ""
+    for target_model in fallback:
+        try:
+            response = client.chat.completions.create(
+                model=target_model,
+                messages=[{"role": "user", "content": prompt}]
+            )
+            return response.choices[0].message.content, target_model
+        except Exception as api_err:
+            error = str(api_err)
+            continue # Auto fallback
+
+    return f"[!] Error: All fallback models failed. Last error: {error}", "None"
