@@ -1,7 +1,7 @@
 import os
 import json
 
-from src.fix.prompts import SYSTEM_PROMPT, USER_PROMPT
+from src.fix.agents.prompts import SYSTEM_PROMPT, USER_PROMPT
 
 def gen_fix(finding_item: dict, source_code: str, model: str = "deepseek/deepseek-v4-flash") -> dict:
     from openai import OpenAI

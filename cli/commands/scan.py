@@ -3,7 +3,7 @@ from cli.views.viewer import show_diff
 import os
 from main import run_sast
 import src.fix.patch as patcher
-import src.fix.agents as ai_agents
+import src.fix.agents.models as ai_agents
 from cli.views import logger
 
 def run_scan(target_path: str, fix: bool = False):

@@ -61,7 +61,7 @@ def run_sast(target_path, rule_list=None, model=None):
         from src.rag import osv
         from src.rag import nvd
         from src.rag import firecrawl
-        from src.review import agents
+        from src.review.agents import models as agents
 
         ts_module = load_tree_sitter()
         

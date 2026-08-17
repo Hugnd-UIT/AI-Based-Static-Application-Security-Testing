@@ -1,6 +1,6 @@
 import os
 
-from src.review.prompts import PROMPT
+from src.review.agents.prompts import PROMPT
 
 MODELS = [
     "deepseek/deepseek-v4-flash",      # DeepSeek V4 Flash 
