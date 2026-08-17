@@ -69,6 +69,8 @@ def run_sast(target_path, rule_list=None, model=None):
         from src.rag import osv
         from src.rag import nvd
         from src.rag import firecrawl
+        from src.rag import github
+        from src.rag.agents import models as rag_agents
         from src.review.agents import models as agents
 
         ts_module = load_tree_sitter()
@@ -130,6 +132,15 @@ def run_sast(target_path, rule_list=None, model=None):
                                 nvd_data["firecrawl_poc"] += f"\n\nSource: {ref_url}\n{scraped_md}"
                             
                             time.sleep(15)
+                            
+                    from cli.views.logger import console
+                    console.print(f"  [dim]Searching GitHub for[/dim] [bold green]{cve_id}[/bold green]...")
+                    github_data = github.search(cve_id)
+                    if "error" not in github_data:
+                        github.report(github_data)
+                        nvd_data["github_issues"] = github_data.get("github_issues", [])
+                    else:
+                        console.print(f"  [dim]GitHub search error: {github_data['error']}[/dim]")
                                 
                     scan_result["nvd_data"].append(nvd_data)
                 
@@ -139,7 +150,16 @@ def run_sast(target_path, rule_list=None, model=None):
     cve_context = "No relevant supply chain vulnerabilities found in project dependencies."
     
     if scan_result["cves"] or scan_result["nvd_data"]:
-        cve_context = json.dumps({"osv": scan_result["cves"], "nvd": scan_result["nvd_data"]}, indent=2)
+        raw_cve_data = json.dumps({"osv": scan_result["cves"], "nvd": scan_result["nvd_data"]}, indent=2)
+        from cli.views.logger import console
+        console.print("  [dim]Running RAG Agent to summarize vulnerabilities...[/dim]")
+        try:
+            rag_summary = rag_agents.fetch(raw_cve_data, model=model)
+            cve_context = json.dumps(rag_summary, indent=2)
+            console.print("  [bold green]✔ RAG Summary generated.[/bold green]")
+        except Exception as e:
+            console.print(f"  [bold red]✖ RAG Agent failed: {e}[/bold red]")
+            cve_context = raw_cve_data
 
     critical_findings = [find_item for find_item in scan_findings if find_item["severity"] == "ERROR"]
     
