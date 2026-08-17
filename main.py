@@ -65,12 +65,16 @@ def run_sast(target_path, rule_list=None, model=None):
     try:
         from src.recognize import detector
         from src.recognize import parser as dep_parser
+
         from src.scan import semgrep
+        from src.scan.agents import models as scan_agents
+        
         from src.rag import osv
         from src.rag import nvd
         from src.rag import firecrawl
         from src.rag import github
         from src.rag.agents import models as rag_agents
+
         from src.review.agents import models as agents
 
         ts_module = load_tree_sitter()
@@ -178,6 +182,20 @@ def run_sast(target_path, rule_list=None, model=None):
                 ast_context = ts_module.extract_context(finding_path, finding_item["start_line"], finding_item["end_line"], target_dir=str(target_dir))
             except Exception as ext_err:
                 ast_context = f"Error extracting AST context: {ext_err}"
+
+            try:
+                logger.console.print(f"  ├─ [dim]Tracing Data Flow (Agent 2)...[/dim]")
+                trace_json = scan_agents.fetch(finding_item, ast_context, model=model)
+                if trace_json and "data_flow_trace" in trace_json:
+                    finding_item["dataflow_trace"] = json.dumps(trace_json["data_flow_trace"], indent=2)
+                    hops_count = len(trace_json["data_flow_trace"])
+                    logger.console.print(f"  ├─ [bold green]✔ Traced {hops_count} data hops.[/bold green]")
+                else:
+                    finding_item["dataflow_trace"] = "No trace available (Scan Agent failed to identify flow)."
+                    logger.console.print(f"  ├─ [bold yellow]⚠ Data flow untraceable.[/bold yellow]")
+            except Exception as e:
+                logger.console.print(f"  ├─ [bold red]✖ Data Flow Tracing failed: {e}[/bold red]")
+                finding_item["dataflow_trace"] = f"Trace Error: {e}"
 
             try:
                 fetch_result = agents.fetch(finding_item, ast_context, cve_context, model=model)
