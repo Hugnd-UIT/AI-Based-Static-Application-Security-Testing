@@ -25,7 +25,7 @@ MODELS = [
 
 def load_tree_sitter():
     # Load tree sitter module dynamically
-    ts_path = Path("src/review/tree-sitter.py").resolve()
+    ts_path = Path("src/audit/tree-sitter.py").resolve()
     spec_loader = importlib.util.spec_from_file_location("tree_sitter", ts_path)
     ts_module = importlib.util.module_from_spec(spec_loader)
     spec_loader.loader.exec_module(ts_module)
@@ -74,8 +74,7 @@ def run_sast(target_path, rule_list=None, model=None):
         from src.rag import firecrawl
         from src.rag import github
         from src.rag.agents import models as rag_agents
-
-        from src.review.agents import models as agents
+        from src.audit.agents import models as agents
 
         ts_module = load_tree_sitter()
         
@@ -154,23 +153,23 @@ def run_sast(target_path, rule_list=None, model=None):
     cve_context = "No relevant supply chain vulnerabilities found in project dependencies."
     
     if scan_result["cves"] or scan_result["nvd_data"]:
-        raw_cve_data = json.dumps({"osv": scan_result["cves"], "nvd": scan_result["nvd_data"]}, indent=2)
+        cve_data_str = json.dumps({"osv": scan_result["cves"], "nvd": scan_result["nvd_data"]}, indent=2)
         from cli.views.logger import console
         console.print("  [dim]Running RAG Agent to summarize vulnerabilities...[/dim]")
         try:
-            rag_summary = rag_agents.fetch(raw_cve_data, model=model)
+            rag_summary = rag_agents.fetch(cve_data_str, model=model)
             cve_context = json.dumps(rag_summary, indent=2)
             console.print("  [bold green]✔ RAG Summary generated.[/bold green]")
         except Exception as e:
             console.print(f"  [bold red]✖ RAG Agent failed: {e}[/bold red]")
-            cve_context = raw_cve_data
+            cve_context = cve_data_str
 
     critical_findings = [find_item for find_item in scan_findings if find_item["severity"] == "ERROR"]
     
     if not critical_findings:
         pass
     else:
-        logger.section("AI REVIEW")
+        logger.section("MULTI-AGENT")
 
         for loop_idx, finding_item in enumerate(critical_findings):
             logger.console.print(f"  Reviewing [bold]{loop_idx+1}/{len(critical_findings)}[/bold]")

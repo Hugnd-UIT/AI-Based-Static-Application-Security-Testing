@@ -20,7 +20,7 @@ def print_header():
     header_text.append(">_ Sinful AI", style="bold cyan")
     header_text.append(" v1.0.0\n\n", style="dim")
 
-    from src.review.agents import MODELS
+    from main import MODELS
     default_model = MODELS[0]
 
     header_text.append("model:     ", style="dim")

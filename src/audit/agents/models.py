@@ -1,4 +1,4 @@
-from src.review.agents.prompts import PROMPT
+from src.audit.agents.prompts import PROMPT
 from src.llm import fetch_llm
 
 def fetch(finding_item: dict, source_code: str, cve_context: str = "None", model: str = None):
