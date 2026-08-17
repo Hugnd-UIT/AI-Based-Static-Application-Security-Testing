@@ -34,7 +34,7 @@ def load_tree_sitter():
 def run_sast(target_path, rule_list=None, model=None, fix=False):
     import os
     actual_model = model or os.environ.get("MODELS", "deepseek/deepseek-v4-flash")
-    model_tag = f" \[[cyan]{actual_model}[/cyan]]"
+    model_tag = fr" [[cyan]{actual_model}[/cyan]]"
     
     # Initialize scan result structure
     temp_dir = None

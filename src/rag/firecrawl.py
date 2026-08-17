@@ -3,14 +3,10 @@ import json
 import urllib.request
 from typing import Optional
 
-URL = "https://api.firecrawl.dev/v1/scrape"
+URL = "http://localhost:8000/firecrawl"
 
 def scrape(target_url: str) -> Optional[str]:
-    api_key = os.environ.get("FIRECRAWL_API_KEY")
-
-    if not api_key:
-        print("[!] Firecrawl api key is not set")
-        return None
+    api_key = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
 
     payload_data = json.dumps({"url": target_url, "formats": ["markdown"]}).encode("utf-8")
     api_req = urllib.request.Request(

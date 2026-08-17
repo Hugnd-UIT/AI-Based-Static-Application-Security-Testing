@@ -2,16 +2,14 @@ import os
 import requests
 
 def search(keyword: str) -> dict:
-    token = os.environ.get("GITHUB_API_KEY")
-    if not token:
-        return {"error": "GITHUB_API_KEY not found in environment."}
+    token = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
 
     headers = {
         "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json"
     }
 
-    url = f"https://api.github.com/search/issues?q={keyword}+is:issue"
+    url = f"http://localhost:8000/github/search/issues?q={keyword}+is:issue"
     
     try:
         response = requests.get(url, headers=headers, timeout=10)

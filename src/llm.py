@@ -4,15 +4,11 @@ from openai import OpenAI
 from main import MODELS
 
 def fetch_llm(prompt: str, model: str = None, is_json: bool = True):
-    api_key = os.environ.get("AI_API_KEY")
-    if not api_key:
-        if not is_json:
-            return "[!] Model api key is not set", "None"
-        raise ValueError("[!] Model api key is not set")
+    api_key = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
 
     client = OpenAI(
         api_key=api_key,
-        base_url="https://api.xkiro.com/v1"
+        base_url="http://localhost:8000/v1"
     )
 
     fallback = list(MODELS)
