@@ -1,0 +1,15 @@
+{
+  "name": "sinful",
+  "version": "1.0.0",
+  "description": "Sinful CLI - AI-Based SAST",
+  "main": "index.js",
+  "bin": {
+    "sinful": "./run.js"
+  },
+  "scripts": {
+    "postinstall": "node install.js"
+  },
+  "author": "Hugnd-UIT",
+  "license": "MIT",
+  "dependencies": {}
+}
