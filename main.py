@@ -270,6 +270,16 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                 fetch_result = agents.fetch(finding_item, ast_context, cve_context, model=model)
                 ai_review = fetch_result if not isinstance(fetch_result, tuple) else fetch_result[0]
                 
+                import re
+                json_match = re.search(r'```json\s*(\{.*?\})\s*```', ai_review, re.DOTALL)
+                verdict_data = {}
+                if json_match:
+                    try:
+                        verdict_data = json.loads(json_match.group(1))
+                        ai_review = ai_review.replace(json_match.group(0), "")
+                    except Exception:
+                        pass
+
                 is_first_line = True
                 for text_line in ai_review.split("\n"):
                     text_line = text_line.strip()
@@ -281,11 +291,9 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                         logger.console.print(f"  ├─ [cyan]◆ {verdict_title}[/cyan]")
                         is_first_line = True
                     elif text_line.startswith("[VULNERABLE]") or "VULNERABLE" in text_line:
-                        logger.console.print("  └─ [bold red]✖ VULNERABLE[/bold red]")
-                        scan_result["is_vulnerable"] = True
-                        is_vuln_flag = True
+                        pass
                     elif text_line.startswith("[SAFE]") or "SAFE" in text_line:
-                        logger.console.print("  └─ [bold green]✓ SAFE[/bold green]")
+                        pass
                     else:
                         if text_line.startswith("* ") or text_line.startswith("- "): text_line = text_line[2:]
                         if text_line.endswith(".") and len(text_line) < 80:
@@ -294,6 +302,25 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                         wrap_width = max(60, logger.console.width - 10)
                         for w_line in textwrap.wrap(text_line, width=wrap_width):
                             logger.console.print(f"  │  [dim]{w_line}[/dim]")
+
+                if verdict_data:
+                    is_vuln = verdict_data.get("verdict", "").upper() == "VULNERABLE"
+                    if is_vuln:
+                        logger.console.print(f"  ├─ [bold red]✖ VULNERABLE[/bold red] [dim][CVSS: {verdict_data.get('cvss_estimate', 'N/A')} - {verdict_data.get('severity', 'UNKNOWN')}][/dim]")
+                        logger.console.print(f"  └─ [dim]Confidence: {verdict_data.get('confidence', 'N/A')}/10 | Class: {verdict_data.get('vuln_class', 'N/A')}[/dim]")
+                        scan_result["is_vulnerable"] = True
+                        is_vuln_flag = True
+                        finding_item.update(verdict_data)
+                    else:
+                        logger.console.print(f"  └─ [bold green]✓ SAFE[/bold green] [dim][Confidence: {verdict_data.get('confidence', 'N/A')}/10][/dim]")
+                else:
+                    if "VULNERABLE" in ai_review:
+                        logger.console.print("  └─ [bold red]✖ VULNERABLE[/bold red]")
+                        scan_result["is_vulnerable"] = True
+                        is_vuln_flag = True
+                    else:
+                        logger.console.print("  └─ [bold green]✓ SAFE[/bold green]")
+
             except Exception as e:
                 logger.console.print(f"  ├─ [bold red]✖ Auditor Agent failed: {e}[/bold red]")
                 ai_review = f"Error: {e}"
@@ -390,6 +417,9 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
     summary_panel = Panel(summary_table, title="[bold]SCAN SUMMARY[/bold]", expand=False, border_style="dim")
     logger.console.print(summary_panel)
     logger.blank()
+
+    scan_findings.sort(key=lambda x: float(x.get("cvss_estimate", 0)), reverse=True)
+    scan_result["findings"] = scan_findings
 
     return {"status": "success", "data": scan_result}
 

@@ -31,7 +31,17 @@ Step 2: Logic Analysis
 - Does the framework automatically escape this context?
 
 Step 3: Final Result
-If you find a Zero-Day logic flaw or a confirmed unbroken exploit path, output EXACTLY ONE of the following tokens on the VERY LAST LINE of your response:
-[VULNERABLE] - Only if you have proven an unbroken, unauthenticated, or unsanitized path from an untrusted source to a dangerous sink.
-[SAFE] - If the input is trusted, properly authorized, sanitized, validated, or unreachable.
+If you find a Zero-Day logic flaw or a confirmed unbroken exploit path, output your final verdict strictly as a JSON block wrapped in ```json ... ``` at the VERY END of your response.
+The JSON must follow this exact structure:
+```json
+{
+  "verdict": "VULNERABLE",
+  "confidence": 9,
+  "cvss_estimate": 8.5,
+  "severity": "CRITICAL",
+  "vuln_class": "IDOR",
+  "reasoning_summary": "User-controlled ID flows directly to DB without ownership check"
+}
+```
+Set "verdict" to "VULNERABLE" only if you have proven an unbroken path to a dangerous sink. Set it to "SAFE" if the input is trusted, properly authorized, sanitized, validated, or unreachable.
 """
