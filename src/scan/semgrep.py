@@ -25,7 +25,13 @@ def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
     scan_cmd.append(str(dir_path))
 
     try:
-        cmd_result = subprocess.run(scan_cmd, capture_output=True, text=True, timeout=600)
+        try:
+            # First attempt: use the standard semgrep command
+            cmd_result = subprocess.run(scan_cmd, capture_output=True, text=True, timeout=600)
+        except (FileNotFoundError, PermissionError):
+            # Fallback for Windows: bypass .ps1 Execution Policies by calling python module directly
+            fallback_cmd = ["python", "-m", "semgrep"] + scan_cmd[1:]
+            cmd_result = subprocess.run(fallback_cmd, capture_output=True, text=True, timeout=600)
 
         if not cmd_result.stdout.strip():
             return []
@@ -63,7 +69,12 @@ def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
         return []
 
     except FileNotFoundError:
-        print("[!] Semgrep is not installed. Please run: pip install semgrep")
+        print("[!] Semgrep is not installed or blocked. Please run: pip install semgrep")
+        print("    If on Windows, ensure Execution Policies allow running scripts, or use WSL.")
+        return []
+        
+    except PermissionError:
+        print("[!] Permission denied when running Semgrep. If on Windows, try running terminal as Administrator or check Execution Policies.")
         return []
 
 from cli.views import logger

@@ -34,7 +34,6 @@ jobs:
           python cli/pipeline/ci.py --exit-code 1 --severity ERROR,WARNING --format sarif --output results.sarif
         continue-on-error: true
         id: sast
-
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
         with:

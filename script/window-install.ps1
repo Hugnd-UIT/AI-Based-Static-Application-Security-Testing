@@ -30,6 +30,17 @@ Write-Host ""
 Write-Color "━━━ INSTALLATION ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━" "Cyan"
 Write-Host ""
 
+# Execution Policy
+Write-Color "├─ Environment" "White"
+Write-Color "│  └─ " "DarkGray" -NoNewline
+try {
+    Set-ExecutionPolicy RemoteSigned -Scope CurrentUser -Force -ErrorAction Stop
+    Write-Color "✓ Execution Policy Unlocked" "Green"
+} catch {
+    Write-Color "⚠ Could not unlock Execution Policy" "Yellow"
+}
+Write-Color "│" "White"
+
 # Directory
 Write-Color "├─ Directory" "White"
 Write-Color "│  └─ $InstallDir" "DarkGray"
