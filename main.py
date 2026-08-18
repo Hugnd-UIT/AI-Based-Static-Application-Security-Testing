@@ -267,8 +267,25 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
             try:
                 logger.blank()
                 logger.console.print(f"  [bold magenta]● AUDITING AGENT[/bold magenta]{model_tag}")
-                fetch_result = agents.fetch(finding_item, ast_context, cve_context, model=model)
-                ai_review = fetch_result if not isinstance(fetch_result, tuple) else fetch_result[0]
+                
+                iterations = 0
+                max_iterations = 3
+                current_ast_context = ast_context
+
+                while iterations < max_iterations:
+                    iterations += 1
+                    fetch_result = agents.fetch(finding_item, current_ast_context, cve_context, model=model)
+                    ai_review = fetch_result if not isinstance(fetch_result, tuple) else fetch_result[0]
+                    
+                    import re
+                    nmc_match = re.search(r'\[NEED_MORE_CONTEXT:\s*(.*?)\]', ai_review)
+                    if nmc_match and iterations < max_iterations:
+                        func_name = nmc_match.group(1).strip()
+                        logger.console.print(f"  ├─ [yellow]↻ Iteration {iterations}: Fetching {func_name}() ...[/yellow]")
+                        func_code = ts_module.get_func_code(str(target_dir), func_name)
+                        current_ast_context += f"\n\n{func_code}"
+                    else:
+                        break
                 
                 import re
                 json_match = re.search(r'```json\s*(\{.*?\})\s*```', ai_review, re.DOTALL)

@@ -347,3 +347,38 @@ def extract_chunk(file_path: Path, start_line: int, end_line: int, padding_lines
     end_idx = min(len(file_lines), end_line + padding_lines)
 
     return "".join(file_lines[start_idx:end_idx])
+
+def get_func_code(target_dir: str, target_func: str) -> str:
+    for root_dir, subdirs, file_list in os.walk(target_dir):
+        subdirs[:] = [d for d in subdirs if d not in {".git", "node_modules", "vendor", ".venv", "__pycache__"}]
+        for file_name in file_list:
+            file_ext = Path(file_name).suffix.lower()
+            if file_ext not in LANG: continue
+            file_path = Path(root_dir) / file_name
+            try:
+                with open(file_path, "rb") as file_obj:
+                    file_content = file_obj.read()
+                
+                if target_func.encode("utf-8") not in file_content:
+                    continue
+
+                ts_parser = Parser(Language(LANG[file_ext]))
+                parsed_tree = ts_parser.parse(file_content)
+
+                match_code = ""
+                def find_def(curr_node):
+                    nonlocal match_code
+                    if match_code: return
+                    node_kind = curr_node.type.lower()
+                    if is_func(node_kind) and get_node_name(curr_node, file_content) == target_func:
+                        match_code = file_content[curr_node.start_byte:curr_node.end_byte].decode("utf-8", errors="ignore")
+                        return
+                    for child_node in curr_node.children:
+                        find_def(child_node)
+
+                find_def(parsed_tree.root_node)
+                if match_code:
+                    return f"[IMPLEMENTATION OF {target_func}() IN {file_name}]\n{match_code}"
+            except Exception:
+                pass
+    return f"// Function {target_func}() not found in the repository."

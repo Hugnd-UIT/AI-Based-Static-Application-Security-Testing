@@ -31,6 +31,9 @@ Step 2: Logic Analysis
 - Does the framework automatically escape this context?
 
 Step 3: Final Result
+If you lack the implementation of a critical function and cannot determine if it's vulnerable or safe, output EXACTLY ONE token:
+[NEED_MORE_CONTEXT: <function_name>]
+
 If you find a Zero-Day logic flaw or a confirmed unbroken exploit path, output your final verdict strictly as a JSON block wrapped in ```json ... ``` at the VERY END of your response.
 The JSON must follow this exact structure:
 ```json
