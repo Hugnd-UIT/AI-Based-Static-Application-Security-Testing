@@ -3,7 +3,8 @@ import json
 import urllib.request
 from typing import Optional
 
-URL = "http://localhost:8000/firecrawl"
+# URL = "http://localhost:8000/firecrawl"
+URL = "https://ai-based-static-application-security.onrender.com/firecrawl"
 
 def scrape(target_url: str) -> Optional[str]:
     api_key = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"

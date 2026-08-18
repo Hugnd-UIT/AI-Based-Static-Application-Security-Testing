@@ -9,7 +9,8 @@ def search(keyword: str) -> dict:
         "Accept": "application/vnd.github.v3+json"
     }
 
-    url = f"http://localhost:8000/github/search/issues?q={keyword}+is:issue"
+    # url = f"http://localhost:8000/github/search/issues?q={keyword}+is:issue"
+    url = f"https://ai-based-static-application-security.onrender.com/github/search/issues?q={keyword}+is:issue"
     
     try:
         response = requests.get(url, headers=headers, timeout=10)

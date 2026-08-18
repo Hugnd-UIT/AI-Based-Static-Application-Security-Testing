@@ -6,9 +6,13 @@ from main import MODELS
 def fetch_llm(prompt: str, model: str = None, is_json: bool = True):
     api_key = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
 
+    # client = OpenAI(
+    #     api_key=api_key,
+    #     base_url="http://localhost:8000/v1"
+    # )
     client = OpenAI(
         api_key=api_key,
-        base_url="http://localhost:8000/v1"
+        base_url="https://ai-based-static-application-security.onrender.com/v1"
     )
 
     fallback = list(MODELS)
