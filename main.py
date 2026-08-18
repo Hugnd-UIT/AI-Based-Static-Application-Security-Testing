@@ -99,14 +99,41 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
     scan_result["findings"] = scan_findings
     semgrep.report(scan_findings)
 
-    if not scan_findings:
+    try:
+        cross_file_context = ts_module.build_context(str(target_dir))
+        if cross_file_context:
+            scan_result["cross_file_context"] = cross_file_context
+        else:
+            cross_file_context = ""
+    except Exception:
+        cross_file_context = ""
+
+    if not scan_findings and not cross_file_context:
         return {"status": "success", "message": "No vulnerabilities found.", "data": scan_result}
+
+    if not scan_findings and cross_file_context:
+        scan_findings = [{
+            "id": "sinful-cross-file-taint",
+            "path": str(target_dir),
+            "start_line": 1,
+            "end_line": 1,
+            "severity": "WARNING",
+            "message": "Cross-file taint path detected by inter-procedural analysis.",
+            "lines": "",
+            "cwe": [],
+            "dataflow_trace": cross_file_context,
+        }]
+        scan_result["findings"] = scan_findings
 
     if parsed_deps:
         try:
             cve_list = osv.check(parsed_deps)
         except AttributeError:
             cve_list = osv.fetch(parsed_deps)
+
+        from src.rag import usage
+        cve_list = usage.check(str(target_dir), cve_list, ts_module)
+        cve_list = [c for c in cve_list if c.get("reachable", True)]
 
         scan_result["cves"] = cve_list
         osv.report(cve_list)
@@ -201,10 +228,15 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
             logger.console.print(f"  └─ [blue]{finding_item['path']}[/blue]")
             
             try:
-                finding_path = str(target_dir / finding_item["path"])
+                finding_path = str(target_dir / finding_item["path"]) if finding_item["path"] != str(target_dir) else str(target_dir)
                 ast_context = ts_module.extract_context(finding_path, finding_item["start_line"], finding_item["end_line"], target_dir=str(target_dir))
+                # Append cross-file context if available
+                if cross_file_context:
+                    ast_context += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{cross_file_context[:1500]}"
             except Exception as ext_err:
                 ast_context = f"Error extracting AST context: {ext_err}"
+                if cross_file_context:
+                    ast_context += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{cross_file_context[:1500]}"
 
             try:
                 import textwrap

@@ -1,67 +1,152 @@
-# Kế hoạch Tái cấu trúc Kiến trúc: Tích hợp Luồng Multi-Agent chuẩn Argus cho Sinful AI
+# Kế Hoạch Nâng SINFUL Lên 100% Argus
 
-Hiện tại, Sinful AI đang sử dụng **Kiến trúc Nguyên khối (Monolithic LLM Approach)**:
-1. Semgrep tìm ra một đoạn code nghi ngờ có lỗi.
-2. Các module RAG (OSV, NVD) tải thông tin CVE về.
-3. Chỉ duy nhất một `Review Agent` (trong file `src/review/agents.py`) nhận toàn bộ đống dữ liệu khổng lồ này và phải tự suy luận đưa ra phán quyết cuối cùng.
+## Trạng Thái Hiện Tại: ~85% Argus
 
-Để đạt được kiến trúc "chuẩn bài" từ bài báo Argus, chúng ta cần chuyển đổi sang **Luồng Đa tác vụ Cộng tác (Collaborative Multi-Agent Pipeline)**, nơi các AI chuyên biệt sẽ hoàn thành từng nhiệm vụ nhỏ và chuyền dữ liệu cho nhau.
-
-## Câu hỏi Mở cần sếp chốt
-> [!IMPORTANT]
-> Bài báo gốc phụ thuộc rất nhiều vào công cụ **CodeQL** để phân tích Luồng dữ liệu (Data Flow). Hiện tại Sinful AI đang xài **Semgrep** và AST (Tree-sitter). Sếp muốn tiếp tục dùng Semgrep làm công cụ quét chính (và dùng AI để mô phỏng lại việc dò luồng dữ liệu), hay sếp muốn tích hợp hẳn một công cụ nặng đô như CodeQL vào hệ thống?
-
-> [!WARNING]
-> Việc chia nhỏ bước Review thành nhiều lần gọi LLM (Agent 1 -> Agent 2 -> Agent 3) sẽ làm **tăng chi phí API và kéo dài thời gian quét**. Sếp có chấp nhận đánh đổi tốc độ/chi phí để đổi lấy độ chính xác cao hơn và giảm hẳn tỷ lệ nhận diện sai (False Positives) không?
-
-## Các Thay đổi Đề xuất
-
-Chúng ta sẽ đập đi xây lại luồng xử lý trong `src/review/agents.py` và `main.py` để điều phối một dây chuyền gồm 4 Agents chuyên biệt.
-
-### 1. Agent RAG & Phụ thuộc (Người thu thập tình báo)
-Hiện tại, `osv` và `nvd` đang nhồi nhét toàn bộ file JSON thô vào prompt cuối cùng.
-- **Thay đổi**: Tạo một agent chuyên dụng đọc hiểu dữ liệu CVE/NVD/Firecrawl thô và chỉ xuất ra một bản tóm tắt ngắn gọn về *các hướng tấn công (attack vectors)* thực sự liên quan đến các thư viện mà dự án đang xài.
-
-### 2. Agent Dò Luồng Dữ liệu (Người rà quét)
-Hiện tại, Semgrep chỉ chỉ ra một dòng/hàm bị lỗi, và AI phải tự đoán ngữ cảnh.
-- **Thay đổi**: Agent này sẽ nhận kết quả từ Semgrep và cây AST. Chỉ thị (prompt) duy nhất của nó là: "Hãy đóng vai một chuyên gia Dò luồng dữ liệu (Data Flow Tracer). Hãy xác định chính xác **Source** (nơi dữ liệu bẩn đi vào) và **Sink** (nơi thực thi nguy hiểm) trong ngữ cảnh này. Dò từng biến một xem dữ liệu chảy đi đâu."
-
-### 3. Agent Kiểm duyệt Sanitization (Người kiểm duyệt)
-Hiện tại, prompt nguyên khối phải tự mò mẫm tìm False Positives (lỗi báo nhầm).
-- **Thay đổi**: Agent này nhận kết quả Luồng Dữ liệu (Data Flow Trace) từ Agent 2. Nhiệm vụ duy nhất của nó là phân tích "Hop-by-hop" (từng bước một): nó nhìn vào từng nút thắt trong luồng dữ liệu xem dữ liệu có đi qua hàm `validate()`, `sanitize()`, hoặc ép kiểu (type-casting) nào không. Nếu có, nó sẽ huỷ cảnh báo (giảm triệt để False Positives).
-
-### 4. Agent Viết PoC (Hacker)
-- **Thay đổi**: Nếu Agent 3 xác nhận lỗ hổng này có thể bị khai thác và chưa được vá (unsanitized), Agent 4 sẽ được gọi lên để viết một đoạn mã khai thác **Proof of Concept (PoC)** thực tế (ví dụ: một HTTP request hoặc payload JSON) để chứng minh lỗ hổng là có thật.
+| Thành phần | Trạng thái |
+|---|---|
+| Pipeline 5 Agent | ✅ Hoàn chỉnh |
+| ReAct Loop Audit Agent | ✅ Hoàn chỉnh |
+| RAG (OSV/NVD/Firecrawl/GitHub) | ✅ Hoàn chỉnh |
+| Tree-sitter Cross-file Caller | ✅ Hoàn chỉnh |
+| Custom Taint Rules (10 ngôn ngữ) | ✅ Hoàn chỉnh |
+| Hack Agent PoC | ✅ Hoàn chỉnh |
+| **Inter-procedural Taint Propagation** | ❌ Thiếu |
+| **SCA Reachability Analysis** | ❌ Thiếu |
+| **Confidence Score / Severity Ranking** | ❌ Thiếu |
+| **Multi-turn ReAct Loop** | ⚠️ Hiện tại 3-step cố định, chưa iterative |
 
 ---
 
-### Các bước Triển khai
+## GAP 1 — Inter-procedural Taint Propagation
+**Vấn đề:** Tree-sitter hiện tại (`find_global_callers`) chỉ tìm **ai gọi hàm bị lỗi** (backward tracing). Nhưng chưa có khả năng **theo dõi dòng chảy dữ liệu qua tham số hàm sang file khác** (forward taint propagation).
 
-#### [MODIFY] `src/review/agents.py`
-Viết lại hàm `review_finding` (hoặc `fetch`) từ một prompt duy nhất thành một chuỗi (chain) gọi các agents:
-```python
-def review_finding_multi_agent(finding, ast_context, cve_context, model):
-    # Agent 1: Tóm tắt thông tin tình báo (RAG)
-    rag_summary = call_rag_agent(cve_context, model)
-    
-    # Agent 2: Dò luồng dữ liệu
-    data_flow_trace = call_tracer_agent(finding, ast_context, model)
-    
-    # Agent 3: Rà soát chức năng làm sạch (Sanitization)
-    audit_result = call_auditor_agent(data_flow_trace, ast_context, model)
-    
-    # Agent 4: Viết mã khai thác (PoC) nếu thực sự có lỗi
-    if "VULNERABLE" in audit_result:
-        poc = call_poc_agent(audit_result, rag_summary, model)
-        return format_final_report(audit_result, poc)
-    
-    return audit_result
+**Ví dụ chưa bắt được:**
+```
+# fileA.py
+def get_user_input():
+    return request.args.get("id")  # Source ở đây
+
+# fileB.py
+from fileA import get_user_input
+def process():
+    uid = get_user_input()          # Taint lan sang fileB
+    db.execute("SELECT * WHERE id=" + uid)  # Sink ở đây
+```
+Semgrep custom rules chỉ nhìn thấy trong 1 file. Tree-sitter hiện tại tìm được caller nhưng không trace taint qua parameter.
+
+**Giải pháp:** Bổ sung hàm `build_cross_file_taint_graph()` vào `tree-sitter.py`:
+1. Scan toàn bộ project, lập danh sách function definition + return values
+2. Khi function trả về tainted data (từ HTTP sources), đánh dấu nó là tainted source
+3. Các file import và gọi function đó → taint lan ra
+
+### File cần sửa:
+#### [MODIFY] [tree-sitter.py](file:///c:\Users\ASUS\Documents\AI-Based%20SAST\src\audit\tree-sitter.py)
+- Thêm hàm `collect_tainted_functions(target_dir)` — scan toàn bộ project, tìm các hàm có HTTP source trong body
+- Thêm hàm `find_cross_file_sinks(target_dir, tainted_funcs)` — tìm các chỗ gọi các hàm đó rồi chạy vào sink
+- Kết quả trả về list các cross-file taint paths, inject vào context của Scan Agent
+
+---
+
+## GAP 2 — SCA Reachability Analysis
+**Vấn đề:** Hiện tại khi phát hiện CVE của dependency (ví dụ: `requests==2.27.0` có CVE), hệ thống báo luôn mà không check xem **cái function bị lỗi của lib đó có thực sự được gọi trong code không**. → Tạo ra False Positive SCA.
+
+**Ví dụ:**
+```
+# requirements.txt: pillow==9.0.0 (có CVE về Image.open())
+# Nhưng code chỉ import pillow để resize, KHÔNG gọi Image.open()
+# → Không nên báo CVE này
 ```
 
-#### [MODIFY] `main.py`
-Cập nhật file điều phối `run_sast` để in ra terminal tiến trình hoạt động của từng agent (như RAG đang chạy, Tracer đang dò...), mang lại cảm giác Multi-Agent thời gian thực rất "ngầu" cho người dùng.
+**Giải pháp:** Sau khi có danh sách CVE từ OSV, bổ sung bước reachability check:
+1. Với mỗi CVE, xác định **tên hàm/method bị lỗi** (từ NVD description hoặc advisory)
+2. Dùng Tree-sitter scan toàn bộ project tìm xem function đó có được gọi không
+3. Nếu không tìm thấy → đánh dấu CVE là `reachable: false` → bỏ qua hoặc hạ độ ưu tiên
 
-## Kế hoạch Nghiệm thu
-1. Chạy quét thử trên một mã nguồn cố tình chứa lỗi (ví dụ: WebGoat hoặc một dự án test).
-2. Kiểm tra xem giao diện CLI có in ra đầy đủ các bước (Tracing -> Auditing -> PoC Generation) hay không.
-3. Xác nhận rằng tỷ lệ nhận diện nhầm (False Positive) giảm hẳn do Auditor agent hoạt động hiệu quả.
+### File cần tạo/sửa:
+#### [NEW] [src/rag/reachability.py](file:///c:\Users\ASUS\Documents\AI-Based%20SAST\src\rag\reachability.py)
+```python
+def check_reachability(target_dir, cve_list, ts_module):
+    # Với mỗi CVE, extract tên function/method từ description
+    # Dùng tree-sitter find_global_callers() để kiểm tra
+    # Return cve_list đã có thêm field "reachable": True/False
+```
+
+#### [MODIFY] [main.py](file:///c:\Users\ASUS\Documents\AI-Based%20SAST\main.py)
+- Sau `osv.check()`, gọi `reachability.check()` để filter CVE list
+- Chỉ những CVE `reachable: true` mới được đưa vào RAG pipeline
+
+---
+
+## GAP 3 — Confidence Score & Severity Ranking
+**Vấn đề:** Audit Agent hiện trả về nhị phân `[VULNERABLE]` / `[SAFE]`. Không có thông tin về **mức độ nghiêm trọng, độ tin cậy** để Dev biết ưu tiên sửa cái nào trước.
+
+**Giải pháp:** Nâng cấp output của Audit Agent:
+
+### File cần sửa:
+#### [MODIFY] [src/audit/agents/prompts.py](file:///c:\Users\ASUS\Documents\AI-Based%20SAST\src\audit\agents\prompts.py)
+Thay đổi Step 3 — thay vì output token nhị phân, yêu cầu AI output JSON:
+```json
+{
+  "verdict": "VULNERABLE",
+  "confidence": 9,
+  "cvss_estimate": 8.5,
+  "severity": "CRITICAL",
+  "vuln_class": "IDOR",
+  "reasoning_summary": "User-controlled ID flows directly to DB without ownership check"
+}
+```
+
+#### [MODIFY] [main.py](file:///c:\Users\ASUS\Documents\AI-Based%20SAST\main.py)
+- Parse JSON verdict từ Audit Agent
+- Hiển thị confidence + severity trong CLI
+- Sort findings theo `cvss_estimate` giảm dần
+
+---
+
+## GAP 4 — Multi-turn ReAct Loop (Iterative Reasoning)
+**Vấn đề:** Audit Agent hiện tại chạy 3 bước cố định (Step 1→2→3). Argus mô tả một vòng lặp **iterative**: Nếu sau Step 2 chưa kết luận được, AI có thể yêu cầu thêm context (thêm file, thêm caller) rồi chạy lại.
+
+**Giải pháp:** Implement vòng lặp ReAct thật sự trong `main.py`:
+
+```
+Lần 1: Audit Agent phân tích với context ban đầu
+  → Nếu AI output "[NEED_MORE_CONTEXT: function_name]"
+  → Tree-sitter fetch thêm code của function đó
+  → Chạy lại Audit Agent với context bổ sung
+  → Tối đa 3 vòng lặp
+  → Lần cuối phải ra verdict
+```
+
+### File cần sửa:
+#### [MODIFY] [src/audit/agents/prompts.py](file:///c:\Users\ASUS\Documents\AI-Based%20SAST\src\audit\agents\prompts.py)
+- Thêm token `[NEED_MORE_CONTEXT: <function_name>]` vào instruction
+
+#### [MODIFY] [main.py](file:///c:\Users\ASUS\Documents\AI-Based%20SAST\main.py)
+- Wrap Audit Agent call trong vòng lặp `while iterations < 3`
+- Parse `NEED_MORE_CONTEXT` token → gọi Tree-sitter fetch thêm
+- Tiếp tục loop cho đến khi có `[VULNERABLE]` / `[SAFE]`
+
+---
+
+## Tóm Tắt Timeline & Độ Phức Tạp
+
+| # | GAP | Độ phức tạp | Thời gian ước tính |
+|---|---|---|---|
+| 1 | Inter-procedural Taint Propagation | 🔴 Cao | ~3-4 giờ |
+| 2 | SCA Reachability Analysis | 🟡 Trung bình | ~2 giờ |
+| 3 | Confidence Score / Severity Ranking | 🟢 Thấp | ~1 giờ |
+| 4 | Multi-turn ReAct Loop | 🟡 Trung bình | ~2 giờ |
+
+**Tổng:** ~8-9 giờ → Đưa SINFUL từ ~85% lên **100% Argus parity**
+
+## Thứ tự triển khai đề xuất:
+```
+GAP 3 (Confidence Score) → Dễ nhất, làm ấm máy
+GAP 2 (SCA Reachability) → Độc lập, không phụ thuộc GAP khác
+GAP 4 (Multi-turn ReAct) → Nâng chất lượng Audit Agent
+GAP 1 (Inter-procedural) → Phức tạp nhất, làm cuối
+```
+
+> [!IMPORTANT]
+> GAP 3 có thể triển khai ngay lập tức mà không cần thay đổi kiến trúc lớn.
+> GAP 1 là cải tiến lớn nhất về chất lượng detection nhưng cũng phức tạp nhất.
