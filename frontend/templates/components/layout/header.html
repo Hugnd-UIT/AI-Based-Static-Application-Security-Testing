@@ -1,7 +1,17 @@
+<style>
+  .logo img {
+    height: 44px !important;
+    transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275), filter 0.3s ease;
+  }
+  .logo:hover img {
+    transform: scale(1.08);
+    filter: drop-shadow(0 0 15px rgba(255, 74, 20, 0.6));
+  }
+</style>
   <nav class="nav" id="nav">
     <div class="nav-in">
-      <a class="logo" href="https://sec1.io" style="display: flex; align-items: center; gap: 8px;">
-        <img src="/static/images/logo-header.png" alt="Sinful SAST" style="height: 36px; width: auto; object-fit: contain;">
+      <a class="logo" href="/" style="display: flex; align-items: center; gap: 8px;">
+        <img src="/static/images/logo-header.png" alt="Sinful SAST" style="width: auto; object-fit: contain;">
       </a>
 
       <div class="nav-r">
