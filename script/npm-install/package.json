@@ -1,10 +1,10 @@
 {
   "name": "sinful",
   "version": "1.0.0",
-  "description": "Sinful CLI - AI-Based SAST",
+  "description": "Sinful CLI",
   "main": "index.js",
   "bin": {
-    "sinful": "./run.js"
+    "sinful": "run.js"
   },
   "scripts": {
     "postinstall": "node install.js"
