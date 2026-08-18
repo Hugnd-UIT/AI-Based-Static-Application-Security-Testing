@@ -59,9 +59,41 @@ def detect(target_path: str) -> Dict[str, int]:
 
     return lang_counts
 
+import subprocess
+
+def get_versions(lang_counts: Dict[str, int]) -> Dict[str, str]:
+    versions = {}
+    cmds = {
+        "php": ["php", "-v"],
+        "javascript": ["node", "-v"],
+        "typescript": ["node", "-v"],
+        "python": ["python", "--version"],
+        "java": ["java", "-version"],
+        "ruby": ["ruby", "-v"],
+        "go": ["go", "version"],
+        "c#": ["dotnet", "--version"],
+        "c": ["gcc", "--version"],
+        "c++": ["g++", "--version"],
+    }
+    
+    for lang in lang_counts.keys():
+        if lang in cmds:
+            try:
+                cmd_result = subprocess.run(cmds[lang], capture_output=True, text=True, timeout=5)
+                # stdout for python/node/php/go, stderr for java
+                output = cmd_result.stdout.strip() if cmd_result.stdout.strip() else cmd_result.stderr.strip()
+                if output:
+                    versions[lang] = output.split('\n')[0].strip()
+                else:
+                    versions[lang] = "Unknown"
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                versions[lang] = "Not Installed"
+                
+    return versions
+
 from cli.views import logger
 
-def report(lang_counts: Dict[str, int]):
+def report(lang_counts: Dict[str, int], lang_versions: Dict[str, str] = None):
     logger.section("LANGUAGES")
 
     if not lang_counts:
@@ -74,4 +106,10 @@ def report(lang_counts: Dict[str, int]):
     console.print(f"  [cyan]{len(lang_counts)}[/cyan] languages detected")
     console.print()
     for lang_name, file_count in sorted_langs:
-        console.print(f"  ├─ [yellow]{lang_name.capitalize()}[/yellow]: {file_count} files")
+        version_str = ""
+        if lang_versions and lang_name in lang_versions:
+            v = lang_versions[lang_name]
+            v_short = v[:30] + "..." if len(v) > 30 else v
+            version_str = f" [dim] - Runtime: {v_short}[/dim]"
+            
+        console.print(f"  ├─ [yellow]{lang_name.capitalize()}[/yellow]: {file_count} files{version_str}")

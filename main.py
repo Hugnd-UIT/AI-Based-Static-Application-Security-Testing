@@ -86,8 +86,10 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
         return {"status": "error", "message": f"Failed to load modules: {load_err}"}
 
     language_counts = detector.detect(str(target_dir))
+    language_versions = detector.get_versions(language_counts)
     scan_result["languages"] = language_counts
-    detector.report(language_counts)
+    scan_result["language_versions"] = language_versions
+    detector.report(language_counts, language_versions)
 
     parsed_deps = dep_parser.parse(str(target_dir))
     scan_result["dependencies"] = parsed_deps
@@ -156,8 +158,12 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
 
     cve_context = "No relevant supply chain vulnerabilities found in project dependencies."
     
-    if scan_result["cves"] or scan_result["nvd_data"]:
-        cve_data_str = json.dumps({"osv": scan_result["cves"], "nvd": scan_result["nvd_data"]}, indent=2)
+    if scan_result["cves"] or scan_result["nvd_data"] or scan_result.get("language_versions"):
+        cve_data_str = json.dumps({
+            "osv": scan_result["cves"], 
+            "nvd": scan_result["nvd_data"],
+            "runtimes": scan_result.get("language_versions")
+        }, indent=2)
         from cli.views.logger import console
         console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{model_tag}")
         import textwrap
@@ -304,7 +310,7 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
             scan_result["ai_reviews"].append({"finding": finding_item, "review": ai_review})
 
             if loop_idx < len(critical_findings) - 1:
-                time.sleep(20)
+                time.sleep(5)
 
     if temp_dir:
         def remove_readonly(func, path, excinfo):

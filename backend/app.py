@@ -7,7 +7,12 @@ app = FastAPI(title="Sinful SAST Backend Proxy")
 
 # Config
 URL = "https://api.xkiro.com"
-API_KEY = os.environ.get("AI_API_KEY")
+import itertools
+
+api_key_env = os.environ.get("AI_API_KEY", "")
+API_KEYS = [k.strip() for k in api_key_env.split(",") if k.strip()]
+
+key_iterator = itertools.cycle(API_KEYS) if API_KEYS else None
 
 GITHUB_URL = "https://api.github.com"
 GITHUB_KEY = os.environ.get("GITHUB_API_KEY")
@@ -57,8 +62,11 @@ async def proxy_firecrawl(request: Request):
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def proxy(request: Request, path: str):
-    if not API_KEY:
+    if not API_KEYS:
         raise HTTPException(status_code=500, detail="Server is missing AI_API_KEY")
+
+    # Rotate keys
+    current_key = next(key_iterator)
 
     target_url = f"{URL}/{path}"
     
@@ -66,7 +74,7 @@ async def proxy(request: Request, path: str):
     
     headers = dict(request.headers)
     headers["host"] = "api.xkiro.com"
-    headers["authorization"] = f"Bearer {API_KEY}"
+    headers["authorization"] = f"Bearer {current_key}"
     headers.pop("content-length", None)
     headers.pop("accept-encoding", None)
 

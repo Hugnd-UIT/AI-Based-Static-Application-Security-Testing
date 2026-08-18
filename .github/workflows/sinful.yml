@@ -1,4 +1,4 @@
-name: Sinful SAST Pipeline
+name: Sinful Pipeline
 
 on:
   push:
