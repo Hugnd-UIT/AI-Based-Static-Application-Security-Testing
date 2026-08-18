@@ -1,0 +1,19 @@
+rules:
+  - id: sinful-taint-scala
+    mode: taint
+    message: "Data flow extracted. Handing over to AI."
+    severity: WARNING
+    languages: [scala]
+    pattern-sources:
+      # Play Framework
+      - pattern: request.getQueryString(...)
+      - pattern: request.body.asFormUrlEncoded(...)
+      - pattern: request.headers(...)
+    pattern-sinks:
+      # SQL Sinks
+      - pattern: $DB.withConnection(...)
+      - pattern: $DB.executeQuery(...)
+      - pattern: java.sql.DriverManager.getConnection(...)
+      # Command Injection
+      - pattern: scala.sys.process._
+      - pattern: Runtime.getRuntime.exec(...)

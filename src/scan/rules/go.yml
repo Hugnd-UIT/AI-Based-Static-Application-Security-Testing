@@ -1,0 +1,28 @@
+rules:
+  - id: sinful-taint-go
+    mode: taint
+    message: "Data flow extracted. Handing over to AI."
+    severity: WARNING
+    languages: [go]
+    pattern-sources:
+      # net/http
+      - pattern: $REQ.URL.Query()
+      - pattern: $REQ.FormValue(...)
+      - pattern: $REQ.PostFormValue(...)
+      - pattern: $REQ.Cookie(...)
+      # Gin / Fiber
+      - pattern: $C.Query(...)
+      - pattern: $C.PostForm(...)
+      - pattern: $C.FormValue(...)
+    pattern-sinks:
+      # SQL Sinks
+      - pattern: $DB.Query(...)
+      - pattern: $DB.Exec(...)
+      - pattern: $DB.QueryRow(...)
+      # Command Injection
+      - pattern: exec.Command(...)
+      - pattern: syscall.Exec(...)
+      # Path Traversal
+      - pattern: os.Open(...)
+      - pattern: os.ReadFile(...)
+      - pattern: ioutil.ReadFile(...)

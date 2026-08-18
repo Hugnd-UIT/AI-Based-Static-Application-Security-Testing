@@ -1,0 +1,27 @@
+rules:
+  - id: sinful-taint-ruby
+    mode: taint
+    message: "Data flow extracted. Handing over to AI."
+    severity: WARNING
+    languages: [ruby]
+    pattern-sources:
+      # Rails / Sinatra
+      - pattern: params[...]
+      - pattern: request.env[...]
+      - pattern: request.cookies[...]
+      - pattern: request.query_parameters[...]
+      - pattern: request.request_parameters[...]
+    pattern-sinks:
+      # SQL Sinks
+      - pattern: $DB.execute(...)
+      - pattern: ActiveRecord::Base.connection.execute(...)
+      - pattern: $MODEL.find_by_sql(...)
+      - pattern: $MODEL.where(...)
+      # Command Injection
+      - pattern: system(...)
+      - pattern: exec(...)
+      - pattern: "%x(...)"
+      - pattern: Open3.popen3(...)
+      # Code Execution / Deserialization
+      - pattern: eval(...)
+      - pattern: Marshal.load(...)

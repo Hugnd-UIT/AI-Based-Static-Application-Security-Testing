@@ -1,0 +1,26 @@
+rules:
+  - id: sinful-taint-csharp
+    mode: taint
+    message: "Data flow extracted. Handing over to AI."
+    severity: WARNING
+    languages: [csharp]
+    pattern-sources:
+      # ASP.NET Core
+      - pattern: Request.Query[...]
+      - pattern: Request.Form[...]
+      - pattern: Request.Cookies[...]
+      - pattern: Request.Headers[...]
+      - pattern: "[FromQuery]"
+      - pattern: "[FromBody]"
+    pattern-sinks:
+      # SQL Sinks
+      - pattern: $CMD.ExecuteReader(...)
+      - pattern: $CMD.ExecuteNonQuery(...)
+      - pattern: $CMD.ExecuteScalar(...)
+      - pattern: $DBCONTEXT.Database.ExecuteSqlRaw(...)
+      - pattern: $DBCONTEXT.Database.ExecuteSqlCommand(...)
+      # Command Injection
+      - pattern: Process.Start(...)
+      # Code Execution / Deserialization
+      - pattern: BinaryFormatter.Deserialize(...)
+      - pattern: JavaScriptSerializer.Deserialize(...)

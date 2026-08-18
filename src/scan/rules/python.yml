@@ -1,0 +1,44 @@
+rules:
+  - id: sinful-taint-python
+    mode: taint
+    message: "Data flow extracted. Handing over to AI."
+    severity: WARNING
+    languages: [python]
+    pattern-sources:
+      # Flask / Werkzeug
+      - pattern: request.json
+      - pattern: request.args
+      - pattern: request.form
+      - pattern: request.values
+      - pattern: request.data
+      - pattern: request.cookies
+      - pattern: request.headers
+      # Django
+      - pattern: request.GET
+      - pattern: request.POST
+      - pattern: request.body
+      - pattern: request.META
+      # General
+      - pattern: sys.argv
+    pattern-sinks:
+      # SQL Sinks
+      - pattern: $DB.execute(...)
+      - pattern: $DB.query(...)
+      - pattern: sqlite3.connect(...).execute(...)
+      - pattern: $CURSOR.execute(...)
+      - pattern: $MODEL.objects.raw(...)
+      - pattern: $MODEL.objects.extra(...)
+      # Command Injection Sinks
+      - pattern: subprocess.run(...)
+      - pattern: subprocess.Popen(...)
+      - pattern: subprocess.call(...)
+      - pattern: subprocess.check_output(...)
+      - pattern: os.system(...)
+      - pattern: os.popen(...)
+      # Code Execution / Deserialization
+      - pattern: eval(...)
+      - pattern: exec(...)
+      - pattern: pickle.loads(...)
+      - pattern: yaml.load(...)
+      # XSS / SSTI
+      - pattern: render_template_string(...)

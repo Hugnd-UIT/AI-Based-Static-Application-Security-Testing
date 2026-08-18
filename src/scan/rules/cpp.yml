@@ -1,0 +1,37 @@
+rules:
+  - id: sinful-taint-cpp
+    mode: taint
+    message: "Data flow extracted. Handing over to AI."
+    severity: WARNING
+    languages: [c]
+    pattern-sources:
+      # Native C/C++
+      - pattern: getenv(...)
+      - pattern: recv(...)
+      - pattern: read(...)
+      - pattern: gets(...)
+      - pattern: scanf(...)
+    pattern-sinks:
+      # Command Injection
+      - pattern: system(...)
+      - pattern: popen(...)
+      - pattern: exec(...)
+      - pattern: execl(...)
+      - pattern: execv(...)
+      # Format String Vulnerabilities
+      - pattern: printf(...)
+      - pattern: fprintf(...)
+      - pattern: sprintf(...)
+      - pattern: snprintf(...)
+      - pattern: vprintf(...)
+      - pattern: syslog(...)
+      # Memory Corruption / Buffer Overflow
+      - pattern: strcpy(...)
+      - pattern: strcat(...)
+      - pattern: memcpy(...)
+      - pattern: memmove(...)
+      - pattern: strncpy(...)
+      - pattern: strncat(...)
+      # File / Path Access
+      - pattern: fopen(...)
+      - pattern: open(...)

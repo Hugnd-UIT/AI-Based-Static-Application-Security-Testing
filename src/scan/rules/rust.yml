@@ -1,0 +1,25 @@
+rules:
+  - id: sinful-taint-rust
+    mode: taint
+    message: "Data flow extracted. Handing over to AI."
+    severity: WARNING
+    languages: [rust]
+    pattern-sources:
+      # Actix / Rocket
+      - pattern: $REQ.query()
+      - pattern: $REQ.form()
+      - pattern: $REQ.headers()
+      - pattern: web::Query(...)
+      - pattern: web::Form(...)
+    pattern-sinks:
+      # SQL Sinks
+      - pattern: $DB.execute(...)
+      - pattern: $DB.query(...)
+      - pattern: sqlx::query(...)
+      - pattern: diesel::sql_query(...)
+      # Command Injection
+      - pattern: Command::new(...)
+      - pattern: process::Command::new(...)
+      # Path Traversal
+      - pattern: std::fs::read(...)
+      - pattern: std::fs::read_to_string(...)

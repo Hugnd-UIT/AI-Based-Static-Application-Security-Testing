@@ -1,0 +1,35 @@
+rules:
+  - id: sinful-taint-php
+    mode: taint
+    message: "Data flow extracted. Handing over to AI."
+    severity: WARNING
+    languages: [php]
+    pattern-sources:
+      # Native PHP
+      - pattern: $_GET
+      - pattern: $_POST
+      - pattern: $_REQUEST
+      - pattern: $_COOKIE
+      - pattern: $_SERVER
+      # Frameworks (Laravel/Symfony)
+      - pattern: $request->query->get(...)
+      - pattern: $request->input(...)
+      - pattern: $request->post(...)
+    pattern-sinks:
+      # SQL Sinks
+      - pattern: $DB->execute(...)
+      - pattern: $DB->query(...)
+      - pattern: mysqli_query(...)
+      - pattern: PDO::query(...)
+      # Command Injection
+      - pattern: shell_exec(...)
+      - pattern: system(...)
+      - pattern: exec(...)
+      - pattern: passthru(...)
+      # Code Execution
+      - pattern: eval(...)
+      - pattern: create_function(...)
+      # Path Traversal / LFI
+      - pattern: file_get_contents(...)
+      - pattern: include(...)
+      - pattern: require(...)

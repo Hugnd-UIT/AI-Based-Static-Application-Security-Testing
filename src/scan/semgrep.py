@@ -18,7 +18,6 @@ def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
         scan_cmd.extend(["--config", rule])
 
     custom_rules = Path(__file__).parent / "rules"
-
     if custom_rules.exists() and custom_rules.is_dir():
         scan_cmd.extend(["--config", str(custom_rules)])
 
@@ -40,8 +39,17 @@ def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
         scan_findings = json_data.get("results", [])
 
         cleaned_findings = []
+        seen_locations = set()
 
         for finding_item in scan_findings:
+            path = finding_item.get("path")
+            start_line = finding_item.get("start", {}).get("line")
+            
+            loc_key = f"{path}:{start_line}"
+            if loc_key in seen_locations:
+                continue
+            seen_locations.add(loc_key)
+
             extra_data = finding_item.get("extra", {})
 
             clean_item = {

@@ -173,10 +173,12 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
             if "cve_id" in rag_summary and rag_summary["cve_id"] != "None":
                 console.print(f"  ├─ [cyan]◆ Analyzing {rag_summary['cve_id']} {rag_summary.get('dependency', 'Unknown')}[/cyan]")
             if "attack_vector" in rag_summary:
-                for w_line in textwrap.wrap(rag_summary['attack_vector'], width=95, initial_indent="Vector: ", subsequent_indent="        "):
+                wrap_width = max(60, console.width - 15)
+                for w_line in textwrap.wrap(rag_summary['attack_vector'], width=wrap_width, initial_indent="Vector: ", subsequent_indent="        "):
                     console.print(f"  │  [dim]{w_line}[/dim]")
             if "mitigation" in rag_summary:
-                for w_line in textwrap.wrap(rag_summary['mitigation'], width=95, initial_indent="Mitigation: ", subsequent_indent="            "):
+                wrap_width = max(60, console.width - 15)
+                for w_line in textwrap.wrap(rag_summary['mitigation'], width=wrap_width, initial_indent="Mitigation: ", subsequent_indent="            "):
                     console.print(f"  │  [dim]{w_line}[/dim]")
             console.print("  └─ [bold green]✔ RAG Summary generated[/bold green]")
         except Exception as e:
@@ -257,7 +259,8 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                         if text_line.endswith(".") and len(text_line) < 80:
                             text_line = text_line[:-1]
                         
-                        for w_line in textwrap.wrap(text_line, width=100):
+                        wrap_width = max(60, logger.console.width - 10)
+                        for w_line in textwrap.wrap(text_line, width=wrap_width):
                             logger.console.print(f"  │  [dim]{w_line}[/dim]")
             except Exception as e:
                 logger.console.print(f"  ├─ [bold red]✖ Auditor Agent failed: {e}[/bold red]")
@@ -273,7 +276,8 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                     if poc_json and "poc_type" in poc_json:
                         logger.console.print(f"  ├─ [cyan]◆ Type:[/cyan] [dim]{poc_json['poc_type']}[/dim]")
                         if "description" in poc_json:
-                            for w_line in textwrap.wrap(poc_json['description'], width=100):
+                            wrap_width = max(60, logger.console.width - 10)
+                            for w_line in textwrap.wrap(poc_json['description'], width=wrap_width):
                                 logger.console.print(f"  │  [dim]{w_line}[/dim]")
                         if "payload" in poc_json:
                             logger.console.print(f"  │  [bold red]Payload:[/bold red]")
@@ -294,7 +298,8 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                         finding_item["fix"] = fix_json
                         if fix_json and "patches" in fix_json:
                             if "explanation" in fix_json:
-                                for w_line in textwrap.wrap(fix_json['explanation'], width=100):
+                                wrap_width = max(60, logger.console.width - 10)
+                                for w_line in textwrap.wrap(fix_json['explanation'], width=wrap_width):
                                     logger.console.print(f"  │  [dim]{w_line}[/dim]")
                             
                             for p_idx, patch in enumerate(fix_json["patches"]):

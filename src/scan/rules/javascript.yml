@@ -1,0 +1,32 @@
+rules:
+  - id: sinful-taint-javascript
+    mode: taint
+    message: "Data flow extracted. Handing over to AI."
+    severity: WARNING
+    languages: [javascript, typescript]
+    pattern-sources:
+      # Express / Node HTTP
+      - pattern: req.query
+      - pattern: req.body
+      - pattern: req.params
+      - pattern: req.headers
+      - pattern: req.cookies
+      # Koa
+      - pattern: ctx.query
+      - pattern: ctx.request.body
+    pattern-sinks:
+      # SQL Sinks
+      - pattern: $DB.execute(...)
+      - pattern: $DB.query(...)
+      # Command Injection
+      - pattern: exec(...)
+      - pattern: child_process.exec(...)
+      - pattern: child_process.spawn(...)
+      - pattern: child_process.execSync(...)
+      # Code Execution
+      - pattern: eval(...)
+      - pattern: setTimeout(..., <... $X ...>)
+      - pattern: setInterval(..., <... $X ...>)
+      # Path Traversal
+      - pattern: fs.readFile(...)
+      - pattern: fs.readFileSync(...)

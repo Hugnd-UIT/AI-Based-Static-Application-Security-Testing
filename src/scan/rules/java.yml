@@ -1,0 +1,26 @@
+rules:
+  - id: sinful-taint-java
+    mode: taint
+    message: "Data flow extracted. Handing over to AI."
+    severity: WARNING
+    languages: [java]
+    pattern-sources:
+      # Servlets
+      - pattern: $REQ.getParameter(...)
+      - pattern: $REQ.getHeader(...)
+      - pattern: $REQ.getCookies()
+      # Spring
+      - pattern: "@RequestParam(...)"
+      - pattern: "@PathVariable(...)"
+      - pattern: "@RequestHeader(...)"
+    pattern-sinks:
+      # SQL Sinks
+      - pattern: $STMT.executeQuery(...)
+      - pattern: $STMT.executeUpdate(...)
+      - pattern: $STMT.execute(...)
+      - pattern: $SESSION.createQuery(...) # Hibernate
+      # Command Injection
+      - pattern: Runtime.getRuntime().exec(...)
+      - pattern: new ProcessBuilder(...)
+      # Code Execution / Deserialization
+      - pattern: $OBJ.readObject(...)

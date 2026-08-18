@@ -5,5 +5,6 @@ def fetch(finding_item: dict, source_code: str, model: str = None) -> dict:
     prompt = PROMPT.replace("{rule}", str(finding_item.get("id"))) \
                    .replace("{msg}", str(finding_item.get("message"))) \
                    .replace("{path}", str(finding_item.get("path"))) \
-                   .replace("{code}", str(source_code))
+                   .replace("{code}", str(source_code)) \
+                   .replace("{dflow}", str(finding_item.get("dataflow_trace", "No dataflow trace provided")))
     return fetch_llm(prompt, model=model, is_json=True)
