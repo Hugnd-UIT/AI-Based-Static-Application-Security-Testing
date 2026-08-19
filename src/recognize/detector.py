@@ -109,6 +109,6 @@ def report_langs(lang_counts: Dict[str, int], lang_versions: Dict[str, str] = No
         if lang_versions and lang_name in lang_versions:
             lang_ver = lang_versions[lang_name]
             short_ver = lang_ver[:30] + "..." if len(lang_ver) > 30 else lang_ver
-            version_str = f" [dim] - Runtime: {short_ver}[/dim]"
+            version_str = f" [dim]- Runtime: {short_ver}[/dim]"
             
-        console.print(f"  "o"? [yellow]{lang_name.capitalize()}[/yellow]: {file_count} files{version_str}")
+        console.print(f"  - [yellow]{lang_name.capitalize()}[/yellow]: {file_count} files{version_str}")

@@ -219,4 +219,4 @@ def report_deps(parsed_deps: List[Dict[str, str]]):
     console.print(f"  [cyan]{len(parsed_deps)}[/cyan] dependencies detected")
     console.print()
     for dep_item in parsed_deps:
-        console.print(f"  "o"? [magenta]{dep_item['ecosystem']}[/magenta] [blue]{dep_item['package']}[/blue] v{dep_item['version']}")
+        console.print(f"  - [magenta]{dep_item['ecosystem']}[/magenta] [blue]{dep_item['package']}[/blue] v{dep_item['version']}")

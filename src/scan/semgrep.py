@@ -22,12 +22,12 @@ RULES = [
     "p/typescript",
     "p/react",
     "p/java",
-    "p/go",
+    "p/golang",
     "p/php",
     "p/ruby",
     "p/trailofbits",
     "p/jwt",
-    "p/crypto",
+
 ]
 
 def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
@@ -55,10 +55,15 @@ def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, A
             fallback_cmd = ["python", "-m", "semgrep"] + scan_cmd[1:]
             cmd_result = subprocess.run(fallback_cmd, capture_output=True, text=True, timeout=600)
 
-        if not cmd_result.stdout.strip():
+        output_text = cmd_result.stdout.strip()
+        if not output_text:
             return []
+            
+        json_start = output_text.find('{')
+        if json_start != -1:
+            output_text = output_text[json_start:]
 
-        json_data = json.loads(cmd_result.stdout)
+        json_data = json.loads(output_text)
         scan_findings = json_data.get("results", [])
 
         cleaned_findings = []
@@ -124,11 +129,11 @@ def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, A
 from cli.views import logger
 
 def report_scan(scan_findings: List[Dict[str, Any]]):
-    logger.section("SEMGREP")
+    logger.section("SAST")
 
     from cli.views.logger import console
     if not scan_findings:
-        console.print("  [green]o" No vulnerabilities detected[/green]")
+        console.print("  [green]- No vulnerabilities detected[/green]")
         return
 
     console.print(f"     [bold]{len(scan_findings)} vulnerabilities detected[/bold]")
@@ -141,13 +146,13 @@ def report_scan(scan_findings: List[Dict[str, Any]]):
         line_num = finding_item["start_line"]
         
         if severity_level == "ERROR":
-            console.print("  [bold red]o- ERROR[/bold red]")
-            console.print(f"  [red]"o"?[/red] Rule   [cyan]{rule_id}[/cyan]")
-            console.print(f"  [red]"o"?[/red] File   [blue]{file_path}[/blue]")
-            console.print(f"  [red]"""?[/red] Line   [yellow]{line_num}[/yellow]")
+            console.print("  [bold red]- ERROR[/bold red]")
+            console.print(f"  [red]|[/red] Rule   [cyan]{rule_id}[/cyan]")
+            console.print(f"  [red]|[/red] File   [blue]{file_path}[/blue]")
+            console.print(f"  [red]-[/red] Line   [yellow]{line_num}[/yellow]")
         else:
-            console.print("  [bold yellow]s WARNING[/bold yellow]")
-            console.print(f"  [yellow]"o"?[/yellow] Rule   [cyan]{rule_id}[/cyan]")
-            console.print(f"  [yellow]"o"?[/yellow] File   [blue]{file_path}[/blue]")
-            console.print(f"  [yellow]"""?[/yellow] Line   [yellow]{line_num}[/yellow]")
+            console.print("  [bold yellow]- WARNING[/bold yellow]")
+            console.print(f"  [yellow]|[/yellow] Rule   [cyan]{rule_id}[/cyan]")
+            console.print(f"  [yellow]|[/yellow] File   [blue]{file_path}[/blue]")
+            console.print(f"  [yellow]-[/yellow] Line   [yellow]{line_num}[/yellow]")
         console.print()

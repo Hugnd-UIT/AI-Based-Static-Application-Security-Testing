@@ -76,12 +76,12 @@ def report_nvd(cve_data: Dict[str, Any]):
 
     from cli.views.logger import console
     console.print(f"  [magenta]NVD[/magenta] [cyan]{cve_data['cve_id']}[/cyan]")
-    console.print(f"  "o"? Severity [yellow]{cve_data['severity']}[/yellow] ({cve_data['base_score']})")
+    console.print(f"  - Severity [yellow]{cve_data['severity']}[/yellow] ({cve_data['base_score']})")
 
     ref_count = len(cve_data["references"]) if cve_data.get("references") else 0
-    console.print(f"  "o"? References [blue]{ref_count}[/blue] links")
+    console.print(f"  - References [blue]{ref_count}[/blue] links")
 
     desc_text = cve_data["description"]
     short_desc = desc_text[:80] + "..." if len(desc_text) > 80 else desc_text
-    console.print(f"  """? Details {short_desc}")
+    console.print(f"  - Details {short_desc}")
     console.print()

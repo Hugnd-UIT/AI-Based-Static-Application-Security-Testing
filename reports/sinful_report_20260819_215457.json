@@ -1,0 +1,151 @@
+{
+  "status": "success",
+  "data": {
+    "status": "processing",
+    "languages": {
+      "python": 6,
+      "c++": 1,
+      "c#": 1,
+      "go": 1,
+      "java": 1,
+      "javascript": 1,
+      "php": 1,
+      "ruby": 1
+    },
+    "language_versions": {
+      "python": "Python 3.14.6",
+      "c++": "g++ (Rev5, Built by MSYS2 project) 16.1.0",
+      "c#": "Not Installed",
+      "go": "Not Installed",
+      "java": "Not Installed",
+      "javascript": "v24.18.0",
+      "php": "Not Installed",
+      "ruby": "Not Installed"
+    },
+    "dependencies": [],
+    "findings": [
+      {
+        "id": "sinful-cross-file-taint",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\samples",
+        "start_line": 1,
+        "end_line": 1,
+        "severity": "CRITICAL",
+        "message": "Cross-file taint path detected by inter-procedural analysis.",
+        "lines": "",
+        "cwe": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"request.args.get('id')\",\n    \"operation\": \"Assignment\",\n    \"line\": 3\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"uid\",\n    \"operation\": \"Assignment\",\n    \"line\": 6\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"conn.execute\",\n    \"operation\": \"SQL Query Execution\",\n    \"line\": 10\n  }\n]",
+        "ast_context": "Error extracting AST context: [Errno 13] Permission denied: 'C:\\\\Users\\\\ASUS\\\\Documents\\\\AI-Based SAST\\\\samples'\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in C:\\Users\\ASUS\\Documents\\AI-Based SAST\\samples\\fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in C:\\Users\\ASUS\\Documents\\AI-Based SAST\\samples\\cross_file_test\\auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "confidence": 95,
+        "cvss_estimate": 9.8,
+        "vuln_class": "SQL Injection",
+        "reasoning": "Unsanitized user input from request.args.get('id') flows directly to a SQL query in conn.execute() without any sanitization or parameterization.",
+        "attack_vector": "An attacker can inject malicious SQL code through the 'id' parameter in the URL, potentially leading to unauthorized data access or database manipulation.",
+        "source_identified": true,
+        "source_variable": "request.args.get('id')",
+        "sink_identified": true,
+        "sink_function": "conn.execute",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "request.args.get('id')",
+            "operation": "Assignment",
+            "line": 3
+          },
+          {
+            "step": 2,
+            "variable": "uid",
+            "operation": "Assignment",
+            "line": 6
+          },
+          {
+            "step": 3,
+            "variable": "conn.execute",
+            "operation": "SQL Query Execution",
+            "line": 10
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": true,
+        "is_flow_unbroken": true,
+        "poc_type": "SQL Injection",
+        "description": "SQL injection vulnerability due to direct concatenation of user input into SQL query.",
+        "payload": "1' OR '1'='1",
+        "explanation": "The payload '1' OR '1'='1' can be used to bypass authentication and retrieve all records from the database.",
+        "patches": [
+          {
+            "file_path": "fileA.py",
+            "old_code": "return request.args.get('id')",
+            "new_code": "return request.args.get('id', type=int)"
+          },
+          {
+            "file_path": "fileB.py",
+            "old_code": "conn.execute('SELECT * FROM users WHERE id=' + uid)",
+            "new_code": "conn.execute('SELECT * FROM users WHERE id=?', (uid,))"
+          }
+        ],
+        "poc": {
+          "verdict": "VULNERABLE",
+          "severity": "CRITICAL",
+          "confidence": 100,
+          "cvss_estimate": 9.8,
+          "vuln_class": "SQL Injection",
+          "reasoning": "Cross-file taint path from request.args.get('id') to SQL query execution",
+          "attack_vector": "http://example.com/process_data?id=1%20UNION%20SELECT%20username,password%20FROM%20users",
+          "source_identified": true,
+          "source_variable": "request.args.get('id')",
+          "sink_identified": true,
+          "sink_function": "conn.execute",
+          "data_flow": [
+            {
+              "step": 1,
+              "variable": "request.args.get('id')",
+              "operation": "Assignment",
+              "line": 3
+            },
+            {
+              "step": 2,
+              "variable": "uid",
+              "operation": "Assignment",
+              "line": 6
+            },
+            {
+              "step": 3,
+              "variable": "conn.execute",
+              "operation": "SQL Query Execution",
+              "line": 10
+            }
+          ],
+          "hops_traced": 3,
+          "cross_file": true,
+          "is_flow_unbroken": true,
+          "poc_type": "HTTP REQUEST",
+          "description": "SQL Injection via user-controlled input in process_data endpoint",
+          "payload": "GET /process_data?id=1%20UNION%20SELECT%20username,password%20FROM%20users HTTP/1.1\\r\\nHost: example.com\\r\\n\\r\\n",
+          "explanation": "The PoC demonstrates how user input is directly concatenated into a SQL query, allowing for SQL injection to extract sensitive data.",
+          "patches": [
+            {
+              "file_path": "fileB.py",
+              "old_code": "conn.execute('SELECT * FROM users WHERE id=' + uid)",
+              "new_code": "conn.execute('SELECT * FROM users WHERE id=?', (uid,))"
+            }
+          ]
+        }
+      }
+    ],
+    "cves": [],
+    "nvd_data": [],
+    "rag_summary": {
+      "cve_id": "Unknown",
+      "dependency": "Unknown",
+      "severity": "Unknown",
+      "attack_vector": "Unknown",
+      "mitigation": "Unknown",
+      "analysis": [],
+      "functions": [],
+      "summary": "No vulnerability data provided in the CVE DATA section."
+    },
+    "cross_file_context": "[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in C:\\Users\\ASUS\\Documents\\AI-Based SAST\\samples\\fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in C:\\Users\\ASUS\\Documents\\AI-Based SAST\\samples\\cross_file_test\\auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+    "is_vulnerable": true
+  }
+}

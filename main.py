@@ -124,6 +124,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
         scan_result["findings"] = scan_findings
 
     if parsed_deps:
+        logger.section("SUPPLY CHAIN")
         try:
             cve_list = osv.check_osv_vulns(parsed_deps)
         except AttributeError:
@@ -198,6 +199,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
             "runtimes": scan_result.get("language_versions")
         }, indent=2)
         from cli.views.logger import console
+        logger.section("MULTI-AGENT")
         console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{model_tag}")
         import textwrap
         try:
@@ -214,20 +216,21 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                 wrap_width = max(60, console.width - 15)
                 for w_line in textwrap.wrap(rag_summary['mitigation'], width=wrap_width, initial_indent="Mitigation: ", subsequent_indent="            "):
                     console.print(f"  │  [dim]{w_line}[/dim]")
-            console.print("  └─ [bold green]✔ RAG Summary generated[/bold green]")
+            console.print("  └─ [bold green]✔ RAG completed![/bold green]")
         except Exception as rag_err:
-            console.print(f"  └─ [bold red]✖ RAG Agent failed: {rag_err}[/bold red]")
+            console.print(f"  └─ [bold red]✖ RAG failed: {rag_err}[/bold red]")
             scan_result["rag_summary"] = {"error": str(rag_err)}
             cve_context = cve_data_str
     else:
         from cli.views.logger import console
+        logger.section("MULTI-AGENT")
         console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{model_tag}")
         console.print("  └─ [dim]No dependencies found! Skip![/dim]")
 
     if not scan_findings:
         pass
     else:
-        logger.section("MULTI-AGENT")
+        logger.console.print()
 
         for loop_idx, finding_item in enumerate(scan_findings):
             logger.console.print(f"  Working [bold]{loop_idx+1}/{len(scan_findings)}[/bold]")
