@@ -461,12 +461,15 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
 def main():
     
     arg_parser = argparse.ArgumentParser(description="Sinful AI-Based SAST")
-    arg_parser.add_argument("target", help="Target directory OR Git URL to scan")
-    arg_parser.add_argument("--rules", nargs="+", help="Specific Semgrep rules to use")
-    arg_parser.add_argument("--model", type=str, help="Specific AI model to use for review")
+    arg_parser.add_argument("target", nargs="?", help="Target directory OR Git URL to scan (optional, if omitted opens interactive CLI)")
     cli_args = arg_parser.parse_args()
 
-    scan_result = run_sast(cli_args.target, cli_args.rules, cli_args.model)
+    if not cli_args.target:
+        from cli.main import start_cli
+        start_cli()
+        return
+
+    scan_result = run_sast(cli_args.target, None, None)
 
     if scan_result["status"] == "error":
         print(scan_result["message"])

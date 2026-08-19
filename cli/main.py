@@ -35,7 +35,7 @@ def print_header():
 
     console.print(header_panel)
     console.print(
-        "\n[dim]Tip: For a limited time, Sinful Auto-Fix is included in your plan for free — let's secure together.[/dim]\n"
+        "\n[dim]Tip: For a limited time, Sinful is included in your plan for free — let's secure together![/dim]\n"
     )
 
 @cli_app.callback(invoke_without_command=True)
@@ -62,12 +62,12 @@ def start_cli():
             class CommandCompleter(Completer):
                 def __init__(self):
                     self.cli_commands = {
-                        '/scan': 'Run a standard security scan without fixing',
-                        '/auto-fix': 'Run a scan and automatically fix vulnerabilities using AI',
-                        '/model': 'Select or view the default AI model to use',
-                        '/clear': 'Clear the terminal screen',
-                        '/help': 'Show help message',
-                        '/exit': 'Exit the CLI',
+                        '/scan': 'Run a security scan without fixing',
+                        '/auto-fix': 'Run a security scan and automatically fix using AI',
+                        '/model': 'Select or view other AI model to use',
+                        '/clear': 'Clear terminal',
+                        '/help': 'Show list of commands',
+                        '/exit': 'Exit terminal',
                     }
                 
                 def get_completions(self, document_context, complete_event):

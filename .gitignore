@@ -45,3 +45,8 @@ venv.bak/
 
 # Test code
 samples/
+
+# Export
+dist/
+output/
+*.spec

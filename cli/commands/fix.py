@@ -35,7 +35,7 @@ def handle_command(user_command: str) -> bool:
         if scan_target:
             run_scan(scan_target, fix=False)
         else:
-            console.print("  [bold yellow]⚠ Please provide a target path.[/bold yellow] Example: [cyan]/scan tests/vulnerable_code[/cyan]")
+            console.print("  [bold yellow]⚠ Please provide a target path[/bold yellow] Example: [cyan]/scan <path-to-code>[/cyan]")
         return True
 
     if cmd_lower.startswith("/auto-fix"):
@@ -43,7 +43,7 @@ def handle_command(user_command: str) -> bool:
         if scan_target:
             run_scan(scan_target, fix=True)
         else:
-            console.print("  [bold yellow]⚠ Please provide a target path.[/bold yellow] Example: [cyan]/auto-fix tests/vulnerable_code[/cyan]")
+            console.print("  [bold yellow]⚠ Please provide a target path[/bold yellow] Example: [cyan]/auto-fix <path-to-code>[/cyan]")
         return True
 
     console.print(f"  [bold red]✖ Unknown command:[/bold red] {cmd_raw.split()[0]}. Type [cyan]/help[/cyan] for a list of commands.")
