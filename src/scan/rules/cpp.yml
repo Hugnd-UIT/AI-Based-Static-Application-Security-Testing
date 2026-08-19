@@ -1,37 +1,92 @@
 rules:
   - id: sinful-taint-cpp
     mode: taint
-    message: "Data flow extracted. Handing over to AI."
+    message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
     severity: WARNING
-    languages: [c]
+    languages: [c, cpp]
+
     pattern-sources:
-      # Native C/C++
+      # ── Standard I/O ──────────────────────────────────────────────
       - pattern: getenv(...)
-      - pattern: recv(...)
-      - pattern: read(...)
       - pattern: gets(...)
+      - pattern: fgets(...)
       - pattern: scanf(...)
+      - pattern: fscanf(...)
+      - pattern: sscanf(...)
+      - pattern: read(...)
+      - pattern: recv(...)
+      - pattern: recvfrom(...)
+      - pattern: recvmsg(...)
+      - pattern: fread(...)
+      - pattern: getchar()
+      - pattern: getc(...)
+      - pattern: fgetc(...)
+      # ── Network ───────────────────────────────────────────────────
+      - pattern: accept(...)
+      - pattern: select(...)
+      - pattern: epoll_wait(...)
+      # ── C++ streams ───────────────────────────────────────────────
+      - pattern: std::cin
+      - pattern: std::getline(...)
+      - pattern: std::cin >> $VAR
+
     pattern-sinks:
-      # Command Injection
+      # ── Command Injection ─────────────────────────────────────────
       - pattern: system(...)
       - pattern: popen(...)
       - pattern: exec(...)
       - pattern: execl(...)
+      - pattern: execle(...)
+      - pattern: execlp(...)
       - pattern: execv(...)
-      # Format String Vulnerabilities
+      - pattern: execvp(...)
+      - pattern: execvpe(...)
+      - pattern: execve(...)
+      - pattern: posix_spawn(...)
+      # ── Format String ─────────────────────────────────────────────
       - pattern: printf(...)
       - pattern: fprintf(...)
       - pattern: sprintf(...)
       - pattern: snprintf(...)
       - pattern: vprintf(...)
+      - pattern: vfprintf(...)
+      - pattern: vsprintf(...)
       - pattern: syslog(...)
-      # Memory Corruption / Buffer Overflow
+      - pattern: err(...)
+      - pattern: errx(...)
+      # ── Buffer Overflow ───────────────────────────────────────────
       - pattern: strcpy(...)
       - pattern: strcat(...)
-      - pattern: memcpy(...)
-      - pattern: memmove(...)
       - pattern: strncpy(...)
       - pattern: strncat(...)
-      # File / Path Access
+      - pattern: memcpy(...)
+      - pattern: memmove(...)
+      - pattern: memset(...)
+      - pattern: stpcpy(...)
+      - pattern: wcscpy(...)
+      - pattern: wcscat(...)
+      # ── File / Path Access ────────────────────────────────────────
       - pattern: fopen(...)
       - pattern: open(...)
+      - pattern: creat(...)
+      - pattern: freopen(...)
+      - pattern: unlink(...)
+      - pattern: remove(...)
+      - pattern: rename(...)
+      # ── Heap ──────────────────────────────────────────────────────
+      - pattern: malloc(...)
+      - pattern: realloc(...)
+      - pattern: alloca(...)
+
+    pattern-sanitizers:
+      # Format string safe alternatives
+      - pattern: snprintf($BUF, sizeof($BUF), "%s", ...)
+      # Safe string ops
+      - pattern: strlcpy(...)
+      - pattern: strlcat(...)
+      - pattern: strdup(...)
+      # Input validation
+      - pattern: atoi(...)
+      - pattern: strtol(...)
+      - pattern: strtoul(...)
+      - pattern: strtod(...)

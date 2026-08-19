@@ -3,7 +3,37 @@ import subprocess
 from pathlib import Path
 from typing import Dict, List, Any
 
-RULES = ["p/owasp-top-ten", "p/security-audit", "p/secrets"]
+RULES = [
+    # ── Core Security ─────────────────────────────────────────────
+    "p/owasp-top-ten",          # OWASP Top 10 coverage
+    "p/security-audit",         # General security audit
+    "p/secrets",                # Hardcoded secrets & API keys
+    "p/default",                # Semgrep's own recommended ruleset
+    # ── Vulnerability-specific ────────────────────────────────────
+    "p/xss",                    # Cross-site Scripting
+    "p/sql-injection",          # SQL Injection
+    "p/command-injection",      # Command Injection / OS injection
+    "p/insecure-transport",     # HTTP, weak TLS, cleartext creds
+    # ── Supply Chain & Dependencies ───────────────────────────────
+    "p/supply-chain",           # Dependency confusion, typosquatting
+    # ── Language / Framework packs ────────────────────────────────
+    "p/python",                 # Python-specific patterns
+    "p/django",                 # Django security rules
+    "p/flask",                  # Flask security rules
+    "p/fastapi",                # FastAPI security rules
+    "p/nodejs",                 # Node.js / Express patterns
+    "p/javascript",             # JavaScript-specific patterns
+    "p/typescript",             # TypeScript-specific patterns
+    "p/react",                  # React XSS / client-side risks
+    "p/java",                   # Java patterns (Spring, Servlet...)
+    "p/go",                     # Go patterns
+    "p/php",                    # PHP patterns
+    "p/ruby",                   # Ruby / Rails patterns
+    # ── Audit-grade packs ─────────────────────────────────────────
+    "p/trailofbits",            # Trail of Bits audit rules
+    "p/jwt",                    # JWT misuse
+    "p/crypto",                 # Weak cryptography
+]
 
 def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
     dir_path = Path(target_path)

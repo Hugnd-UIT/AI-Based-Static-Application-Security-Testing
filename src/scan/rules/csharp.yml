@@ -1,26 +1,106 @@
 rules:
   - id: sinful-taint-csharp
     mode: taint
-    message: "Data flow extracted. Handing over to AI."
+    message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
     severity: WARNING
     languages: [csharp]
+
     pattern-sources:
-      # ASP.NET Core
+      # ── ASP.NET Core / MVC ────────────────────────────────────────
       - pattern: Request.Query[...]
+      - pattern: Request.Query.ContainsKey(...)
       - pattern: Request.Form[...]
+      - pattern: Request.Form.TryGetValue(...)
       - pattern: Request.Cookies[...]
       - pattern: Request.Headers[...]
+      - pattern: Request.Headers.TryGetValue(...)
+      - pattern: Request.Body
+      - pattern: Request.RouteValues[...]
+      - pattern: Request.QueryString
+      # ── Attribute sources ─────────────────────────────────────────
       - pattern: "[FromQuery]"
       - pattern: "[FromBody]"
+      - pattern: "[FromRoute]"
+      - pattern: "[FromForm]"
+      - pattern: "[FromHeader]"
+      # ── Classic ASP.NET Web Forms ─────────────────────────────────
+      - pattern: Request.Params[...]
+      - pattern: Request.QueryString[...]
+      - pattern: Request.Form[...]
+      # ── General ───────────────────────────────────────────────────
+      - pattern: Environment.GetEnvironmentVariable(...)
+      - pattern: Console.ReadLine()
+      - pattern: args[...]
+
     pattern-sinks:
-      # SQL Sinks
+      # ── SQL Injection ─────────────────────────────────────────────
       - pattern: $CMD.ExecuteReader(...)
       - pattern: $CMD.ExecuteNonQuery(...)
       - pattern: $CMD.ExecuteScalar(...)
+      - pattern: $CMD.CommandText = ...
       - pattern: $DBCONTEXT.Database.ExecuteSqlRaw(...)
       - pattern: $DBCONTEXT.Database.ExecuteSqlCommand(...)
-      # Command Injection
+      - pattern: $DBCONTEXT.Database.ExecuteSqlRawAsync(...)
+      - pattern: SqlCommand($QUERY, ...)
+      - pattern: $CONN.CreateCommand()
+      - pattern: $CTX.FromSqlRaw(...)
+      - pattern: $CTX.FromSqlInterpolated(...)
+      # ── Command Injection ─────────────────────────────────────────
       - pattern: Process.Start(...)
-      # Code Execution / Deserialization
-      - pattern: BinaryFormatter.Deserialize(...)
-      - pattern: JavaScriptSerializer.Deserialize(...)
+      - pattern: new ProcessStartInfo(...)
+      - pattern: $PROC.StartInfo.Arguments = ...
+      - pattern: $PROC.StartInfo.FileName = ...
+      # ── Code Execution / Deserialization ──────────────────────────
+      - pattern: BinaryFormatter().Deserialize(...)
+      - pattern: JavaScriptSerializer().Deserialize(...)
+      - pattern: XmlSerializer(...).Deserialize(...)
+      - pattern: NetDataContractSerializer().ReadObject(...)
+      - pattern: LosFormatter().Deserialize(...)
+      - pattern: ObjectStateFormatter().Deserialize(...)
+      - pattern: JsonConvert.DeserializeObject(...)
+      - pattern: Assembly.Load(...)
+      - pattern: Assembly.LoadFrom(...)
+      # ── Path Traversal / File Access ──────────────────────────────
+      - pattern: File.ReadAllText(...)
+      - pattern: File.ReadAllBytes(...)
+      - pattern: File.WriteAllText(...)
+      - pattern: File.Open(...)
+      - pattern: File.Delete(...)
+      - pattern: Path.Combine(...)
+      - pattern: new FileStream(...)
+      # ── SSRF ──────────────────────────────────────────────────────
+      - pattern: (new HttpClient()).GetAsync(...)
+      - pattern: (new HttpClient()).PostAsync(...)
+      - pattern: WebRequest.Create(...)
+      - pattern: $CLIENT.GetAsync(...)
+      - pattern: $CLIENT.PostAsync(...)
+      # ── XSS / Open Redirect ───────────────────────────────────────
+      - pattern: Response.Write(...)
+      - pattern: HtmlHelper.Raw(...)
+      - pattern: Response.Redirect(...)
+      - pattern: Redirect(...)
+      # ── LDAP Injection ────────────────────────────────────────────
+      - pattern: DirectorySearcher($FILTER)
+      - pattern: DirectoryEntry(..., ..., ...)
+      # ── XML / XXE ─────────────────────────────────────────────────
+      - pattern: XDocument.Load(...)
+      - pattern: XmlDocument().Load(...)
+      - pattern: XPathDocument(...)
+
+    pattern-sanitizers:
+      # SQL — Parameterized
+      - pattern: new SqlParameter(...)
+      - pattern: $CMD.Parameters.AddWithValue(...)
+      # HTML
+      - pattern: HttpUtility.HtmlEncode(...)
+      - pattern: WebUtility.HtmlEncode(...)
+      - pattern: AntiXssEncoder.HtmlEncode(...)
+      # Path
+      - pattern: Path.GetFileName(...)
+      # URL
+      - pattern: HttpUtility.UrlEncode(...)
+      - pattern: Uri.EscapeDataString(...)
+      # Type casting
+      - pattern: int.Parse(...)
+      - pattern: Convert.ToInt32(...)
+      - pattern: Convert.ToInt64(...)

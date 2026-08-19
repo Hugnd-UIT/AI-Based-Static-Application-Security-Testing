@@ -1,44 +1,138 @@
 rules:
   - id: sinful-taint-python
     mode: taint
-    message: "Data flow extracted. Handing over to AI."
+    message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
     severity: WARNING
     languages: [python]
+
     pattern-sources:
-      # Flask / Werkzeug
+      # ── Flask / Werkzeug ──────────────────────────────────────────
       - pattern: request.json
       - pattern: request.args
+      - pattern: request.args.get(...)
       - pattern: request.form
+      - pattern: request.form.get(...)
       - pattern: request.values
+      - pattern: request.values.get(...)
       - pattern: request.data
       - pattern: request.cookies
+      - pattern: request.cookies.get(...)
       - pattern: request.headers
-      # Django
+      - pattern: request.headers.get(...)
+      - pattern: request.files
+      - pattern: request.get_json(...)
+      # ── Django ────────────────────────────────────────────────────
       - pattern: request.GET
+      - pattern: request.GET.get(...)
       - pattern: request.POST
+      - pattern: request.POST.get(...)
       - pattern: request.body
       - pattern: request.META
-      # General
+      - pattern: request.META.get(...)
+      - pattern: request.FILES
+      - pattern: request.COOKIES
+      - pattern: request.COOKIES.get(...)
+      # ── FastAPI ───────────────────────────────────────────────────
+      - pattern: $VAR = Body(...)
+      - pattern: $VAR = Query(...)
+      - pattern: $VAR = Path(...)
+      - pattern: $VAR = Form(...)
+      - pattern: $VAR = Header(...)
+      - pattern: $VAR = Cookie(...)
+      - pattern: $VAR = File(...)
+      - pattern: $VAR = UploadFile(...)
+      # ── General / CLI ─────────────────────────────────────────────
       - pattern: sys.argv
+      - pattern: os.environ.get(...)
+      - pattern: os.getenv(...)
+      - pattern: input(...)
+
     pattern-sinks:
-      # SQL Sinks
+      # ── SQL Injection ─────────────────────────────────────────────
       - pattern: $DB.execute(...)
       - pattern: $DB.query(...)
-      - pattern: sqlite3.connect(...).execute(...)
+      - pattern: $DB.raw(...)
       - pattern: $CURSOR.execute(...)
+      - pattern: $CURSOR.executemany(...)
+      - pattern: sqlite3.connect(...).execute(...)
       - pattern: $MODEL.objects.raw(...)
       - pattern: $MODEL.objects.extra(...)
-      # Command Injection Sinks
+      - pattern: $SESSION.execute(...)
+      - pattern: $ENGINE.execute(...)
+      - pattern: text(...)                          # SQLAlchemy text()
+      - pattern: $CONN.execute(text(...))
+      # ── Command Injection ─────────────────────────────────────────
       - pattern: subprocess.run(...)
       - pattern: subprocess.Popen(...)
       - pattern: subprocess.call(...)
       - pattern: subprocess.check_output(...)
+      - pattern: subprocess.check_call(...)
       - pattern: os.system(...)
       - pattern: os.popen(...)
-      # Code Execution / Deserialization
+      - pattern: os.exec(...)
+      - pattern: pty.spawn(...)
+      # ── Code Execution / Deserialization ──────────────────────────
       - pattern: eval(...)
       - pattern: exec(...)
+      - pattern: compile(...)
       - pattern: pickle.loads(...)
+      - pattern: pickle.load(...)
+      - pattern: marshal.loads(...)
       - pattern: yaml.load(...)
-      # XSS / SSTI
+      - pattern: jsonpickle.decode(...)
+      - pattern: __import__(...)
+      # ── Path Traversal / File Access ──────────────────────────────
+      - pattern: open(...)
+      - pattern: os.path.join(...)
+      - pattern: os.path.abspath(...)
+      - pattern: pathlib.Path(...)
+      - pattern: shutil.copy(...)
+      - pattern: shutil.move(...)
+      - pattern: os.remove(...)
+      - pattern: os.unlink(...)
+      # ── SSRF / HTTP Request Injection ─────────────────────────────
+      - pattern: requests.get(...)
+      - pattern: requests.post(...)
+      - pattern: requests.put(...)
+      - pattern: requests.request(...)
+      - pattern: urllib.request.urlopen(...)
+      - pattern: httpx.get(...)
+      - pattern: httpx.post(...)
+      - pattern: aiohttp.ClientSession().get(...)
+      # ── XSS / SSTI ───────────────────────────────────────────────
       - pattern: render_template_string(...)
+      - pattern: Markup(...)
+      - pattern: jinja2.Template(...).render(...)
+      # ── LDAP Injection ───────────────────────────────────────────
+      - pattern: $CONN.search(...)
+      - pattern: ldap3.Connection(...).search(...)
+      # ── XML / XXE ─────────────────────────────────────────────────
+      - pattern: lxml.etree.fromstring(...)
+      - pattern: xml.etree.ElementTree.fromstring(...)
+      - pattern: minidom.parseString(...)
+      # ── Redirect ─────────────────────────────────────────────────
+      - pattern: redirect(...)
+      - pattern: flask.redirect(...)
+
+    pattern-sanitizers:
+      # SQL
+      - pattern: $DB.escape_string(...)
+      - pattern: $CURSOR.mogrify(...)
+      - pattern: sqlalchemy.text(...)
+      # Shell
+      - pattern: shlex.quote(...)
+      - pattern: pipes.quote(...)
+      # Path
+      - pattern: os.path.basename(...)
+      - pattern: pathlib.Path(...).name
+      # HTML / XSS
+      - pattern: html.escape(...)
+      - pattern: markupsafe.escape(...)
+      - pattern: bleach.clean(...)
+      # URL
+      - pattern: urllib.parse.quote(...)
+      - pattern: urllib.parse.urlencode(...)
+      # Type casting (trusted conversions)
+      - pattern: int(...)
+      - pattern: float(...)
+      - pattern: bool(...)

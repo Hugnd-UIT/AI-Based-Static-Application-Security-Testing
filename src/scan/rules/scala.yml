@@ -1,19 +1,90 @@
 rules:
   - id: sinful-taint-scala
     mode: taint
-    message: "Data flow extracted. Handing over to AI."
+    message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
     severity: WARNING
     languages: [scala]
+
     pattern-sources:
-      # Play Framework
+      # ── Play Framework ────────────────────────────────────────────
       - pattern: request.getQueryString(...)
-      - pattern: request.body.asFormUrlEncoded(...)
-      - pattern: request.headers(...)
+      - pattern: request.body.asFormUrlEncoded
+      - pattern: request.body.asJson
+      - pattern: request.body.asText
+      - pattern: request.body.asXml
+      - pattern: request.headers.get(...)
+      - pattern: request.cookies.get(...)
+      - pattern: request.queryString
+      - pattern: request.path
+      - pattern: request.rawQueryString
+      # ── Akka HTTP ─────────────────────────────────────────────────
+      - pattern: parameter(...)
+      - pattern: parameters(...)
+      - pattern: entity(as[...])
+      - pattern: headerValueByName(...)
+      - pattern: cookie(...)
+      # ── Finch / Http4s ────────────────────────────────────────────
+      - pattern: req.params.get(...)
+      - pattern: req.headers.get(...)
+      # ── General ───────────────────────────────────────────────────
+      - pattern: sys.env.get(...)
+      - pattern: System.getenv(...)
+      - pattern: args(...)
+
     pattern-sinks:
-      # SQL Sinks
+      # ── SQL Injection ─────────────────────────────────────────────
       - pattern: $DB.withConnection(...)
-      - pattern: $DB.executeQuery(...)
+      - pattern: $DB.withTransaction(...)
+      - pattern: DB.executeQuery(...)
       - pattern: java.sql.DriverManager.getConnection(...)
-      # Command Injection
-      - pattern: scala.sys.process._
+      - pattern: $STMT.executeQuery(...)
+      - pattern: $STMT.execute(...)
+      - pattern: $STMT.executeUpdate(...)
+      # Slick raw SQL
+      - pattern: sql"..."
+      - pattern: sqlu"..."
+      - pattern: $SESSION.createSQLQuery(...)
+      - pattern: $SESSION.createQuery(...)
+      # Anorm
+      - pattern: SQL(...)
+      # ── Command Injection ─────────────────────────────────────────
+      - pattern: scala.sys.process.Process(...)
       - pattern: Runtime.getRuntime.exec(...)
+      - pattern: ProcessBuilder(...)
+      - pattern: "!" + ...
+      - pattern: "!!" + ...
+      # ── Path Traversal / File Access ──────────────────────────────
+      - pattern: scala.io.Source.fromFile(...)
+      - pattern: java.io.File(...)
+      - pattern: java.io.FileInputStream(...)
+      - pattern: java.nio.file.Files.readAllBytes(...)
+      - pattern: java.nio.file.Paths.get(...)
+      # ── SSRF ──────────────────────────────────────────────────────
+      - pattern: new java.net.URL(...).openConnection()
+      - pattern: scala.io.Source.fromURL(...)
+      - pattern: ws.url(...)
+      - pattern: $WS.url(...)
+      # ── Deserialization ───────────────────────────────────────────
+      - pattern: java.io.ObjectInputStream(...).readObject()
+      - pattern: $OIS.readObject()
+      # ── XSS ───────────────────────────────────────────────────────
+      - pattern: Ok($DATA)
+      - pattern: Results.Ok($DATA)
+      - pattern: Html(...)
+      # ── LDAP ──────────────────────────────────────────────────────
+      - pattern: $CTX.search(...)
+      - pattern: InitialDirContext(...).search(...)
+
+    pattern-sanitizers:
+      # SQL — parameterized
+      - pattern: $CONN.prepareStatement(...)
+      # HTML
+      - pattern: play.twirl.api.HtmlFormat.escape(...)
+      - pattern: xml.Utility.escape(...)
+      # URL
+      - pattern: java.net.URLEncoder.encode(...)
+      # Type safe casting
+      - pattern: $STR.toInt
+      - pattern: $STR.toLong
+      - pattern: $STR.toDouble
+      - pattern: Integer.parseInt(...)

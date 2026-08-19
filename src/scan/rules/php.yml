@@ -1,35 +1,119 @@
 rules:
   - id: sinful-taint-php
     mode: taint
-    message: "Data flow extracted. Handing over to AI."
+    message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
     severity: WARNING
     languages: [php]
+
     pattern-sources:
-      # Native PHP
+      # ── Native PHP Superglobals ───────────────────────────────────
       - pattern: $_GET
+      - pattern: $_GET[$KEY]
       - pattern: $_POST
+      - pattern: $_POST[$KEY]
       - pattern: $_REQUEST
+      - pattern: $_REQUEST[$KEY]
       - pattern: $_COOKIE
+      - pattern: $_COOKIE[$KEY]
       - pattern: $_SERVER
-      # Frameworks (Laravel/Symfony)
-      - pattern: $request->query->get(...)
+      - pattern: $_SERVER[$KEY]
+      - pattern: $_FILES
+      - pattern: $_FILES[$KEY]
+      - pattern: $_ENV
+      - pattern: php://input
+      - pattern: file_get_contents("php://input")
+      # ── Laravel ───────────────────────────────────────────────────
+      - pattern: $request->query(...)
       - pattern: $request->input(...)
       - pattern: $request->post(...)
+      - pattern: $request->get(...)
+      - pattern: $request->header(...)
+      - pattern: $request->cookie(...)
+      - pattern: $request->file(...)
+      - pattern: $request->all()
+      - pattern: $request->json(...)
+      # ── Symfony ───────────────────────────────────────────────────
+      - pattern: $request->query->get(...)
+      - pattern: $request->request->get(...)
+      - pattern: $request->headers->get(...)
+      - pattern: $request->cookies->get(...)
+      - pattern: $request->files->get(...)
+      # ── General ───────────────────────────────────────────────────
+      - pattern: getenv(...)
+      - pattern: filter_input(...)
+
     pattern-sinks:
-      # SQL Sinks
-      - pattern: $DB->execute(...)
-      - pattern: $DB->query(...)
+      # ── SQL Injection ─────────────────────────────────────────────
       - pattern: mysqli_query(...)
-      - pattern: PDO::query(...)
-      # Command Injection
+      - pattern: $MYSQLI->query(...)
+      - pattern: $PDO->query(...)
+      - pattern: $PDO->exec(...)
+      - pattern: $DB->execute(...)
+      - pattern: $STMT->execute(...)
+      - pattern: mysql_query(...)
+      # Laravel raw SQL
+      - pattern: DB::select(...)
+      - pattern: DB::statement(...)
+      - pattern: DB::unprepared(...)
+      - pattern: $BUILDER->whereRaw(...)
+      - pattern: $BUILDER->selectRaw(...)
+      - pattern: $BUILDER->orderByRaw(...)
+      - pattern: $BUILDER->havingRaw(...)
+      # ── Command Injection ─────────────────────────────────────────
       - pattern: shell_exec(...)
       - pattern: system(...)
       - pattern: exec(...)
       - pattern: passthru(...)
-      # Code Execution
+      - pattern: proc_open(...)
+      - pattern: popen(...)
+      - pattern: "`$CMD`"
+      # ── Code Execution ────────────────────────────────────────────
       - pattern: eval(...)
       - pattern: create_function(...)
-      # Path Traversal / LFI
+      - pattern: assert(...)
+      - pattern: preg_replace("/...e.../", ...)
+      # ── Path Traversal / File Inclusion ───────────────────────────
       - pattern: file_get_contents(...)
+      - pattern: file_put_contents(...)
+      - pattern: fopen(...)
+      - pattern: readfile(...)
       - pattern: include(...)
+      - pattern: include_once(...)
       - pattern: require(...)
+      - pattern: require_once(...)
+      - pattern: move_uploaded_file(...)
+      # ── SSRF ──────────────────────────────────────────────────────
+      - pattern: curl_setopt($CH, CURLOPT_URL, ...)
+      - pattern: file_get_contents("http://...")
+      # ── XSS ───────────────────────────────────────────────────────
+      - pattern: echo ...
+      - pattern: print(...)
+      - pattern: print_r(...)
+      - pattern: printf(...)
+      - pattern: header("Location: " . ...)        # Open Redirect
+      # ── Deserialization ───────────────────────────────────────────
+      - pattern: unserialize(...)
+      # ── LDAP ──────────────────────────────────────────────────────
+      - pattern: ldap_search(...)
+      - pattern: ldap_bind(...)
+
+    pattern-sanitizers:
+      # SQL
+      - pattern: $PDO->prepare(...)
+      - pattern: $MYSQLI->prepare(...)
+      - pattern: mysqli_real_escape_string(...)
+      - pattern: addslashes(...)
+      # HTML / XSS
+      - pattern: htmlspecialchars(...)
+      - pattern: htmlentities(...)
+      - pattern: strip_tags(...)
+      # Path
+      - pattern: basename(...)
+      - pattern: realpath(...)
+      # URL
+      - pattern: urlencode(...)
+      - pattern: rawurlencode(...)
+      # Validation
+      - pattern: filter_var(...)
+      - pattern: intval(...)
+      - pattern: floatval(...)
