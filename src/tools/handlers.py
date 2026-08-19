@@ -59,6 +59,14 @@ def run_agent(
 
                 logger.debug("[%s] Tool: %s(%s)", agent_name, tool_name, list(tool_args))
 
+                try:
+                    from cli.views.logger import console
+                    if tool_name != "submit_verdict":
+                        display_name = tool_name.replace("_", " ").title()
+                        console.print(f"  ├─ [yellow]Action:[/yellow] [cyan]{display_name}[/cyan]")
+                except ImportError:
+                    pass
+
                 if tool_name == "submit_verdict":
                     msg_history.append({
                         "role": "tool",

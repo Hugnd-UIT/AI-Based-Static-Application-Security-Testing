@@ -1,284 +1,157 @@
-# SINFUL — Plan: Nâng cấp 4 Agents → True ReAct Agents với Tool Use
+# Upgrade Plan: Sinful SAST → Argus-Level
 
 ## Mục tiêu
-
-Biến toàn bộ 4 AI Agents (Scan, Audit, Hack, Fix) từ mô hình **LLM-as-Judge** (gọi API 1 lần, nhận text) thành **True ReAct Agents** với **OpenAI Function Calling**:
-
-- Agent **tự chủ động gọi tools** để thu thập thêm bằng chứng
-- Agent **tự quyết định** cần bao nhiêu bước để kết luận  
-- Giải quyết triệt để 3 gap so với CodeQL: **Aliasing**, **CFG**, **Cross-file taint**
-- Không cần tên miền hay server — tools chạy hoàn toàn **local** trên máy user
-
-## Cơ chế hoạt động (không cần domain/server)
-
-```
-Code Python sếp → Gửi messages + tool_schemas lên API
-LLM             → Trả về JSON: "Tôi muốn gọi trace_variable(x, app.py)"
-Code Python sếp → Đọc JSON → tự chạy hàm local → gửi kết quả lại LLM
-LLM             → Tiếp tục reason → gọi tool tiếp hoặc submit verdict
-```
-
-LLM không bao giờ gọi trực tiếp vào code — chỉ trả về JSON "intention", Python code tự execute.
+Nâng điểm từ ~80% → 100% ngang Argus, giải quyết 3 điểm yếu core.
 
 ---
 
-## Shared Infrastructure (dùng chung cho cả 4 agents)
+## Upgrade 1: Backward Recursion khi Data Flow bị gãy ⭐ (ưu tiên cao nhất)
 
-### [NEW] `src/audit/tools.py`
+### Vấn đề
+Scan Agent trả về `data_flow: []` → ghi `⚠ Data flow untraceable` rồi bỏ qua.
+Argus có bước "Recursion": leo ngược từ sink lên upstream caller, lấy caller cao nhất làm "surrogate sink" và trace lại.
 
-Tập hợp tất cả tool executors. Mỗi tool là Python function chạy local.
+### Cơ chế mới
 
-**6 tools:**
-
-| Tool | Input | Output | Giải quyết gap |
-|------|-------|--------|----------------|
-| `read_file` | path, start_line, end_line | Nội dung file | Context gathering |
-| `trace_variable` | var_name, file_path | Alias chain đầy đủ | **Aliasing gap** |
-| `find_function` | function_name | Full source của hàm | Cross-file gap |
-| `find_callers` | function_name | Tất cả caller locations | Call graph |
-| `search_pattern` | pattern, ext | Matches trong codebase | Sanitizer/CFG check |
-| `submit_verdict` | verdict, severity, ... | Kết thúc vòng lặp | Final answer |
-
-### [NEW] `src/audit/tool_schemas.py`
-
-JSON Schema theo chuẩn OpenAI Function Calling. Gửi kèm mỗi API request.
-
-### [NEW] `src/audit/agent_runner.py`
-
-Generic ReAct loop dùng chung cho cả 4 agents:
-
-```python
-def run_agent(system_prompt, initial_message, tools, tool_schemas,
-              target_dir, ts_module, model, max_steps):
-    messages = [system_prompt, initial_message]
-    
-    for step in range(max_steps):
-        response = client.chat.completions.create(
-            model=model,
-            messages=messages,
-            tools=tool_schemas,
-            tool_choice="auto"
-        )
-        msg = response.choices[0].message
-        messages.append(msg)
-        
-        if msg.tool_calls:
-            for tool_call in msg.tool_calls:
-                result = tools.execute_tool(
-                    tool_call.function.name,
-                    json.loads(tool_call.function.arguments),
-                    target_dir, ts_module
-                )
-                messages.append({
-                    "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": str(result)
-                })
-        else:
-            # No tool call → Agent đã kết luận
-            return parse_final_response(msg.content)
-    
-    return fallback_verdict()
+```
+SCAN AGENT → data_flow: []
+    └─→ BACKWARD RECURSION:
+            1. Lấy sink function từ finding (e.g., db.execute)
+            2. Gọi find_callers(sink_func) để tìm ai gọi nó
+            3. Lấy caller cao nhất (hoặc caller nào nhận input từ ngoài)
+            4. Dùng caller đó làm "surrogate sink" mới
+            5. Chạy lại SCAN AGENT với surrogate sink
+            6. Nối backward path + forward path → full data_flow
 ```
 
-### [MODIFY] `src/audit/tree-sitter.py`
-
-Thêm 2 functions mới:
-
-- **`resolve_aliases(file_path, var_name, ts_module)`**: AST traversal tìm alias chain
-- **`find_sanitizer_on_path(file_path, source_line, sink_line)`**: Tìm sanitizer/validator giữa 2 dòng
+### Files cần sửa
+- **`main.py`**: Thêm logic sau khi SCAN AGENT trả về `data_flow: []`:
+  - Gọi `ts_module.get_func_callers(sink_func, target_dir)` để build backward tree
+  - Retry SCAN AGENT với surrogate sink (tối đa 2 lần)
+- **`src/scan/agents/prompts.py`**: Thêm instruction "nếu không trace được từ source → sink trực tiếp, hãy thử gọi `find_callers` để tìm surrogate sinks"
+- **`src/tools/schemas.py`**: Thêm `surrogate_sink` field vào `SUBMIT_VERDICT_SCHEMA` để agent report lại khi nó không trace được
 
 ---
 
-## Agent 1: Scan Agent (Data Flow Tracer)
+## Upgrade 2: Dynamic Sink Expansion từ RAG ⭐⭐
 
-**Files:** `src/scan/agents/models.py` + `prompts.py`
+### Vấn đề
+RAG thu thập CVE của dependency → tóm tắt → chỉ truyền làm context cho Audit.
+Argus còn dùng CVE context để **LLM đề xuất thêm sink patterns mới** → inject vào tập scan.
 
-**Tools:** `read_file`, `find_function`, `find_callers`, `submit_verdict`
+### Cơ chế mới
 
-**Max steps:** 8
-
-**submit_verdict output:**
-```json
-{
-  "source_identified": true,
-  "source_variable": "user_id",
-  "sink_function": "db.execute",
-  "data_flow": [
-    {"step": 1, "variable": "user_id", "operation": "request.args.get('id')", "line": 12},
-    {"step": 2, "variable": "user_id", "operation": "passed to process_query()", "line": 15},
-    {"step": 3, "variable": "query", "operation": "f-string → db.execute()", "line": 28}
-  ],
-  "hops_traced": 3,
-  "cross_file": true
-}
 ```
+RAG AGENT hoàn thành
+    └─→ SINK EXPANSION AGENT (mới):
+            Input: CVE context + danh sách hàm trong codebase
+            Output: danh sách sink patterns bổ sung (func names / regex)
+            └─→ Inject vào Semgrep scan làm extra custom rules
+                    HOẶC chạy thêm search_pattern() queries cho mỗi sink mới
+```
+
+### Files cần sửa/tạo
+- **`src/rag/agents/sink_expander.py`** [NEW]: Agent nhỏ gọi LLM để extract "dangerous function names" từ CVE description
+- **`main.py`**: Sau RAG, collect extra sinks → chạy `search_pattern()` trên codebase cho từng sink mới → append vào `scan_findings` nếu tìm thấy
+- Không cần tạo Semgrep rule mới, dùng `search_pattern` tool của sếp là đủ
 
 ---
 
-## Agent 2: Audit Agent (Vulnerability Verifier) — PRIMARY
+## Upgrade 3: Supply Chain PoC Pre-Verification ⭐
 
-**Files:** `src/audit/agents/models.py` + `prompts.py`
+### Vấn đề
+CVE của dependency được fetch về → truyền thẳng vào Audit làm context.
+Argus verify exploitability của từng CVE dependency trước bằng PoC Agent.
 
-**Tools:** `read_file`, `trace_variable`, `find_function`, `find_callers`, `search_pattern`, `submit_verdict`
+### Cơ chế mới
 
-**Max steps:** 10
-
-**New System Prompt (key points):**
 ```
-MANDATORY STEPS BEFORE VERDICT:
-
-1. ALIAS ANALYSIS: Gọi trace_variable() trên TỪNG biến trong sink call.
-   KHÔNG được assume biến là clean khi chưa trace.
-
-2. CFG ANALYSIS: Gọi search_pattern() để tìm sanitizer giữa source và sink.
-   Sanitizer phải nằm trên TẤT CẢ paths — không chỉ 1 nhánh if.
-
-3. CROSS-FILE: Nếu sink gọi unknown function, gọi find_function() trước.
-   KHÔNG được assume unknown function là safe.
-
-4. Chỉ gọi submit_verdict() khi có BẰNG CHỨNG CỤ THỂ.
+OSV/NVD fetch CVE list
+    └─→ [per CVE] POC VERIFICATION AGENT (mới nhỏ):
+            Input: CVE description + code của dependency usage trong project
+            Output: {exploitable: true/false, confidence: 80, reasoning: "..."}
+            └─→ Filter: chỉ giữ CVE có exploitable=true hoặc confidence < 50
 ```
 
-**submit_verdict output:**
-```json
-{
-  "verdict": "VULNERABLE",
-  "severity": "CRITICAL",
-  "confidence": 95,
-  "cvss_estimate": 9.8,
-  "vuln_class": "SQL Injection",
-  "reasoning": "request.args('id') → x (alias) → query → db.execute(). Không có sanitizer trên bất kỳ path nào.",
-  "attack_vector": "GET /users?id=1' OR '1'='1"
-}
+### Files cần sửa/tạo
+- **`src/rag/agents/poc_verifier.py`** [NEW]: Gọi LLM với ReAct nhỏ, verify xem CVE này có thể exploit được trong context project hay không
+- **`main.py`**: Sau khi fetch NVD, chạy poc_verifier → filter cve_list → giảm noise cho Audit Agent
+- **`src/tools/schemas.py`**: Thêm `POC_VERIFY_TOOL_SET` dùng `read_file` + `search_pattern` + `submit_verdict`
+
+---
+
+## Giải đáp thắc mắc: Sinful SAST vs Argus Workflow
+
+Sếp đang thắc mắc là thêm 2-3 agents nữa thì có bị "thừa" so với Argus không? Câu trả lời là **KHÔNG**. Thực chất, Argus cũng có ngần ấy Agent, chỉ là họ gọi tên khác đi. Dưới đây là luồng mapping 1-1 giữa Argus và bản nâng cấp của sếp:
+
+### 1. Luồng xử lý Supply Chain (Dependencies)
+- **Argus**: Dùng **RAG** tìm CVE $\rightarrow$ Chạy **PoC Agent** để verify xem CVE đó có exploit được không $\rightarrow$ Sinh ra các **Extra Sinks** (sink mới).
+- **Sinful SAST (Plan)**: RAG Agent (đã có) $\rightarrow$ **PoC Verifier Agent (Upgrade 3)** $\rightarrow$ **Sink Expansion Agent (Upgrade 2)**.
+$\Rightarrow$ *Kết luận: 2 con agent sếp thêm vào ở Upgrade 2 & 3 chính là để cover trọn vẹn sức mạnh phần Supply Chain của Argus!*
+
+### 2. Luồng xử lý Data Flow (Re³)
+- **Argus**: **Retrieval** (dùng CodeQL tìm data flow) $\rightarrow$ **Recursion** (nếu gãy flow, lùi lại tìm caller làm surrogate sink) $\rightarrow$ **Review** (Agent chuyên review từng hop xem có bị chặn bởi if/else hay sanitizer không).
+- **Sinful SAST (Plan)**: **Scan Agent** (tương đương CodeQL Retrieval) $\rightarrow$ **Backward Recursion (Upgrade 1)** $\rightarrow$ **Audit Agent** (tương đương Review Agent).
+$\Rightarrow$ *Kết luận: Sếp không đẻ thêm Agent ở đây, sếp chỉ thêm "Logic Recursion" vào giữa con Scan và con Audit để flow không bị gãy.*
+
+### 3. Luồng xử lý sau khi phát hiện lỗi (Post-Detection)
+- **Argus**: Không đề cập sâu đến việc tự động viết patch (Fix) hay gen exploit payload cho source code chính.
+- **Sinful SAST**: Sếp có **Hack Agent** và **Fix Agent**.
+$\Rightarrow$ *Kết luận: Đây là điểm sếp ĂN ĐỨT Argus! Argus chỉ tập trung tìm lỗi, sếp làm luôn cả đoạn exploit và fix.*
+
+### 4. Tóm tắt luồng thực tế toàn bộ hệ thống của Argus (End-to-End Workflow)
+Để sếp dễ hình dung, đây là sơ đồ chạy từ đầu đến cuối của Argus được nhắc trong bài báo:
+```text
+[BƯỚC 1: SINK SCANNING - Tìm lỗ hổng thư viện]
+ 1. Dependencies Parsing: Phân tích các file cấu hình (ví dụ: pom.xml) để lấy danh sách thư viện.
+ 2. RAG Retrieval: Tìm kiếm thông tin lỗ hổng (CVE, GitHub issues) liên quan đến thư viện đó.
+ 3. PoC Agent Verification: Gọi LLM (theo dạng ReAct) để đánh giá xem lỗ hổng CVE đó có thực sự khai thác được không. Xác minh xong sẽ lưu các Sinks của thư viện lại.
+
+[BƯỚC 2: DATA FLOW ANALYSIS (Re³) - Dò tìm luồng dữ liệu độc hại]
+ 4. Retrieval (Forward Scan): Đưa các Sinks tìm được ở Bước 1 vào CodeQL để quét data flow từ Source -> Sink. Nếu thấy luồng đầy đủ, chuyển sang Review.
+ 5. Recursion (Chữa luồng gãy): Nếu CodeQL bị gãy luồng (không tìm được Source), Argus dò ngược từ Sink lên trên để tạo "Surrogate Sinks" (các hàm mồi). Sau đó chạy CodeQL quét lại từ Surrogate Sinks này.
+ 6. Review Agent: LLM Agent kiểm tra tỉ mỉ từng bước (hop-by-hop) của luồng dữ liệu xem có bị vướng if/else, try/catch hay hàm filter/sanitizer nào chặn lại không. Nếu vượt qua hết -> Báo cáo VULNERABLE.
 ```
 
 ---
 
-## Agent 3: Hack Agent (PoC Generator)
+## Thứ tự thực hiện
 
-**Files:** `src/hack/agents/models.py` + `prompts.py`
+```
+[Tuần 1] Upgrade 1: Backward Recursion
+  - Fix lỗi "Data flow untraceable" ngay lập tức
+  - Tác động cao nhất, code ít nhất
 
-**Tools:** `read_file`, `search_pattern`, `find_function`, `submit_verdict`
+[Tuần 2] Upgrade 2: Dynamic Sink Expansion
+  - Tạo src/rag/agents/sink_expander.py
+  - Sửa main.py inject extra sinks
 
-**Max steps:** 5
-
-**Mục đích tool use:** Đọc route handler → biết endpoint URL, HTTP method, auth headers → PoC thực tế hơn.
-
-**submit_verdict output:**
-```json
-{
-  "poc_type": "HTTP REQUEST",
-  "description": "SQL injection via id parameter in GET /api/users",
-  "payload": "GET /api/users?id=1' UNION SELECT username,password FROM users-- HTTP/1.1\nHost: target.com"
-}
+[Tuần 3] Upgrade 3: PoC Pre-Verification
+  - Tạo src/rag/agents/poc_verifier.py
+  - Filter CVE list trước khi audit
 ```
 
 ---
 
-## Agent 4: Fix Agent (Auto Patch Generator)
+## Lưu ý về thứ tự agent (trả lời thắc mắc của sếp)
 
-**Files:** `src/fix/agents/models.py` + `prompts.py`
+Thứ tự hiện tại: `Scan → Audit → Hack → Fix` — **ĐÃ ĐÚNG** và không cần thay đổi.
 
-**Tools:** `read_file`, `search_pattern`, `find_function`, `submit_verdict`
+Con Hack chạy sau Audit là thiết kế hợp lý:
+- Audit xác nhận VULNERABLE trước
+- Hack chỉ tốn token khi đã chắc chắn là lỗi thật
 
-**Max steps:** 5
-
-**Mục đích tool use:** Đọc codebase → biết coding style, existing sanitizer utilities → patch realistic.
-
-**submit_verdict output:**
-```json
-{
-  "explanation": "Use parameterized query. Project's db_utils.safe_query() already handles this.",
-  "patches": [
-    {
-      "file_path": "app.py",
-      "old_code": "db.execute(f\"SELECT * WHERE id={user_id}\")",
-      "new_code": "db.execute(\"SELECT * WHERE id=?\", (user_id,))"
-    }
-  ]
-}
-```
+Điều Argus làm khác là có thêm "PoC Agent" để verify CVE dependency (Upgrade 3 phía trên), không phải thay đổi thứ tự Hack Agent hiện tại của sếp.
 
 ---
 
-## Implementation Order
+## Open Questions
 
-```
-Phase 1 — Shared Infrastructure
-  ├─ [NEW] src/audit/tool_schemas.py
-  ├─ [NEW] src/audit/tools.py
-  ├─ [NEW] src/audit/agent_runner.py
-  └─ [MODIFY] src/audit/tree-sitter.py  (+resolve_aliases, +find_sanitizer_on_path)
+> **Q1:** Upgrade 1 (Backward Recursion) — Tại sao retry scan agent tối đa 2 lần mà không phải "càng nhiều càng tốt"?
+> **Giải thích:** Trong phân tích tĩnh (Static Analysis), nếu sếp lùi lại (backward) càng sâu, số lượng nhánh (paths) sẽ bùng nổ cấp số nhân (Path Explosion). Nếu retry vô hạn, LLM sẽ bị kẹt trong vòng lặp đọc file, tốn hàng chục nghìn token và rất nhiều thời gian mà chưa chắc tìm ra lỗi (vì flow gãy có thể đơn giản là do biến đó an toàn). Thực tế, 1-2 lần lùi (tương đương 1-2 function calls) là đủ để vượt qua các hàm wrapper/helper. Nếu quá 2 lần mà không thấy source, tỷ lệ cao đó là False Positive.
 
-Phase 2 — Audit Agent (PRIMARY — làm đầu tiên, test kỹ)
-  ├─ [MODIFY] src/audit/agents/prompts.py
-  └─ [MODIFY] src/audit/agents/models.py
+> **Q2:** Upgrade 2 (Sink Expansion) — Sếp muốn inject extra sinks bằng cách nào?
+> - Option A: Chạy `search_pattern()` cho mỗi sink mới tìm được từ CVE (dễ làm, không cần rule file)
+> - Option B: Tự động generate Semgrep YAML rule mới từ CVE context (mạnh hơn nhưng phức tạp hơn)
 
-Phase 3 — Scan Agent
-  ├─ [MODIFY] src/scan/agents/prompts.py
-  └─ [MODIFY] src/scan/agents/models.py
-
-Phase 4 — Hack Agent
-  ├─ [MODIFY] src/hack/agents/prompts.py
-  └─ [MODIFY] src/hack/agents/models.py
-
-Phase 5 — Fix Agent
-  ├─ [MODIFY] src/fix/agents/prompts.py
-  └─ [MODIFY] src/fix/agents/models.py
-
-Phase 6 — Wire up
-  └─ [MODIFY] main.py
-```
-
----
-
-## Files thay đổi tổng kết
-
-| File | Action | Ghi chú |
-|------|--------|---------|
-| `src/audit/tool_schemas.py` | NEW | 6 tool JSON schemas |
-| `src/audit/tools.py` | NEW | Tool executors + dispatcher |
-| `src/audit/agent_runner.py` | NEW | Generic ReAct loop |
-| `src/audit/tree-sitter.py` | MODIFY | +resolve_aliases +find_sanitizer_on_path |
-| `src/audit/agents/models.py` | MODIFY | → run_agent() |
-| `src/audit/agents/prompts.py` | MODIFY | Agentic system prompt |
-| `src/scan/agents/models.py` | MODIFY | → run_agent() |
-| `src/scan/agents/prompts.py` | MODIFY | Agentic system prompt |
-| `src/hack/agents/models.py` | MODIFY | → run_agent() |
-| `src/hack/agents/prompts.py` | MODIFY | Agentic system prompt |
-| `src/fix/agents/models.py` | MODIFY | → run_agent() |
-| `src/fix/agents/prompts.py` | MODIFY | Agentic system prompt |
-| `main.py` | MODIFY | Wire up new agent calls |
-
-**Tổng: 3 files mới + 10 files sửa**
-
----
-
-## Test Cases
-
-```python
-# Test 1 — Aliasing chain
-user_input = request.args.get("id")
-x = user_input          # alias 1
-y = x                   # alias 2
-db.execute(f"SELECT * WHERE id={y}")
-# Expected: trace_variable("y") → chain → VULNERABLE ✅
-
-# Test 2 — Sanitizer chỉ 1 nhánh (vẫn VULNERABLE)
-user_input = request.args.get("id")
-if condition:
-    user_input = escape(user_input)
-db.execute(f"SELECT * WHERE id={user_input}")
-# Expected: search_pattern tìm escape() → nhưng conditional → VULNERABLE ✅
-
-# Test 3 — Cross-file taint
-# file1.py: def get_data(): return request.args.get("id")
-# file2.py: data = get_data(); db.execute(f"...{data}")
-# Expected: find_function("get_data") → trace → VULNERABLE ✅
-
-# Test 4 — True SAFE
-user_id = int(request.args.get("id"))
-db.execute("SELECT * WHERE id=?", (user_id,))
-# Expected: trace int() sanitizer + parameterized query → SAFE ✅
-```
+> **Q3:** Upgrade 3 (PoC Verifier) — Sếp có muốn làm không? Hay chỉ làm 1 và 2 trước?

@@ -272,7 +272,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                     logger.console.print(f"  └─ [bold green]✔ {hops_count} Hops[/bold green]")
                 else:
                     finding_item["dataflow_trace"] = "No trace available"
-                    logger.console.print(f"  └─ [bold yellow]⚠ Data flow untraceable.[/bold yellow]")
+                    logger.console.print(f"  └─ [bold yellow]⚠ Data flow untraceable[/bold yellow]")
             except Exception as scan_err:
                 logger.console.print(f"  └─ [bold red]✖ Data Flow Tracing failed: {scan_err}[/bold red]")
                 finding_item["dataflow_trace"] = f"Trace Error: {scan_err}"
