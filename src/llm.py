@@ -3,36 +3,32 @@ import json
 from openai import OpenAI
 from main import MODELS
 
-def fetch_llm(prompt: str, model: str = None, is_json: bool = True):
+def create_client() -> OpenAI:
     api_key = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
+    base_url = "https://ai-based-static-application-security.onrender.com/v1"
+    return OpenAI(api_key=api_key, base_url=base_url)
 
-    # client = OpenAI(
-    #     api_key=api_key,
-    #     base_url="http://localhost:8000/v1"
-    # )
-    client = OpenAI(
-        api_key=api_key,
-        base_url="https://ai-based-static-application-security.onrender.com/v1"
-    )
+def fetch_llm(prompt_text: str, model_name: str = None, is_json: bool = True):
+    api_client = create_client()
 
-    fallback = list(MODELS)
-    if model:
-        if model in fallback:
-            fallback.remove(model)
-        fallback.insert(0, model)
+    model_fallback = list(MODELS)
+    if model_name:
+        if model_name in model_fallback:
+            model_fallback.remove(model_name)
+        model_fallback.insert(0, model_name)
 
-    error = ""
-    for target_model in fallback:
+    last_error = ""
+    for target_model in model_fallback:
         try:
-            kwargs = {
+            req_kwargs = {
                 "model": target_model,
-                "messages": [{"role": "system", "content": prompt}],
+                "messages": [{"role": "system", "content": prompt_text}],
             }
             if is_json:
-                kwargs["response_format"] = {"type": "json_object"}
+                req_kwargs["response_format"] = {"type": "json_object"}
 
-            response = client.chat.completions.create(**kwargs)
-            raw_text = response.choices[0].message.content.strip()
+            api_resp = api_client.chat.completions.create(**req_kwargs)
+            raw_text = api_resp.choices[0].message.content.strip()
             
             if is_json:
                 if raw_text.startswith("```json"):
@@ -47,9 +43,41 @@ def fetch_llm(prompt: str, model: str = None, is_json: bool = True):
                 return raw_text, target_model
 
         except Exception as api_err:
-            error = str(api_err)
+            last_error = str(api_err)
             continue
 
     if not is_json:
-        return f"[!] Error: All fallback models failed. Last error: {error}", "None"
-    raise RuntimeError(f"[!] Error: All fallback models failed. Last error: {error}")
+        return f"[!] Error: All fallback models failed. Last error: {last_error}", "None"
+    raise RuntimeError(f"[!] Error: All fallback models failed. Last error: {last_error}")
+
+
+def fetch_llm_tools(
+    msg_history: list,
+    tool_schemas: list,
+    model_name: str = None,
+    tool_choice: str = "auto",
+):
+    api_client = create_client()
+
+    model_fallback = list(MODELS)
+    if model_name:
+        if model_name in model_fallback:
+            model_fallback.remove(model_name)
+        model_fallback.insert(0, model_name)
+
+    last_error = ""
+    for target_model in model_fallback:
+        try:
+            api_resp = api_client.chat.completions.create(
+                model=target_model,
+                messages=msg_history,
+                tools=tool_schemas,
+                tool_choice=tool_choice,
+            )
+            return api_resp.choices[0].message, target_model
+
+        except Exception as api_err:
+            last_error = str(api_err)
+            continue
+
+    raise RuntimeError(f"[!] fetch_llm_tools: All fallback models failed. Last error: {last_error}")

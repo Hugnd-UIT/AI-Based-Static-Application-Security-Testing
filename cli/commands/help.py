@@ -1,7 +1,7 @@
 from cli.views.console import console
 
 
-def show_help():
+def display_help():
 
     console.print("\n[bold orange1]Available commands:[/bold orange1]")
     console.print(

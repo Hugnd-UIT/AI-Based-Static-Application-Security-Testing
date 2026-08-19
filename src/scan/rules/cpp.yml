@@ -6,7 +6,7 @@ rules:
     languages: [c, cpp]
 
     pattern-sources:
-      # ── Standard I/O ──────────────────────────────────────────────
+      # Standard I/O 
       - pattern: getenv(...)
       - pattern: gets(...)
       - pattern: fgets(...)
@@ -21,17 +21,17 @@ rules:
       - pattern: getchar()
       - pattern: getc(...)
       - pattern: fgetc(...)
-      # ── Network ───────────────────────────────────────────────────
+      # Network 
       - pattern: accept(...)
       - pattern: select(...)
       - pattern: epoll_wait(...)
-      # ── C++ streams ───────────────────────────────────────────────
+      # C++ streams 
       - pattern: std::cin
       - pattern: std::getline(...)
       - pattern: std::cin >> $VAR
 
     pattern-sinks:
-      # ── Command Injection ─────────────────────────────────────────
+      # Command Injection 
       - pattern: system(...)
       - pattern: popen(...)
       - pattern: exec(...)
@@ -43,7 +43,7 @@ rules:
       - pattern: execvpe(...)
       - pattern: execve(...)
       - pattern: posix_spawn(...)
-      # ── Format String ─────────────────────────────────────────────
+      # Format String 
       - pattern: printf(...)
       - pattern: fprintf(...)
       - pattern: sprintf(...)
@@ -54,7 +54,7 @@ rules:
       - pattern: syslog(...)
       - pattern: err(...)
       - pattern: errx(...)
-      # ── Buffer Overflow ───────────────────────────────────────────
+      # Buffer Overflow 
       - pattern: strcpy(...)
       - pattern: strcat(...)
       - pattern: strncpy(...)
@@ -65,7 +65,7 @@ rules:
       - pattern: stpcpy(...)
       - pattern: wcscpy(...)
       - pattern: wcscat(...)
-      # ── File / Path Access ────────────────────────────────────────
+      # File / Path Access 
       - pattern: fopen(...)
       - pattern: open(...)
       - pattern: creat(...)
@@ -73,19 +73,19 @@ rules:
       - pattern: unlink(...)
       - pattern: remove(...)
       - pattern: rename(...)
-      # ── Heap ──────────────────────────────────────────────────────
+      # Heap 
       - pattern: malloc(...)
       - pattern: realloc(...)
       - pattern: alloca(...)
 
     pattern-sanitizers:
-      # Format string safe alternatives
+      # Format string safe alternatives 
       - pattern: snprintf($BUF, sizeof($BUF), "%s", ...)
-      # Safe string ops
+      # Safe string ops 
       - pattern: strlcpy(...)
       - pattern: strlcat(...)
       - pattern: strdup(...)
-      # Input validation
+      # Input validation 
       - pattern: atoi(...)
       - pattern: strtol(...)
       - pattern: strtoul(...)

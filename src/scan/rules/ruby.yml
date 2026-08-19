@@ -6,7 +6,7 @@ rules:
     languages: [ruby]
 
     pattern-sources:
-      # ── Rails ─────────────────────────────────────────────────────
+      # Rails 
       - pattern: params[...]
       - pattern: params.require(...)
       - pattern: params.permit(...)
@@ -18,15 +18,15 @@ rules:
       - pattern: request.request_parameters[...]
       - pattern: request.path_parameters[...]
       - pattern: request.raw_post
-      # ── Sinatra ───────────────────────────────────────────────────
+      # Sinatra 
       - pattern: env[...]
-      # ── General ───────────────────────────────────────────────────
+      # General 
       - pattern: ENV[...]
       - pattern: ARGV[...]
       - pattern: $stdin.gets
 
     pattern-sinks:
-      # ── SQL Injection ─────────────────────────────────────────────
+      # SQL Injection 
       - pattern: $DB.execute(...)
       - pattern: ActiveRecord::Base.connection.execute(...)
       - pattern: $MODEL.find_by_sql(...)
@@ -36,53 +36,53 @@ rules:
       - pattern: $MODEL.having(...)
       - pattern: $MODEL.order(...)
       - pattern: $MODEL.group(...)
-      # ── Command Injection ─────────────────────────────────────────
+      # Command Injection 
       - pattern: system(...)
       - pattern: exec(...)
-      - pattern: "`#{...}`"
+      - pattern: "`#{...}`" 
       - pattern: "%x{...}"
       - pattern: Open3.popen3(...)
       - pattern: Open3.capture3(...)
       - pattern: IO.popen(...)
       - pattern: Kernel.exec(...)
       - pattern: Kernel.system(...)
-      # ── Code Execution / Deserialization ──────────────────────────
+      # Code Execution / Deserialization 
       - pattern: eval(...)
       - pattern: Marshal.load(...)
       - pattern: Marshal.restore(...)
       - pattern: YAML.load(...)
       - pattern: Kernel.load(...)
-      # ── Path Traversal / File Access ──────────────────────────────
+      # Path Traversal / File Access 
       - pattern: File.open(...)
       - pattern: File.read(...)
       - pattern: IO.read(...)
       - pattern: File.write(...)
       - pattern: File.delete(...)
       - pattern: Pathname.new(...)
-      # ── SSRF ──────────────────────────────────────────────────────
+      # SSRF 
       - pattern: Net::HTTP.get(...)
       - pattern: open(...)
       - pattern: URI.open(...)
       - pattern: Faraday.get(...)
       - pattern: HTTParty.get(...)
-      # ── XSS / Open Redirect ───────────────────────────────────────
+      # XSS / Open Redirect 
       - pattern: render inline: ...
       - pattern: redirect_to(...)
 
     pattern-sanitizers:
-      # SQL (use ActiveRecord parameterization)
+      # SQL use ActiveRecord parameterization 
       - pattern: $MODEL.sanitize(...)
       - pattern: ActiveRecord::Base.sanitize_sql(...)
-      # HTML
+      # HTML 
       - pattern: CGI.escapeHTML(...)
       - pattern: ERB::Util.html_escape(...)
       - pattern: Rack::Utils.escape_html(...)
-      # Path
+      # Path 
       - pattern: File.basename(...)
       - pattern: Pathname.new(...).basename
-      # URL
+      # URL 
       - pattern: CGI.escape(...)
       - pattern: URI.encode_www_form_component(...)
-      # Type casting
+      # Type casting 
       - pattern: Integer(...)
       - pattern: Float(...)

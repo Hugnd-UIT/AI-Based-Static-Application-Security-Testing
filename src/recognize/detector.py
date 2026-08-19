@@ -39,7 +39,7 @@ EXCLUDES = {
     "obj",
 }
 
-def detect(target_path: str) -> Dict[str, int]:
+def detect_langs(target_path: str) -> Dict[str, int]:
     dir_path = Path(target_path)
 
     if not dir_path.exists() or not dir_path.is_dir():
@@ -61,9 +61,9 @@ def detect(target_path: str) -> Dict[str, int]:
 
 import subprocess
 
-def get_versions(lang_counts: Dict[str, int]) -> Dict[str, str]:
-    versions = {}
-    cmds = {
+def get_lang_versions(lang_counts: Dict[str, int]) -> Dict[str, str]:
+    lang_versions = {}
+    cmd_list = {
         "php": ["php", "-v"],
         "javascript": ["node", "-v"],
         "typescript": ["node", "-v"],
@@ -76,24 +76,23 @@ def get_versions(lang_counts: Dict[str, int]) -> Dict[str, str]:
         "c++": ["g++", "--version"],
     }
     
-    for lang in lang_counts.keys():
-        if lang in cmds:
+    for lang_name in lang_counts.keys():
+        if lang_name in cmd_list:
             try:
-                cmd_result = subprocess.run(cmds[lang], capture_output=True, text=True, timeout=5)
-                # stdout for python/node/php/go, stderr for java
-                output = cmd_result.stdout.strip() if cmd_result.stdout.strip() else cmd_result.stderr.strip()
-                if output:
-                    versions[lang] = output.split('\n')[0].strip()
+                cmd_result = subprocess.run(cmd_list[lang_name], capture_output=True, text=True, timeout=5)
+                cmd_output = cmd_result.stdout.strip() if cmd_result.stdout.strip() else cmd_result.stderr.strip()
+                if cmd_output:
+                    lang_versions[lang_name] = cmd_output.split('\n')[0].strip()
                 else:
-                    versions[lang] = "Unknown"
+                    lang_versions[lang_name] = "Unknown"
             except (FileNotFoundError, subprocess.TimeoutExpired):
-                versions[lang] = "Not Installed"
+                lang_versions[lang_name] = "Not Installed"
                 
-    return versions
+    return lang_versions
 
 from cli.views import logger
 
-def report(lang_counts: Dict[str, int], lang_versions: Dict[str, str] = None):
+def report_langs(lang_counts: Dict[str, int], lang_versions: Dict[str, str] = None):
     logger.section("LANGUAGES")
 
     if not lang_counts:
@@ -101,15 +100,15 @@ def report(lang_counts: Dict[str, int], lang_versions: Dict[str, str] = None):
         return
 
     from cli.views.logger import console
-    sorted_langs = sorted(lang_counts.items(), key=lambda item: item[1], reverse=True)
+    sorted_langs = sorted(lang_counts.items(), key=lambda lang_item: lang_item[1], reverse=True)
     
     console.print(f"  [cyan]{len(lang_counts)}[/cyan] languages detected")
     console.print()
     for lang_name, file_count in sorted_langs:
         version_str = ""
         if lang_versions and lang_name in lang_versions:
-            v = lang_versions[lang_name]
-            v_short = v[:30] + "..." if len(v) > 30 else v
-            version_str = f" [dim] - Runtime: {v_short}[/dim]"
+            lang_ver = lang_versions[lang_name]
+            short_ver = lang_ver[:30] + "..." if len(lang_ver) > 30 else lang_ver
+            version_str = f" [dim] - Runtime: {short_ver}[/dim]"
             
-        console.print(f"  ├─ [yellow]{lang_name.capitalize()}[/yellow]: {file_count} files{version_str}")
+        console.print(f"  "o"? [yellow]{lang_name.capitalize()}[/yellow]: {file_count} files{version_str}")

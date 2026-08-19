@@ -14,16 +14,16 @@ ECO = {
     "nuget": "NuGet",
 }
 
-def check(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+def check_osv_vulns(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
     if not parsed_deps:
         return []
 
     query_list = []
 
     for dep_item in parsed_deps:
-        ecosystem = ECO.get(dep_item["ecosystem"], dep_item["ecosystem"])
+        ecosystem_name = ECO.get(dep_item["ecosystem"], dep_item["ecosystem"])
         query_dict = {
-            "package": {"name": dep_item["package"], "ecosystem": ecosystem},
+            "package": {"name": dep_item["package"], "ecosystem": ecosystem_name},
             "version": dep_item["version"],
         }
         query_list.append(query_dict)
@@ -72,12 +72,12 @@ def check(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
 
 from cli.views import logger
 
-def report(vuln_list: List[Dict[str, Any]]):
+def report_osv(vuln_list: List[Dict[str, Any]]):
     logger.section("OSV")
 
     from cli.views.logger import console
     if not vuln_list:
-        console.print("  [green]✓ No known vulnerabilities found in dependencies[/green]")
+        console.print("  [green]o" No known vulnerabilities found in dependencies[/green]")
         return
 
     console.print(f"     [bold]{len(vuln_list)} vulnerabilities detected[/bold]")
@@ -92,7 +92,7 @@ def report(vuln_list: List[Dict[str, Any]]):
         vuln_groups[pkg_name].append(vuln_item)
 
     for pkg_name, issue_list in vuln_groups.items():
-        console.print(f"  [magenta]📦 {pkg_name}[/magenta]")
+        console.print(f"  [magenta]dY" {pkg_name}[/magenta]")
 
         for loop_idx, issue_item in enumerate(issue_list):
             cve_str = ", ".join(c for c in issue_item["cve"] if str(c).startswith("CVE"))
@@ -101,7 +101,7 @@ def report(vuln_list: List[Dict[str, Any]]):
             summary_text = issue_item['summary'][:80] + "..." if len(issue_item['summary']) > 80 else issue_item['summary']
             
             is_last = (loop_idx == len(issue_list) - 1)
-            display_prefix = "  └─" if is_last else "  ├─"
+            display_prefix = "  """?" if is_last else "  "o"?"
             
             console.print(f"{display_prefix} [red]{vuln_id}{display_cve}[/red]: {summary_text}")
         

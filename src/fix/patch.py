@@ -1,42 +1,40 @@
-def apply_patch(file_content: str, old_code: str, new_code: str) -> str:
+def replace_code_string(file_content: str, old_code: str, new_code: str) -> str:
     if old_code in file_content:
         return file_content.replace(old_code, new_code, 1)
         
-    old_lines = [l.strip() for l in old_code.strip().split('\n')]
+    old_lines = [line.strip() for line in old_code.strip().split('\n')]
     file_lines = file_content.split('\n')
     
     if old_lines:
-        for i in range(len(file_lines) - len(old_lines) + 1):
-            match = True
-            for j, old_l in enumerate(old_lines):
-                if file_lines[i+j].strip() != old_l:
-                    match = False
+        for line_idx in range(len(file_lines) - len(old_lines) + 1):
+            is_match = True
+            for list_idx, old_line in enumerate(old_lines):
+                if file_lines[line_idx+list_idx].strip() != old_line:
+                    is_match = False
                     break
-            if match:
-                before = '\n'.join(file_lines[:i])
-                after = '\n'.join(file_lines[i+len(old_lines):])
+            if is_match:
+                before_code = '\n'.join(file_lines[:line_idx])
+                after_code = '\n'.join(file_lines[line_idx+len(old_lines):])
                 
-                # Try to preserve indentation of the first line if new_code is missing it
-                orig_indent = file_lines[i][:len(file_lines[i]) - len(file_lines[i].lstrip())]
+                orig_indent = file_lines[line_idx][:len(file_lines[line_idx]) - len(file_lines[line_idx].lstrip())]
                 new_lines = new_code.strip('\n').split('\n')
                 
-                # If AI didn't indent the first line, add it
                 if new_lines and len(new_lines[0]) - len(new_lines[0].lstrip()) == 0:
-                    new_lines = [orig_indent + l for l in new_lines]
+                    new_lines = [orig_indent + line for line in new_lines]
                     new_code_indented = '\n'.join(new_lines)
                 else:
                     new_code_indented = new_code.strip('\n')
                     
-                return before + ('\n' if before else '') + new_code_indented + ('\n' if after else '') + after
+                return before_code + ('\n' if before_code else '') + new_code_indented + ('\n' if after_code else '') + after_code
 
     raise ValueError("Could not find exact match for 'old_code' in the file.")
 
-def patch(file_path: str, old_code: str, new_code: str) -> bool:
+def apply_code_patch(file_path: str, old_code: str, new_code: str) -> bool:
     try:
         with open(file_path, "r", encoding="utf-8") as file_obj:
             file_content = file_obj.read()
 
-        new_content = apply_patch(file_content, old_code, new_code)
+        new_content = replace_code_string(file_content, old_code, new_code)
 
         with open(file_path, "w", encoding="utf-8") as file_obj:
             file_obj.write(new_content)

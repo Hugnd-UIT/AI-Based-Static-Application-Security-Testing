@@ -3,36 +3,36 @@ import re
 from pathlib import Path
 from typing import List, Dict, Any
 
-def check(target_dir: str, cve_list: List[Dict[str, Any]], ts_module) -> List[Dict[str, Any]]:
+def check_code_usage(target_dir: str, cve_list: List[Dict[str, Any]], ts_module) -> List[Dict[str, Any]]:
     if not cve_list or not os.path.exists(target_dir):
         return cve_list
 
-    for cve in cve_list:
-        text = cve.get("summary", "") + "\n" + cve.get("details", "")
-        tokens = set()
+    for cve_item in cve_list:
+        cve_text = cve_item.get("summary", "") + "\n" + cve_item.get("details", "")
+        cve_tokens = set()
         
-        for t in re.findall(r'`([^`]+)`', text):
-            t = t.strip()
-            if '(' in t: t = t.split('(')[0]
-            if '.' in t: t = t.split('.')[-1]
-            if re.match(r'^[a-zA-Z_]\w*$', t) and len(t) > 2:
-                tokens.add(t)
+        for text_token in re.findall(r'`([^`]+)`', cve_text):
+            text_token = text_token.strip()
+            if '(' in text_token: text_token = text_token.split('(')[0]
+            if '.' in text_token: text_token = text_token.split('.')[-1]
+            if re.match(r'^[a-zA-Z_]\w*$', text_token) and len(text_token) > 2:
+                cve_tokens.add(text_token)
 
-        if not tokens:
-            cve["reachable"] = True
+        if not cve_tokens:
+            cve_item["reachable"] = True
             continue
 
-        reachable = False
-        for t in tokens:
-            for ext, lang in ts_module.LANG.items():
-                ts_parser = ts_module.Parser(ts_module.Language(lang))
-                caller_ctx = ts_module.find_global_callers(target_dir, t, ext, ts_parser)
+        is_reachable = False
+        for text_token in cve_tokens:
+            for file_ext, lang_name in ts_module.LANG.items():
+                ts_parser = ts_module.Parser(ts_module.Language(lang_name))
+                caller_ctx = ts_module.find_global_callers(target_dir, text_token, file_ext, ts_parser)
                 if caller_ctx:
-                    reachable = True
+                    is_reachable = True
                     break
-            if reachable:
+            if is_reachable:
                 break
 
-        cve["reachable"] = reachable
+        cve_item["reachable"] = is_reachable
 
     return cve_list

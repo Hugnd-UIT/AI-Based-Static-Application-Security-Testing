@@ -3,7 +3,7 @@ from rich.syntax import Syntax
 from cli.views.console import console
 import difflib
 
-def show_diff(target_path: str, old_code: str, new_code: str):
+def display_diff(target_path: str, old_code: str, new_code: str):
     diff_lines = list(
         difflib.unified_diff(
             old_code.splitlines(keepends=True),

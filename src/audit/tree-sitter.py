@@ -154,25 +154,25 @@ def is_func(node_kind: str) -> bool:
         or "method" in node_kind
     )
 
-def has_src(file_content: bytes, curr_node) -> bool:
+def has_source(file_content: bytes, curr_node) -> bool:
     try:
         node_text = file_content[curr_node.start_byte:curr_node.end_byte].decode("utf-8", errors="ignore")
-        return any(src in node_text for src in SOURCES)
+        return any(source_str in node_text for source_str in SOURCES)
     except Exception:
         return False
 
 def has_sink(file_content: bytes, curr_node) -> bool:
     try:
         node_text = file_content[curr_node.start_byte:curr_node.end_byte].decode("utf-8", errors="ignore")
-        return any(sink in node_text for sink in SINKS)
+        return any(sink_str in node_text for sink_str in SINKS)
     except Exception:
         return False
 
-def collect_tainted_functions(target_dir: str) -> dict:
+def get_tainted_funcs(target_dir: str) -> dict:
     tainted_funcs = {}
 
-    for root_dir, subdirs, file_list in os.walk(target_dir):
-        subdirs[:] = [d for d in subdirs if d not in {".git", "node_modules", "vendor", ".venv", "__pycache__"}]
+    for root_dir, sub_dirs, file_list in os.walk(target_dir):
+        sub_dirs[:] = [d for d in sub_dirs if d not in {".git", "node_modules", "vendor", ".venv", "__pycache__"}]
 
         for file_name in file_list:
             file_ext = Path(file_name).suffix.lower()
@@ -188,32 +188,32 @@ def collect_tainted_functions(target_dir: str) -> dict:
                 ts_parser = Parser(Language(LANG[file_ext]))
                 parsed_tree = ts_parser.parse(file_content)
 
-                def traverse(curr_node):
+                def traverse_tree(curr_node):
                     node_kind = curr_node.type.lower()
-                    if is_func(node_kind) and has_src(file_content, curr_node):
+                    if is_func(node_kind) and has_source(file_content, curr_node):
                         func_name = get_node_name(curr_node, file_content)
                         func_code = file_content[curr_node.start_byte:curr_node.end_byte].decode("utf-8", errors="ignore")
                         if func_name and func_name not in tainted_funcs:
                             tainted_funcs[func_name] = {"file": str(file_path), "code": func_code[:800]}
                     for child_node in curr_node.children:
-                        traverse(child_node)
+                        traverse_tree(child_node)
 
-                traverse(parsed_tree.root_node)
+                traverse_tree(parsed_tree.root_node)
 
             except Exception:
                 pass
 
     return tainted_funcs
 
-def find_cross_file_sinks(target_dir: str, tainted_funcs: dict) -> str:
+def find_cross_sinks(target_dir: str, tainted_funcs: dict) -> str:
     if not tainted_funcs:
         return ""
 
     cross_paths = []
     tainted_names = set(tainted_funcs.keys())
 
-    for root_dir, subdirs, file_list in os.walk(target_dir):
-        subdirs[:] = [d for d in subdirs if d not in {".git", "node_modules", "vendor", ".venv", "__pycache__"}]
+    for root_dir, sub_dirs, file_list in os.walk(target_dir):
+        sub_dirs[:] = [d for d in sub_dirs if d not in {".git", "node_modules", "vendor", ".venv", "__pycache__"}]
 
         for file_name in file_list:
             file_ext = Path(file_name).suffix.lower()
@@ -242,16 +242,15 @@ def find_cross_file_sinks(target_dir: str, tainted_funcs: dict) -> str:
                         parent_func_node = curr_node
 
                     if ("call" in node_kind or "invocation" in node_kind) and parent_func_node:
-                        # Find the identifier of the function being called
                         call_ident = None
-                        for child in curr_node.children:
-                            if child.type == "identifier":
-                                call_ident = child
+                        for child_node in curr_node.children:
+                            if child_node.type == "identifier":
+                                call_ident = child_node
                                 break
-                            elif child.type in ("attribute", "member_expression"):
-                                for gchild in child.children:
-                                    if gchild.type == "property_identifier" or gchild.type == "identifier":
-                                        call_ident = gchild
+                            elif child_node.type in ("attribute", "member_expression"):
+                                for gchild_node in child_node.children:
+                                    if gchild_node.type == "property_identifier" or gchild_node.type == "identifier":
+                                        call_ident = gchild_node
                                         
                         if call_ident:
                             func_called = file_content[call_ident.start_byte:call_ident.end_byte].decode("utf-8", errors="ignore")
@@ -282,11 +281,11 @@ def build_context(target_dir: str) -> str:
     if not target_dir or not Path(target_dir).exists():
         return ""
 
-    tainted_funcs = collect_tainted_functions(target_dir)
+    tainted_funcs = get_tainted_funcs(target_dir)
     if not tainted_funcs:
         return ""
 
-    return find_cross_file_sinks(target_dir, tainted_funcs)
+    return find_cross_sinks(target_dir, tainted_funcs)
 
 
 def extract_context(
@@ -359,8 +358,8 @@ def extract_chunk(file_path: Path, start_line: int, end_line: int, padding_lines
     return "".join(file_lines[start_idx:end_idx])
 
 def get_func_code(target_dir: str, target_func: str) -> str:
-    for root_dir, subdirs, file_list in os.walk(target_dir):
-        subdirs[:] = [d for d in subdirs if d not in {".git", "node_modules", "vendor", ".venv", "__pycache__"}]
+    for root_dir, sub_dirs, file_list in os.walk(target_dir):
+        sub_dirs[:] = [d for d in sub_dirs if d not in {".git", "node_modules", "vendor", ".venv", "__pycache__"}]
         for file_name in file_list:
             file_ext = Path(file_name).suffix.lower()
             if file_ext not in LANG: continue
@@ -392,3 +391,122 @@ def get_func_code(target_dir: str, target_func: str) -> str:
             except Exception:
                 pass
     return f"// Function {target_func}() not found in the repository."
+
+def resolve_aliases(file_path: str, var_name: str) -> str:
+    import re
+
+    dir_path = Path(file_path)
+    if not dir_path.exists():
+        return f"File not found: {file_path}"
+
+    file_ext = dir_path.suffix.lower()
+
+    if file_ext not in LANG:
+        with open(dir_path, "r", encoding="utf-8", errors="replace") as file_handle:
+            file_lines = file_handle.readlines()
+        regex_pattern = re.compile(rf"\b{re.escape(var_name)}\b")
+        match_hits = [(idx + 1, line_text.rstrip()) for idx, line_text in enumerate(file_lines) if regex_pattern.search(line_text)]
+        if not match_hits:
+            return ""
+        return "\n".join(f"  line {line_num:4d}: {code_snippet}" for line_num, code_snippet in match_hits[:30])
+
+    try:
+        with open(dir_path, "rb") as file_handle:
+            source_code = file_handle.read()
+
+        ts_parser = Parser(Language(LANG[file_ext]))
+        parsed_tree = ts_parser.parse(source_code)
+
+        alias_chain = []
+        var_bytes = var_name.encode("utf-8")
+
+        def visit_node(curr_node):
+            if curr_node.type in (
+                "assignment", "augmented_assignment",
+                "variable_declarator", "local_variable_declaration",
+                "expression_statement",
+            ):
+                node_text = source_code[curr_node.start_byte:curr_node.end_byte]
+                if var_bytes in node_text:
+                    code_snippet = node_text.decode("utf-8", errors="ignore").strip()
+                    alias_chain.append((curr_node.start_point[0] + 1, code_snippet[:120]))
+
+            for child_node in curr_node.children:
+                visit_node(child_node)
+
+        visit_node(parsed_tree.root_node)
+
+        if not alias_chain:
+            return ""
+
+        output_lines = [f"  line {line_num:4d}: {code_snippet}" for line_num, code_snippet in alias_chain]
+        return "\n".join(output_lines)
+
+    except Exception as parse_err:
+        return f"[resolve_aliases error] {parse_err}"
+
+
+def find_sanitizer_path(
+    file_path: str,
+    source_line: int,
+    sink_line: int,
+) -> str:
+    import re
+
+    dir_path = Path(file_path)
+    if not dir_path.exists():
+        return f"File not found: {file_path}"
+
+    try:
+        with open(dir_path, "r", encoding="utf-8", errors="replace") as file_handle:
+            all_lines = file_handle.readlines()
+    except Exception as read_err:
+        return f"[find_sanitizer_path error] {read_err}"
+
+    start_idx = max(0, source_line - 1)
+    end_idx   = min(len(all_lines), sink_line)
+    code_region = all_lines[start_idx:end_idx]
+
+    match_hits = []
+    for loop_idx, line_text in enumerate(code_region, start=source_line):
+        for sanitizer_keyword in SANITIZERS:
+            if re.search(sanitizer_keyword, line_text, re.IGNORECASE):
+                stripped_text = line_text.strip()
+                is_conditional = stripped_text.startswith(("if ", "elif ", "else:", "except", "try:"))
+                indent_level = len(line_text) - len(line_text.lstrip())
+                match_hits.append({
+                    "line": loop_idx,
+                    "text": stripped_text[:100],
+                    "sanitizer": sanitizer_keyword,
+                    "conditional": is_conditional,
+                    "indent": indent_level,
+                })
+                break
+
+    if not match_hits:
+        return (
+            f"[NO SANITIZER] No sanitizer detected between lines "
+            f"{source_line}-{sink_line} in {dir_path.name}. "
+            "Taint path is likely unguarded."
+        )
+
+    all_conditional = all(hit["conditional"] or hit["indent"] > 0 for hit in match_hits)
+
+    summary_lines = [
+        f"[SANITIZER ANALYSIS] {dir_path.name} lines {source_line}-{sink_line}:"
+    ]
+    for hit_item in match_hits:
+        flag_type = "CONDITIONAL" if hit_item["conditional"] else "ON-PATH"
+        summary_lines.append(f"  line {hit_item['line']:4d} [{flag_type}] {hit_item['text']}")
+
+    if all_conditional:
+        summary_lines.append(
+            "  WARNING: All sanitizers are inside conditional branches "
+            "- taint may reach sink on the unsanitized path."
+        )
+    else:
+        summary_lines.append(
+            "  At least one sanitizer is on the direct execution path."
+        )
+
+    return "\n".join(summary_lines)

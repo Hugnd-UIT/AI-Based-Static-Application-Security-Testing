@@ -4,11 +4,9 @@ import subprocess
 import argparse
 from pathlib import Path
 
-# Add project root to path
 ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(ROOT_DIR))
 
-# Use rich for UI
 try:
     from rich.console import Console
     from rich.panel import Panel
@@ -17,34 +15,34 @@ except ImportError:
     print("Error: Required 'rich' library is not installed.")
     sys.exit(1)
 
-def print_header():
+def display_cd_header():
     console.print()
     console.print(Panel(
-        "[bold cyan]SINFUL SAST · CD[/bold cyan]\n[dim]Continuous Deployment[/dim]",
+        "[bold cyan]SINFUL SAST - CD[/bold cyan]\n[dim]Continuous Deployment[/dim]",
         border_style="cyan",
         expand=False
     ))
     console.print()
 
-def print_workflow_failed(cmd, exit_code, reason):
+def display_cd_failure(deploy_cmd, exit_code, reason_msg):
     console.print("[cyan]━━━ CD WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
     console.print("Environment     [green]✓ VERIFIED[/green]")
-    if cmd:
-        console.print(f"Command         [dim]{cmd}[/dim]")
+    if deploy_cmd:
+        console.print(f"Command         [dim]{deploy_cmd}[/dim]")
     console.print("Preparation     [green]✓ COMPLETED[/green]")
     console.print("Deployment      [red]✖ FAILED[/red]")
     console.print("Deployment Gate [red]✖ FAILED[/red]\n")
     console.print("[cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
     console.print("[bold red]✖ CD WORKFLOW FAILED[/bold red]\n")
-    console.print(f"{reason}")
+    console.print(f"{reason_msg}")
     console.print("Deployment stopped.\n")
     console.print(f"[dim]Exit code: {exit_code}[/dim]")
     sys.exit(exit_code)
 
-def start_cd(command):
-    print_header()
+def start_cd_workflow(deploy_cmd):
+    display_cd_header()
 
-    if not command:
+    if not deploy_cmd:
         console.print("[cyan]━━━ CD WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
         console.print("[red]✖ Deployment command not provided.[/red]\n")
         console.print("Usage:\n[dim]python cli/pipeline/cd.py --cmd \"<deployment-command>\"[/dim]")
@@ -52,22 +50,22 @@ def start_cd(command):
         
     console.print("[cyan]━━━ CD WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
     console.print("Environment     [green]✓ VERIFIED[/green]")
-    console.print(f"Command         [dim]{command}[/dim]")
+    console.print(f"Command         [dim]{deploy_cmd}[/dim]")
     console.print("Preparation     [green]✓ COMPLETED[/green]")
     console.print("Deployment      [cyan]● RUNNING[/cyan]\n")
 
     try:
-        process = subprocess.Popen(
-            command, 
+        run_process = subprocess.Popen(
+            deploy_cmd, 
             shell=True, 
             stdout=sys.stdout, 
             stderr=sys.stderr
         )
-        process.communicate()
+        run_process.communicate()
         
-        if process.returncode != 0:
+        if run_process.returncode != 0:
             console.print()
-            print_workflow_failed(command, process.returncode, f"Deployment command exited with code {process.returncode}.")
+            display_cd_failure(deploy_cmd, run_process.returncode, f"Deployment command exited with code {run_process.returncode}.")
         else:
             console.print("\n[cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
             console.print("Deployment Gate [green]✓ PASSED[/green]\n")
@@ -76,13 +74,13 @@ def start_cd(command):
             console.print("Deployment completed successfully.\n")
             console.print("[dim]Exit code: 0[/dim]")
             
-    except Exception as e:
+    except Exception as run_err:
         console.print()
-        print_workflow_failed(command, 1, f"Deployment encountered an error: {e}")
+        display_cd_failure(deploy_cmd, 1, f"Deployment encountered an error: {run_err}")
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="Sinful SAST CD Wrapper")
-    parser.add_argument("--cmd", type=str, help="Actual deployment command to run (e.g., 'npx vercel --prod')", default="")
-    args = parser.parse_args()
+    arg_parser = argparse.ArgumentParser(description="Sinful SAST CD Wrapper")
+    arg_parser.add_argument("--cmd", type=str, help="Actual deployment command to run (e.g., 'npx vercel --prod')", default="")
+    cli_args = arg_parser.parse_args()
     
-    start_cd(args.cmd)
+    start_cd_workflow(cli_args.cmd)

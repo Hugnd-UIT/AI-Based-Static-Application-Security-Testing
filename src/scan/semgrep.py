@@ -4,38 +4,33 @@ from pathlib import Path
 from typing import Dict, List, Any
 
 RULES = [
-    # ── Core Security ─────────────────────────────────────────────
-    "p/owasp-top-ten",          # OWASP Top 10 coverage
-    "p/security-audit",         # General security audit
-    "p/secrets",                # Hardcoded secrets & API keys
-    "p/default",                # Semgrep's own recommended ruleset
-    # ── Vulnerability-specific ────────────────────────────────────
-    "p/xss",                    # Cross-site Scripting
-    "p/sql-injection",          # SQL Injection
-    "p/command-injection",      # Command Injection / OS injection
-    "p/insecure-transport",     # HTTP, weak TLS, cleartext creds
-    # ── Supply Chain & Dependencies ───────────────────────────────
-    "p/supply-chain",           # Dependency confusion, typosquatting
-    # ── Language / Framework packs ────────────────────────────────
-    "p/python",                 # Python-specific patterns
-    "p/django",                 # Django security rules
-    "p/flask",                  # Flask security rules
-    "p/fastapi",                # FastAPI security rules
-    "p/nodejs",                 # Node.js / Express patterns
-    "p/javascript",             # JavaScript-specific patterns
-    "p/typescript",             # TypeScript-specific patterns
-    "p/react",                  # React XSS / client-side risks
-    "p/java",                   # Java patterns (Spring, Servlet...)
-    "p/go",                     # Go patterns
-    "p/php",                    # PHP patterns
-    "p/ruby",                   # Ruby / Rails patterns
-    # ── Audit-grade packs ─────────────────────────────────────────
-    "p/trailofbits",            # Trail of Bits audit rules
-    "p/jwt",                    # JWT misuse
-    "p/crypto",                 # Weak cryptography
+    "p/owasp-top-ten",
+    "p/security-audit",
+    "p/secrets",
+    "p/default",
+    "p/xss",
+    "p/sql-injection",
+    "p/command-injection",
+    "p/insecure-transport",
+    "p/supply-chain",
+    "p/python",
+    "p/django",
+    "p/flask",
+    "p/fastapi",
+    "p/nodejs",
+    "p/javascript",
+    "p/typescript",
+    "p/react",
+    "p/java",
+    "p/go",
+    "p/php",
+    "p/ruby",
+    "p/trailofbits",
+    "p/jwt",
+    "p/crypto",
 ]
 
-def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
+def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
     dir_path = Path(target_path)
 
     if not dir_path.exists() or not dir_path.is_dir():
@@ -44,8 +39,8 @@ def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
     rule_list = rule_list if rule_list else RULES
     scan_cmd = ["semgrep", "scan", "--json", "--quiet"]
 
-    for rule in rule_list:
-        scan_cmd.extend(["--config", rule])
+    for rule_name in rule_list:
+        scan_cmd.extend(["--config", rule_name])
 
     custom_rules = Path(__file__).parent / "rules"
     if custom_rules.exists() and custom_rules.is_dir():
@@ -55,10 +50,8 @@ def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
 
     try:
         try:
-            # First attempt: use the standard semgrep command
             cmd_result = subprocess.run(scan_cmd, capture_output=True, text=True, timeout=600)
         except (FileNotFoundError, PermissionError):
-            # Fallback for Windows: bypass .ps1 Execution Policies by calling python module directly
             fallback_cmd = ["python", "-m", "semgrep"] + scan_cmd[1:]
             cmd_result = subprocess.run(fallback_cmd, capture_output=True, text=True, timeout=600)
 
@@ -72,16 +65,16 @@ def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
         seen_locations = set()
 
         for finding_item in scan_findings:
-            path = finding_item.get("path")
+            file_path = finding_item.get("path")
             start_line = finding_item.get("start", {}).get("line")
             
-            loc_key = f"{path}:{start_line}"
+            loc_key = f"{file_path}:{start_line}"
             if loc_key in seen_locations:
                 continue
             seen_locations.add(loc_key)
 
             extra_data = finding_item.get("extra", {})
-            metadata = extra_data.get("metadata", {})
+            meta_data = extra_data.get("metadata", {})
 
             clean_item = {
                 "id": finding_item.get("check_id"),
@@ -93,16 +86,16 @@ def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
                 "severity": extra_data.get("severity"),
                 "message": extra_data.get("message"),
                 "lines": extra_data.get("lines"),
-                "cwe": metadata.get("cwe", []),
-                "owasp": metadata.get("owasp", []),
-                "category": metadata.get("category", ""),
-                "technology": metadata.get("technology", []),
-                "confidence": metadata.get("confidence", ""),
-                "impact": metadata.get("impact", ""),
-                "likelihood": metadata.get("likelihood", ""),
-                "references": metadata.get("references", []),
-                "shortlink": metadata.get("shortlink", ""),
-                "vulnerability_class": metadata.get("vulnerability_class", []),
+                "cwe": meta_data.get("cwe", []),
+                "owasp": meta_data.get("owasp", []),
+                "category": meta_data.get("category", ""),
+                "technology": meta_data.get("technology", []),
+                "confidence": meta_data.get("confidence", ""),
+                "impact": meta_data.get("impact", ""),
+                "likelihood": meta_data.get("likelihood", ""),
+                "references": meta_data.get("references", []),
+                "shortlink": meta_data.get("shortlink", ""),
+                "vulnerability_class": meta_data.get("vulnerability_class", []),
                 "dataflow_trace": extra_data.get("dataflow_trace"),
                 "fix": extra_data.get("fix"),
                 "fix_regex": extra_data.get("fix_regex")
@@ -122,21 +115,20 @@ def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
 
     except FileNotFoundError:
         print("[!] Semgrep is not installed or blocked. Please run: pip install semgrep")
-        print("    If on Windows, ensure Execution Policies allow running scripts, or use WSL.")
         return []
         
     except PermissionError:
-        print("[!] Permission denied when running Semgrep. If on Windows, try running terminal as Administrator or check Execution Policies.")
+        print("[!] Permission denied when running Semgrep.")
         return []
 
 from cli.views import logger
 
-def report(scan_findings: List[Dict[str, Any]]):
+def report_scan(scan_findings: List[Dict[str, Any]]):
     logger.section("SEMGREP")
 
     from cli.views.logger import console
     if not scan_findings:
-        console.print("  [green]✓ No vulnerabilities detected[/green]")
+        console.print("  [green]o" No vulnerabilities detected[/green]")
         return
 
     console.print(f"     [bold]{len(scan_findings)} vulnerabilities detected[/bold]")
@@ -149,13 +141,13 @@ def report(scan_findings: List[Dict[str, Any]]):
         line_num = finding_item["start_line"]
         
         if severity_level == "ERROR":
-            console.print("  [bold red]✖ ERROR[/bold red]")
-            console.print(f"  [red]├─[/red] Rule   [cyan]{rule_id}[/cyan]")
-            console.print(f"  [red]├─[/red] File   [blue]{file_path}[/blue]")
-            console.print(f"  [red]└─[/red] Line   [yellow]{line_num}[/yellow]")
+            console.print("  [bold red]o- ERROR[/bold red]")
+            console.print(f"  [red]"o"?[/red] Rule   [cyan]{rule_id}[/cyan]")
+            console.print(f"  [red]"o"?[/red] File   [blue]{file_path}[/blue]")
+            console.print(f"  [red]"""?[/red] Line   [yellow]{line_num}[/yellow]")
         else:
-            console.print("  [bold yellow]⚠ WARNING[/bold yellow]")
-            console.print(f"  [yellow]├─[/yellow] Rule   [cyan]{rule_id}[/cyan]")
-            console.print(f"  [yellow]├─[/yellow] File   [blue]{file_path}[/blue]")
-            console.print(f"  [yellow]└─[/yellow] Line   [yellow]{line_num}[/yellow]")
+            console.print("  [bold yellow]s WARNING[/bold yellow]")
+            console.print(f"  [yellow]"o"?[/yellow] Rule   [cyan]{rule_id}[/cyan]")
+            console.print(f"  [yellow]"o"?[/yellow] File   [blue]{file_path}[/blue]")
+            console.print(f"  [yellow]"""?[/yellow] Line   [yellow]{line_num}[/yellow]")
         console.print()

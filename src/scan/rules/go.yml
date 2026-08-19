@@ -6,7 +6,7 @@ rules:
     languages: [go]
 
     pattern-sources:
-      # ── net/http ──────────────────────────────────────────────────
+      # net/http 
       - pattern: $REQ.URL.Query()
       - pattern: $REQ.URL.Query().Get(...)
       - pattern: $REQ.FormValue(...)
@@ -16,7 +16,7 @@ rules:
       - pattern: $REQ.Body
       - pattern: $REQ.URL.Path
       - pattern: $REQ.URL.RawQuery
-      # ── Gin ───────────────────────────────────────────────────────
+      # Gin 
       - pattern: $C.Query(...)
       - pattern: $C.DefaultQuery(...)
       - pattern: $C.PostForm(...)
@@ -25,17 +25,17 @@ rules:
       - pattern: $C.Cookie(...)
       - pattern: $C.ShouldBindJSON(...)
       - pattern: $C.ShouldBind(...)
-      # ── Echo / Fiber ──────────────────────────────────────────────
+      # Echo / Fiber 
       - pattern: $CTX.QueryParam(...)
       - pattern: $CTX.FormValue(...)
       - pattern: $CTX.Param(...)
       - pattern: $CTX.Request().Header.Get(...)
-      # ── General ───────────────────────────────────────────────────
+      # General 
       - pattern: os.Getenv(...)
       - pattern: os.Args
 
     pattern-sinks:
-      # ── SQL Injection ─────────────────────────────────────────────
+      # SQL Injection 
       - pattern: $DB.Query(...)
       - pattern: $DB.QueryRow(...)
       - pattern: $DB.Exec(...)
@@ -46,13 +46,13 @@ rules:
       - pattern: $GORM.Raw(...)
       - pattern: $GORM.Where(...).Find(...)
       - pattern: $GORM.Exec(...)
-      # ── Command Injection ─────────────────────────────────────────
+      # Command Injection 
       - pattern: exec.Command(...)
       - pattern: exec.CommandContext(...)
       - pattern: syscall.Exec(...)
       - pattern: syscall.ForkExec(...)
       - pattern: syscall.StartProcess(...)
-      # ── Path Traversal / File Access ──────────────────────────────
+      # Path Traversal / File Access 
       - pattern: os.Open(...)
       - pattern: os.OpenFile(...)
       - pattern: os.ReadFile(...)
@@ -61,38 +61,38 @@ rules:
       - pattern: ioutil.ReadFile(...)
       - pattern: ioutil.WriteFile(...)
       - pattern: filepath.Join(...)
-      # ── SSRF ──────────────────────────────────────────────────────
+      # SSRF 
       - pattern: http.Get(...)
       - pattern: http.Post(...)
       - pattern: http.NewRequest(...)
       - pattern: $CLIENT.Get(...)
       - pattern: $CLIENT.Do(...)
-      # ── Open Redirect ─────────────────────────────────────────────
+      # Open Redirect 
       - pattern: http.Redirect(...)
-      # ── XSS ───────────────────────────────────────────────────────
+      # XSS 
       - pattern: fmt.Fprintf($W, ...)
       - pattern: $W.Write(...)
       - pattern: template.HTML(...)
       - pattern: $T.Execute($W, ...)
-      # ── LDAP ──────────────────────────────────────────────────────
+      # LDAP 
       - pattern: $CONN.Search(...)
-      # ── Deserialzation / Code Execution ───────────────────────────
+      # Deserialzation / Code Execution 
       - pattern: gob.NewDecoder($R).Decode(...)
       - pattern: plugin.Open(...)
 
     pattern-sanitizers:
-      # SQL — use parameterized queries
+      # SQL — use parameterized queries 
       - pattern: $DB.Prepare(...)
-      # Path
+      # Path 
       - pattern: filepath.Base(...)
       - pattern: filepath.Clean(...)
-      # HTML
+      # HTML 
       - pattern: html.EscapeString(...)
       - pattern: template.HTMLEscapeString(...)
-      # URL
+      # URL 
       - pattern: url.QueryEscape(...)
       - pattern: url.PathEscape(...)
-      # Type casting
+      # Type casting 
       - pattern: strconv.Atoi(...)
       - pattern: strconv.ParseInt(...)
       - pattern: strconv.ParseFloat(...)

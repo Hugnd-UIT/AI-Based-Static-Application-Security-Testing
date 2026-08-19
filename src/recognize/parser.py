@@ -20,8 +20,8 @@ DEPS = {
 def parse_php(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            json_data = json.load(f)
+        with open(file_path, "r", encoding="utf-8") as file_handle:
+            json_data = json.load(file_handle)
             req_dict = {**json_data.get("require", {}), **json_data.get("require-dev", {})}
 
             for pkg_name, pkg_version in req_dict.items():
@@ -42,8 +42,8 @@ def parse_php(file_path: str) -> List[Dict[str, str]]:
 def parse_npm(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            json_data = json.load(f)
+        with open(file_path, "r", encoding="utf-8") as file_handle:
+            json_data = json.load(file_handle)
             req_dict = {**json_data.get("dependencies", {}), **json_data.get("devDependencies", {})}
 
             for pkg_name, pkg_version in req_dict.items():
@@ -57,15 +57,15 @@ def parse_npm(file_path: str) -> List[Dict[str, str]]:
 def parse_pypi(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
+        with open(file_path, "r", encoding="utf-8") as file_handle:
+            for line_text in file_handle:
+                line_text = line_text.strip()
 
-                if not line or line.startswith("#"):
+                if not line_text or line_text.startswith("#"):
                     continue
 
-                if "==" in line:
-                    pkg_name, pkg_version = line.split("==", 1)
+                if "==" in line_text:
+                    pkg_name, pkg_version = line_text.split("==", 1)
                     parsed_deps.append(
                         {
                             "ecosystem": "pypi",
@@ -82,15 +82,15 @@ def parse_maven(file_path: str) -> List[Dict[str, str]]:
     try:
         xml_tree = ET.parse(file_path)
         xml_root = xml_tree.getroot()
-        namespace = ""
+        xml_ns = ""
 
         if xml_root.tag.startswith("{"):
-            namespace = xml_root.tag.split("}")[0] + "}"
+            xml_ns = xml_root.tag.split("}")[0] + "}"
 
-        for dep_node in xml_root.findall(f".//{namespace}dependency"):
-            group_id = dep_node.find(f"{namespace}groupId")
-            artifact_id = dep_node.find(f"{namespace}artifactId")
-            pkg_version = dep_node.find(f"{namespace}version")
+        for dep_node in xml_root.findall(f".//{xml_ns}dependency"):
+            group_id = dep_node.find(f"{xml_ns}groupId")
+            artifact_id = dep_node.find(f"{xml_ns}artifactId")
+            pkg_version = dep_node.find(f"{xml_ns}version")
 
             if group_id is not None and artifact_id is not None and pkg_version is not None:
                 if "$" not in pkg_version.text:
@@ -105,8 +105,8 @@ def parse_maven(file_path: str) -> List[Dict[str, str]]:
 def parse_go(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            file_content = f.read()
+        with open(file_path, "r", encoding="utf-8") as file_handle:
+            file_content = file_handle.read()
             regex_matches = re.findall(r"([a-zA-Z0-9.\-_/]+)\s+v([0-9a-zA-Z.\-_]+)", file_content)
 
             for pkg_name, pkg_version in regex_matches:
@@ -119,13 +119,13 @@ def parse_go(file_path: str) -> List[Dict[str, str]]:
 def parse_ruby(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
-            for line in f:
-                line = line.strip()
+        with open(file_path, "r", encoding="utf-8") as file_handle:
+            for line_text in file_handle:
+                line_text = line_text.strip()
 
-                if line.startswith("gem "):
+                if line_text.startswith("gem "):
                     regex_match = re.search(
-                        r"""gem\s+['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])?""", line
+                        r"""gem\s+['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])?""", line_text
                     )
 
                     if regex_match:
@@ -172,7 +172,7 @@ def parse_nuget(file_path: str) -> List[Dict[str, str]]:
         pass
     return parsed_deps
 
-def parse(target_path: str) -> List[Dict[str, str]]:
+def parse_all_deps(target_path: str) -> List[Dict[str, str]]:
     dir_path = Path(target_path)
 
     if not dir_path.exists() or not dir_path.is_dir():
@@ -208,7 +208,7 @@ def parse(target_path: str) -> List[Dict[str, str]]:
 
 from cli.views import logger
 
-def report(parsed_deps: List[Dict[str, str]]):
+def report_deps(parsed_deps: List[Dict[str, str]]):
     logger.section("DEPENDENCIES")
 
     if not parsed_deps:
@@ -219,4 +219,4 @@ def report(parsed_deps: List[Dict[str, str]]):
     console.print(f"  [cyan]{len(parsed_deps)}[/cyan] dependencies detected")
     console.print()
     for dep_item in parsed_deps:
-        console.print(f"  ├─ [magenta]{dep_item['ecosystem']}[/magenta] [blue]{dep_item['package']}[/blue] v{dep_item['version']}")
+        console.print(f"  "o"? [magenta]{dep_item['ecosystem']}[/magenta] [blue]{dep_item['package']}[/blue] v{dep_item['version']}")

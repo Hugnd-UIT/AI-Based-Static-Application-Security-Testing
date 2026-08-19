@@ -6,7 +6,7 @@ rules:
     languages: [java]
 
     pattern-sources:
-      # ── Servlet / JAX-RS ──────────────────────────────────────────
+      # Servlet / JAX-RS 
       - pattern: $REQ.getParameter(...)
       - pattern: $REQ.getParameterValues(...)
       - pattern: $REQ.getHeader(...)
@@ -17,7 +17,7 @@ rules:
       - pattern: $REQ.getQueryString()
       - pattern: $REQ.getRequestURI()
       - pattern: $REQ.getPathInfo()
-      # ── Spring MVC ────────────────────────────────────────────────
+      # Spring MVC 
       - pattern: "@RequestParam"
       - pattern: "@PathVariable"
       - pattern: "@RequestHeader"
@@ -25,77 +25,77 @@ rules:
       - pattern: "@CookieValue"
       - pattern: "@ModelAttribute"
       - pattern: $MODEL.getAttribute(...)
-      # ── Spring WebFlux ────────────────────────────────────────────
+      # Spring WebFlux 
       - pattern: $EXCHANGE.getRequest().getQueryParams()
       - pattern: $EXCHANGE.getRequest().getHeaders()
-      # ── General ───────────────────────────────────────────────────
+      # General 
       - pattern: System.getenv(...)
       - pattern: System.getProperty(...)
 
     pattern-sinks:
-      # ── SQL Injection ─────────────────────────────────────────────
+      # SQL Injection 
       - pattern: $STMT.executeQuery(...)
       - pattern: $STMT.executeUpdate(...)
       - pattern: $STMT.execute(...)
       - pattern: $STMT.addBatch(...)
-      - pattern: $SESSION.createQuery(...)           # Hibernate HQL
+      - pattern: $SESSION.createQuery(...)           # Hibernate HQL 
       - pattern: $SESSION.createNativeQuery(...)
       - pattern: $SESSION.createSQLQuery(...)
-      - pattern: $EM.createQuery(...)                # JPA JPQL
+      - pattern: $EM.createQuery(...)                # JPA JPQL 
       - pattern: $EM.createNativeQuery(...)
       - pattern: (new JdbcTemplate(...)).queryForObject(...)
       - pattern: (new JdbcTemplate(...)).query(...)
       - pattern: (new JdbcTemplate(...)).execute(...)
-      # ── Command Injection ─────────────────────────────────────────
+      # Command Injection 
       - pattern: Runtime.getRuntime().exec(...)
       - pattern: new ProcessBuilder(...)
       - pattern: $BUILDER.command(...)
-      # ── Code Execution / Deserialization ──────────────────────────
+      # Code Execution / Deserialization 
       - pattern: $OBJ.readObject(...)
       - pattern: XMLDecoder(...)
       - pattern: (new ObjectInputStream(...)).readObject()
       - pattern: Class.forName(...)
       - pattern: $LOADER.loadClass(...)
-      # ── Path Traversal / File Access ──────────────────────────────
+      # Path Traversal / File Access 
       - pattern: new File(...)
       - pattern: new FileInputStream(...)
       - pattern: new FileOutputStream(...)
       - pattern: Files.readAllBytes(...)
       - pattern: Files.newInputStream(...)
       - pattern: Paths.get(...)
-      # ── SSRF ──────────────────────────────────────────────────────
+      # SSRF 
       - pattern: new URL(...).openConnection()
       - pattern: new URL(...).openStream()
       - pattern: $CLIENT.get(...).uri(...)
       - pattern: RestTemplate(...).getForObject(...)
-      # ── Open Redirect ─────────────────────────────────────────────
+      # Open Redirect 
       - pattern: $RESP.sendRedirect(...)
       - pattern: "redirect:..."
-      # ── XSS ───────────────────────────────────────────────────────
+      # XSS 
       - pattern: $RESP.getWriter().print(...)
       - pattern: $RESP.getWriter().println(...)
       - pattern: $RESP.getWriter().write(...)
-      # ── JNDI Injection (Log4Shell) ────────────────────────────────
+      # JNDI Injection Log4Shell 
       - pattern: (new InitialContext()).lookup(...)
       - pattern: $CTX.lookup(...)
-      # ── LDAP Injection ────────────────────────────────────────────
+      # LDAP Injection 
       - pattern: $CTX.search(...)
       - pattern: $CTX.bind(...)
-      # ── XML/XXE ───────────────────────────────────────────────────
+      # XML/XXE 
       - pattern: $FACTORY.newDocumentBuilder().parse(...)
       - pattern: $READER.parse(...)
 
     pattern-sanitizers:
-      # SQL
-      - pattern: $CONN.prepareStatement(...)         # PreparedStatement usage
-      # HTML
+      # SQL 
+      - pattern: $CONN.prepareStatement(...)         # PreparedStatement usage 
+      # HTML 
       - pattern: StringEscapeUtils.escapeHtml4(...)
       - pattern: HtmlUtils.htmlEscape(...)
-      # Path
+      # Path 
       - pattern: FilenameUtils.getName(...)
-      # URL
+      # URL 
       - pattern: URLEncoder.encode(...)
-      # Type casting
+      # Type casting 
       - pattern: Integer.parseInt(...)
       - pattern: Long.parseLong(...)
       - pattern: Double.parseDouble(...)

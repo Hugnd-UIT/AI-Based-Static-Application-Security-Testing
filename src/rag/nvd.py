@@ -6,13 +6,13 @@ from typing import Dict, Any, Optional
 
 URL = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId="
 
-def fetch(cve_id: str, retries: int = 2) -> Optional[Dict[str, Any]]:
+def fetch_nvd_cve(cve_id: str, max_retries: int = 2) -> Optional[Dict[str, Any]]:
     if not cve_id.startswith("CVE-"):
         return None
 
     api_url = f"{URL}{cve_id}"
 
-    for attempt in range(retries + 1):
+    for curr_attempt in range(max_retries + 1):
         try:
             api_req = urllib.request.Request(api_url)
             api_key = os.environ.get("NIST_API_KEY", "")
@@ -57,10 +57,10 @@ def fetch(cve_id: str, retries: int = 2) -> Optional[Dict[str, Any]]:
 
         except urllib.error.HTTPError as http_err:
             if http_err.code == 403:
-                if attempt < retries:
-                    time.sleep(6 * (attempt + 1))
+                if curr_attempt < max_retries:
+                    time.sleep(6 * (curr_attempt + 1))
                     continue
-                print(f"[!] NVD API Rate Limit Exceeded for {cve_id} after {retries + 1} attempts")
+                print(f"[!] NVD API Rate Limit Exceeded for {cve_id} after {max_retries + 1} attempts")
             else:
                 print(f"[!] HTTP Error fetching {cve_id}: {http_err.code}")
             break
@@ -70,18 +70,18 @@ def fetch(cve_id: str, retries: int = 2) -> Optional[Dict[str, Any]]:
 
     return None
 
-def report(cve_data: Dict[str, Any]):
+def report_nvd(cve_data: Dict[str, Any]):
     if not cve_data:
         return
 
     from cli.views.logger import console
     console.print(f"  [magenta]NVD[/magenta] [cyan]{cve_data['cve_id']}[/cyan]")
-    console.print(f"  ├─ Severity [yellow]{cve_data['severity']}[/yellow] ({cve_data['base_score']})")
+    console.print(f"  "o"? Severity [yellow]{cve_data['severity']}[/yellow] ({cve_data['base_score']})")
 
     ref_count = len(cve_data["references"]) if cve_data.get("references") else 0
-    console.print(f"  ├─ References [blue]{ref_count}[/blue] links")
+    console.print(f"  "o"? References [blue]{ref_count}[/blue] links")
 
     desc_text = cve_data["description"]
     short_desc = desc_text[:80] + "..." if len(desc_text) > 80 else desc_text
-    console.print(f"  └─ Details {short_desc}")
+    console.print(f"  """? Details {short_desc}")
     console.print()

@@ -8,14 +8,14 @@ ROOT_DIR = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(ROOT_DIR))
 
 try:
-    from main import run_sast
+    from main import start_sast
     from cli.views import logger
     from rich.panel import Panel
 except ImportError:
     print("Error: Cannot import the main module of Sinful SAST.")
     sys.exit(1)
 
-def gen_report(scan_findings, output_path):
+def generate_sarif_report(scan_findings, output_path):
     sarif_rules = {}
     sarif_results = []
     
@@ -69,7 +69,7 @@ def gen_report(scan_findings, output_path):
     with open(output_path, "w", encoding="utf-8") as output_file:
         json.dump(sarif_data, output_file, indent=2)
 
-def start_ci():
+def start_ci_workflow():
     cli_parser = argparse.ArgumentParser(description="Sinful SAST CI Scanner")
     cli_parser.add_argument("--exit-code", type=int, default=1, help="Exit code when vulnerabilities are found")
     cli_parser.add_argument("--severity", type=str, default="ERROR,WARNING", help="Comma-separated severities to block on")
@@ -80,7 +80,7 @@ def start_ci():
     if cli_args.format != "sarif":
         logger.console.print()
         logger.console.print(Panel(
-            "[bold cyan]SINFUL SAST · CI[/bold cyan]\n[dim]Continuous Integration[/dim]", 
+            "[bold cyan]SINFUL SAST - CI[/bold cyan]\n[dim]Continuous Integration[/dim]", 
             border_style="cyan", 
             expand=False
         ))
@@ -90,7 +90,7 @@ def start_ci():
     target_dir = os.getcwd()
     
     try:
-        scan_result = run_sast(target_dir)
+        scan_result = start_sast(target_dir)
     except Exception as scan_err:
         if cli_args.format != "sarif":
             logger.console.print("[cyan]━━━ CI WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
@@ -107,7 +107,7 @@ def start_ci():
     scan_findings = scan_data.get("findings", [])
     
     if cli_args.format == "sarif":
-        gen_report(scan_findings, cli_args.output)
+        generate_sarif_report(scan_findings, cli_args.output)
         print(f"SARIF report generated: {cli_args.output}")
     
     blocked_severities = [severity_item.strip().upper() for severity_item in cli_args.severity.split(",")]
@@ -125,7 +125,6 @@ def start_ci():
             logger.console.print("[cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
             logger.console.print("[bold red]✖ CI WORKFLOW FAILED[/bold red]\n")
             
-            # Detailed findings summary
             logger.console.print(f"{count_blocked} issue(s) matched the configured severity threshold.")
             logger.console.print("Pipeline blocked.\n")
             logger.console.print(f"[dim]Exit code: {cli_args.exit_code}[/dim]")
@@ -140,4 +139,4 @@ def start_ci():
             sys.exit(0)
 
 if __name__ == "__main__":
-    start_ci()
+    start_ci_workflow()

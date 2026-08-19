@@ -6,7 +6,7 @@ rules:
     languages: [javascript, typescript]
 
     pattern-sources:
-      # ── Express / Node HTTP ───────────────────────────────────────
+      # Express / Node HTTP 
       - pattern: req.query
       - pattern: req.query.$FIELD
       - pattern: req.body
@@ -20,23 +20,23 @@ rules:
       - pattern: req.get(...)
       - pattern: req.file
       - pattern: req.files
-      # ── Koa ───────────────────────────────────────────────────────
+      # Koa 
       - pattern: ctx.query
       - pattern: ctx.request.body
       - pattern: ctx.params
       - pattern: ctx.cookies.get(...)
       - pattern: ctx.headers
-      # ── Fastify ───────────────────────────────────────────────────
+      # Fastify 
       - pattern: request.query
       - pattern: request.body
       - pattern: request.params
       - pattern: request.headers
-      # ── Next.js ───────────────────────────────────────────────────
+      # Next.js 
       - pattern: $CTX.query
       - pattern: $REQ.query
       - pattern: searchParams.get(...)
       - pattern: useSearchParams().get(...)
-      # ── Browser DOM ───────────────────────────────────────────────
+      # Browser DOM 
       - pattern: document.location.hash
       - pattern: document.location.search
       - pattern: window.location.href
@@ -45,19 +45,19 @@ rules:
       - pattern: document.referrer
       - pattern: document.URL
       - pattern: document.cookie
-      # ── General ───────────────────────────────────────────────────
+      # General 
       - pattern: process.env.$VAR
       - pattern: process.argv
 
     pattern-sinks:
-      # ── SQL Injection ─────────────────────────────────────────────
+      # SQL Injection 
       - pattern: $DB.query(...)
       - pattern: $DB.execute(...)
       - pattern: $POOL.query(...)
       - pattern: $CLIENT.query(...)
       - pattern: $KNEX.raw(...)
       - pattern: $SEQUELIZE.query(...)
-      # ── NoSQL Injection (MongoDB) ─────────────────────────────────
+      # NoSQL Injection MongoDB 
       - pattern: $COLLECTION.find(...)
       - pattern: $COLLECTION.findOne(...)
       - pattern: $COLLECTION.updateOne(...)
@@ -65,7 +65,7 @@ rules:
       - pattern: $COLLECTION.aggregate(...)
       - pattern: $MODEL.findOne(...)
       - pattern: $MODEL.find(...)
-      # ── Command Injection ─────────────────────────────────────────
+      # Command Injection 
       - pattern: exec(...)
       - pattern: execSync(...)
       - pattern: spawn(...)
@@ -74,14 +74,14 @@ rules:
       - pattern: child_process.spawn(...)
       - pattern: child_process.execSync(...)
       - pattern: child_process.fork(...)
-      # ── Code Execution ────────────────────────────────────────────
+      # Code Execution 
       - pattern: eval(...)
       - pattern: new Function(...)
       - pattern: setTimeout($X, ...)
       - pattern: setInterval($X, ...)
       - pattern: vm.runInThisContext(...)
       - pattern: vm.runInNewContext(...)
-      # ── Path Traversal / File Access ──────────────────────────────
+      # Path Traversal / File Access 
       - pattern: fs.readFile(...)
       - pattern: fs.readFileSync(...)
       - pattern: fs.writeFile(...)
@@ -90,7 +90,7 @@ rules:
       - pattern: fs.rmdir(...)
       - pattern: require(...)
       - pattern: import(...)
-      # ── SSRF ──────────────────────────────────────────────────────
+      # SSRF 
       - pattern: fetch(...)
       - pattern: axios.get(...)
       - pattern: axios.post(...)
@@ -99,7 +99,7 @@ rules:
       - pattern: https.get(...)
       - pattern: got(...)
       - pattern: request(...)
-      # ── XSS / DOM Injection ───────────────────────────────────────
+      # XSS / DOM Injection 
       - pattern: $EL.innerHTML = ...
       - pattern: $EL.outerHTML = ...
       - pattern: $EL.insertAdjacentHTML(...)
@@ -107,30 +107,30 @@ rules:
       - pattern: document.writeln(...)
       - pattern: $RES.send(...)
       - pattern: $RES.write(...)
-      # ── Prototype Pollution ───────────────────────────────────────
+      # Prototype Pollution 
       - pattern: $OBJ[$KEY] = ...
       - pattern: _.merge($OBJ, ...)
       - pattern: Object.assign($OBJ, ...)
-      # ── Open Redirect ─────────────────────────────────────────────
+      # Open Redirect 
       - pattern: $RES.redirect(...)
       - pattern: window.location.href = ...
       - pattern: window.location.replace(...)
 
     pattern-sanitizers:
-      # SQL
+      # SQL 
       - pattern: $CLIENT.escape(...)
       - pattern: mysql.escape(...)
-      # HTML
+      # HTML 
       - pattern: DOMPurify.sanitize(...)
       - pattern: sanitizeHtml(...)
       - pattern: escape(...)
-      # Path
+      # Path 
       - pattern: path.basename(...)
       - pattern: path.resolve(...)
-      # URL
+      # URL 
       - pattern: encodeURIComponent(...)
       - pattern: encodeURI(...)
-      # Type casting
+      # Type casting 
       - pattern: parseInt(...)
       - pattern: parseFloat(...)
       - pattern: Number(...)

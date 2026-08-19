@@ -6,7 +6,7 @@ rules:
     languages: [csharp]
 
     pattern-sources:
-      # ── ASP.NET Core / MVC ────────────────────────────────────────
+      # ASP.NET Core / MVC 
       - pattern: Request.Query[...]
       - pattern: Request.Query.ContainsKey(...)
       - pattern: Request.Form[...]
@@ -17,23 +17,23 @@ rules:
       - pattern: Request.Body
       - pattern: Request.RouteValues[...]
       - pattern: Request.QueryString
-      # ── Attribute sources ─────────────────────────────────────────
+      # Attribute sources 
       - pattern: "[FromQuery]"
       - pattern: "[FromBody]"
       - pattern: "[FromRoute]"
       - pattern: "[FromForm]"
       - pattern: "[FromHeader]"
-      # ── Classic ASP.NET Web Forms ─────────────────────────────────
+      # Classic ASP.NET Web Forms 
       - pattern: Request.Params[...]
       - pattern: Request.QueryString[...]
       - pattern: Request.Form[...]
-      # ── General ───────────────────────────────────────────────────
+      # General 
       - pattern: Environment.GetEnvironmentVariable(...)
       - pattern: Console.ReadLine()
       - pattern: args[...]
 
     pattern-sinks:
-      # ── SQL Injection ─────────────────────────────────────────────
+      # SQL Injection 
       - pattern: $CMD.ExecuteReader(...)
       - pattern: $CMD.ExecuteNonQuery(...)
       - pattern: $CMD.ExecuteScalar(...)
@@ -45,12 +45,12 @@ rules:
       - pattern: $CONN.CreateCommand()
       - pattern: $CTX.FromSqlRaw(...)
       - pattern: $CTX.FromSqlInterpolated(...)
-      # ── Command Injection ─────────────────────────────────────────
+      # Command Injection 
       - pattern: Process.Start(...)
       - pattern: new ProcessStartInfo(...)
       - pattern: $PROC.StartInfo.Arguments = ...
       - pattern: $PROC.StartInfo.FileName = ...
-      # ── Code Execution / Deserialization ──────────────────────────
+      # Code Execution / Deserialization 
       - pattern: BinaryFormatter().Deserialize(...)
       - pattern: JavaScriptSerializer().Deserialize(...)
       - pattern: XmlSerializer(...).Deserialize(...)
@@ -60,7 +60,7 @@ rules:
       - pattern: JsonConvert.DeserializeObject(...)
       - pattern: Assembly.Load(...)
       - pattern: Assembly.LoadFrom(...)
-      # ── Path Traversal / File Access ──────────────────────────────
+      # Path Traversal / File Access 
       - pattern: File.ReadAllText(...)
       - pattern: File.ReadAllBytes(...)
       - pattern: File.WriteAllText(...)
@@ -68,39 +68,39 @@ rules:
       - pattern: File.Delete(...)
       - pattern: Path.Combine(...)
       - pattern: new FileStream(...)
-      # ── SSRF ──────────────────────────────────────────────────────
+      # SSRF 
       - pattern: (new HttpClient()).GetAsync(...)
       - pattern: (new HttpClient()).PostAsync(...)
       - pattern: WebRequest.Create(...)
       - pattern: $CLIENT.GetAsync(...)
       - pattern: $CLIENT.PostAsync(...)
-      # ── XSS / Open Redirect ───────────────────────────────────────
+      # XSS / Open Redirect 
       - pattern: Response.Write(...)
       - pattern: HtmlHelper.Raw(...)
       - pattern: Response.Redirect(...)
       - pattern: Redirect(...)
-      # ── LDAP Injection ────────────────────────────────────────────
+      # LDAP Injection 
       - pattern: DirectorySearcher($FILTER)
       - pattern: DirectoryEntry(..., ..., ...)
-      # ── XML / XXE ─────────────────────────────────────────────────
+      # XML / XXE 
       - pattern: XDocument.Load(...)
       - pattern: XmlDocument().Load(...)
       - pattern: XPathDocument(...)
 
     pattern-sanitizers:
-      # SQL — Parameterized
+      # SQL — Parameterized 
       - pattern: new SqlParameter(...)
       - pattern: $CMD.Parameters.AddWithValue(...)
-      # HTML
+      # HTML 
       - pattern: HttpUtility.HtmlEncode(...)
       - pattern: WebUtility.HtmlEncode(...)
       - pattern: AntiXssEncoder.HtmlEncode(...)
-      # Path
+      # Path 
       - pattern: Path.GetFileName(...)
-      # URL
+      # URL 
       - pattern: HttpUtility.UrlEncode(...)
       - pattern: Uri.EscapeDataString(...)
-      # Type casting
+      # Type casting 
       - pattern: int.Parse(...)
       - pattern: Convert.ToInt32(...)
       - pattern: Convert.ToInt64(...)

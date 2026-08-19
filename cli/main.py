@@ -13,8 +13,8 @@ cli_app = typer.Typer(
     add_completion=False,
 )
 
-def print_header():
-    current_cwd = os.getcwd()
+def display_header():
+    working_dir = os.getcwd()
     header_text = Text()
 
     header_text.append(">_ Sinful AI", style="bold cyan")
@@ -29,18 +29,18 @@ def print_header():
     header_text.append(" to change\n", style="dim")
 
     header_text.append("directory: ", style="dim")
-    header_text.append(current_cwd, style="white")
+    header_text.append(working_dir, style="white")
 
     header_panel = Panel(header_text, border_style="dim", padding=(0, 2), expand=False)
 
     console.print(header_panel)
     console.print(
-        "\n[dim]Tip: For a limited time, Sinful is included in your plan for free — let's secure together![/dim]\n"
+        "\n[dim]Tip: For a limited time, Sinful is included in your plan for free - let's secure together![/dim]\n"
     )
 
 @cli_app.callback(invoke_without_command=True)
 def start_cli():
-    print_header()
+    display_header()
 
     while True:
         try:
@@ -70,8 +70,8 @@ def start_cli():
                         '/exit': 'Exit terminal',
                     }
                 
-                def get_completions(self, document_context, complete_event):
-                    text_input = document_context.text_before_cursor
+                def get_completions(self, doc_context, complete_evt):
+                    text_input = doc_context.text_before_cursor
                     if text_input.startswith('/'):
                         for cmd_key, cmd_desc in self.cli_commands.items():
                             if cmd_key.startswith(text_input.lower()):
@@ -84,10 +84,10 @@ def start_cli():
 
             input_buffer = Buffer(completer=CommandCompleter(), complete_while_typing=True)
 
-            top_padding = Window(height=1, char=' ', style='bg:#373737')
-            prompt_window = Window(width=4, height=1, content=FormattedTextControl('  › '), style='bg:#373737 fg:ansicyan bold')
-            buffer_window = Window(height=1, content=BufferControl(buffer=input_buffer), style='bg:#373737 fg:#ffffff')
-            bottom_padding = Window(height=1, char=' ', style='bg:#373737')
+            top_pad = Window(height=1, char=' ', style='bg:#373737')
+            prompt_win = Window(width=4, height=1, content=FormattedTextControl('  > '), style='bg:#373737 fg:ansicyan bold')
+            buffer_win = Window(height=1, content=BufferControl(buffer=input_buffer), style='bg:#373737 fg:#ffffff')
+            bottom_pad = Window(height=1, char=' ', style='bg:#373737')
             
             current_model = os.environ.get("MODELS", "deepseek/deepseek-v4-flash")
             home_dir = os.path.expanduser("~")
@@ -96,16 +96,16 @@ def start_cli():
             status_text = [
                 ('', '\n'),
                 ('class:status-model', f"  {current_model} "),
-                ('class:status-dot', "• "),
+                ('class:status-dot', "* "),
                 ('class:status-path', f"{short_cwd}")
             ]
-            status_window = Window(height=2, content=FormattedTextControl(status_text))
+            status_win = Window(height=2, content=FormattedTextControl(status_text))
 
             root_container = HSplit([
-                top_padding,
-                VSplit([prompt_window, buffer_window], height=1),
-                bottom_padding,
-                status_window,
+                top_pad,
+                VSplit([prompt_win, buffer_win], height=1),
+                bottom_pad,
+                status_win,
                 CompletionsMenu(max_height=16, scroll_offset=1)
             ])
 
@@ -113,11 +113,11 @@ def start_cli():
 
             key_bindings = KeyBindings()
             @key_bindings.add('enter')
-            def on_enter(event):
-                event.app.exit(result=input_buffer.text)
+            def on_enter(event_data):
+                event_data.app.exit(result=input_buffer.text)
             @key_bindings.add('c-c')
-            def on_cancel(event):
-                event.app.exit(result=None)
+            def on_cancel(event_data):
+                event_data.app.exit(result=None)
 
             prompt_style = Style.from_dict({
                 'completion-menu': 'bg:default fg:#e5e7eb',
@@ -151,9 +151,9 @@ def start_cli():
                 if not target_cmd:
                     break
 
-            from cli.commands.fix import handle_command
+            from cli.commands.fix import process_command
 
-            should_run = handle_command(target_cmd)
+            should_run = process_command(target_cmd)
 
             if not should_run:
                 break
