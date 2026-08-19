@@ -1,4 +1,159 @@
-# Kế Hoạch Nâng SINFUL Lên 100% Argus
+# Kế Hoạch SINFUL — Trạng Thái Thực Tế
+
+## Trạng Thái Tổng Quan: ~95% Argus Parity
+
+> [!IMPORTANT]
+> Tất cả 4 GAP ban đầu đã được triển khai đầy đủ trong codebase. Tài liệu này cập nhật trạng thái thực tế và liệt kê các GAP còn lại để tiến lên 100%.
+
+---
+
+## ✅ Đã Hoàn Thành (So với Plan ban đầu)
+
+| Thành phần | Trạng thái | Ghi chú |
+|---|---|---|
+| Pipeline 5 Agent | ✅ | Scan → RAG → Audit → Hack → Fix |
+| ReAct Loop Audit Agent | ✅ | Multi-turn, tối đa 3 vòng lặp |
+| RAG (OSV/NVD/Firecrawl/GitHub) | ✅ | Đầy đủ |
+| Tree-sitter Cross-file Caller | ✅ | `build_context()`, `find_global_callers()` |
+| Custom Taint Rules (10 ngôn ngữ) | ✅ | Semgrep rules |
+| Hack Agent PoC | ✅ | `gen_poc()` |
+| Fix Agent | ✅ | `gen_fix()` có patches |
+| **GAP 1 — Inter-procedural Taint** | ✅ | `build_context()` + inject vào Audit Agent context |
+| **GAP 2 — SCA Reachability** | ✅ | `src/rag/usage.py` — `check()` với Tree-sitter |
+| **GAP 3 — Confidence Score / Severity** | ✅ | JSON verdict: `confidence`, `cvss_estimate`, `severity`, `vuln_class` |
+| **GAP 4 — Multi-turn ReAct Loop** | ✅ | `while iterations < 3` + `NEED_MORE_CONTEXT` token |
+
+---
+
+## 🔴 GAP Còn Lại — Tiến Lên 100%
+
+### GAP A — Forward Taint Propagation (Vẫn là gap so với Argus)
+
+**Vấn đề:** `build_context()` hiện tại thực hiện **backward tracing** (ai gọi hàm bị lỗi). Chưa có **forward taint**: nếu `get_user_input()` ở `fileA.py` trả về tainted data, chưa tự động phát hiện khi `fileB.py` gọi hàm đó và đưa vào sink.
+
+**Ví dụ chưa bắt được:**
+```python
+# fileA.py
+def get_user_input():
+    return request.args.get("id")  # Source ở đây
+
+# fileB.py
+from fileA import get_user_input
+def process():
+    uid = get_user_input()          # Taint lan sang fileB
+    db.execute("SELECT * WHERE id=" + uid)  # Sink — chưa bắt được
+```
+
+**Giải pháp:**
+
+#### [MODIFY] src/audit/tree-sitter.py
+- Thêm `collect_tainted_functions(target_dir)` — scan project, tìm hàm có HTTP source trong body
+- Thêm `find_cross_file_sinks(target_dir, tainted_funcs)` — tìm nơi gọi hàm tainted → vào sink
+- Inject kết quả vào `build_context()` để Audit Agent nhận đầy đủ
+
+**Độ phức tạp:** 🔴 Cao | **Ước tính:** ~3-4 giờ
+
+---
+
+### GAP B — Báo Cáo HTML/JSON Đầy Đủ
+
+**Vấn đề:** Hiện tại kết quả chỉ hiển thị trên CLI (Rich console). Không có output file nào để share cho team, tích hợp CI/CD, hay hiển thị trên dashboard web.
+
+**Giải pháp:**
+
+#### [MODIFY] main.py
+- Thêm flag `--output json` hoặc `--output html`
+- Khi chạy xong, ghi `scan_result` ra file `.json` hoặc render HTML report
+
+#### [NEW] src/reports/html.py
+- Template HTML với bảng findings, CVSS scores, PoC code, patch diff
+
+**Độ phức tạp:** 🟡 Trung bình | **Ước tính:** ~2-3 giờ
+
+---
+
+### GAP C — CI/CD Integration (GitHub Actions / GitLab)
+
+**Vấn đề:** Chưa có cách tích hợp SINFUL vào pipeline CI/CD. Dev phải chạy tay, không thể scan tự động mỗi khi có commit/PR.
+
+**Giải pháp:**
+
+#### [NEW] .github/workflows/sinful-scan.yml
+```yaml
+name: Sinful SAST
+on: [pull_request]
+jobs:
+  sast:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      - run: pip install sinful-sast
+      - run: sinful . --output json
+      - uses: actions/upload-artifact@v3
+        with:
+          name: sinful-report
+          path: sinful-report.json
+```
+
+**Độ phức tạp:** 🟢 Thấp | **Ước tính:** ~1 giờ
+
+---
+
+### GAP D — Scan Speed Optimization
+
+**Vấn đề:** `time.sleep(15)` giữa mỗi Firecrawl call và `time.sleep(6)` giữa các CVE rất chậm. Với project có nhiều CVE, scan mất hàng chục phút.
+
+**Giải pháp:**
+
+#### [MODIFY] main.py
+- Dùng `asyncio` + `aiohttp` để fetch song song (concurrent) thay vì tuần tự
+- Hoặc đơn giản hơn: giảm rate limit sleep, tăng retry logic thay thế
+- Cache NVD/OSV responses vào local SQLite để tránh gọi lại cùng CVE
+
+**Độ phức tạp:** 🟡 Trung bình | **Ước tính:** ~2 giờ
+
+---
+
+### GAP E — Baseline / Diff Scan (So sánh với lần scan trước)
+
+**Vấn đề:** Mỗi lần scan là scan full từ đầu. Dev không biết vulnerability nào là **mới xuất hiện** sau commit, cái nào đã có từ trước.
+
+**Giải pháp:**
+
+#### [NEW] src/baseline.py
+- Lưu kết quả scan vào file `.sinful-baseline.json`
+- Lần scan tiếp theo, so sánh findings mới vs baseline
+- Chỉ report NEW findings + RESOLVED findings
+
+**Độ phức tạp:** 🟢 Thấp | **Ước tính:** ~1.5 giờ
+
+---
+
+## Tóm Tắt Timeline & Độ Phức Tạp
+
+| # | GAP | Độ phức tạp | Thời gian ước tính | Ưu tiên |
+|---|---|---|---|---|
+| A | Forward Taint Propagation | 🔴 Cao | ~3-4 giờ | P1 — Core quality |
+| B | HTML/JSON Report Output | 🟡 Trung bình | ~2-3 giờ | P2 — Usability |
+| C | CI/CD Integration | 🟢 Thấp | ~1 giờ | P2 — Adoption |
+| D | Scan Speed Optimization | 🟡 Trung bình | ~2 giờ | P3 — UX |
+| E | Baseline / Diff Scan | 🟢 Thấp | ~1.5 giờ | P3 — UX |
+
+**Tổng còn lại:** ~10-11 giờ → Đưa SINFUL từ ~95% lên **100% Argus parity + vượt Argus**
+
+## Thứ tự triển khai đề xuất:
+```
+GAP C (CI/CD)         → Dễ nhất, impact lớn ngay
+GAP E (Baseline)      → Dễ, rất hữu ích cho Dev
+GAP B (Report Output) → UX quan trọng cho demo/production
+GAP D (Speed)         → Tăng trải nghiệm user
+GAP A (Forward Taint) → Phức tạp nhất, làm cuối cùng
+```
+
+> [!NOTE]
+> GAP C + E có thể làm song song trong 1 buổi vì hoàn toàn độc lập với nhau.
+> GAP A là cải tiến lớn nhất về chất lượng detection nhưng cũng là phức tạp nhất.
+
 
 ## Trạng Thái Hiện Tại: ~85% Argus
 

@@ -168,7 +168,7 @@ def has_sink(file_content: bytes, curr_node) -> bool:
     except Exception:
         return False
 
-def collect_func(target_dir: str) -> dict:
+def collect_tainted_functions(target_dir: str) -> dict:
     tainted_funcs = {}
 
     for root_dir, subdirs, file_list in os.walk(target_dir):
@@ -188,7 +188,7 @@ def collect_func(target_dir: str) -> dict:
                 ts_parser = Parser(Language(LANG[file_ext]))
                 parsed_tree = ts_parser.parse(file_content)
 
-                def collect_funcs(curr_node):
+                def traverse(curr_node):
                     node_kind = curr_node.type.lower()
                     if is_func(node_kind) and has_src(file_content, curr_node):
                         func_name = get_node_name(curr_node, file_content)
@@ -196,16 +196,16 @@ def collect_func(target_dir: str) -> dict:
                         if func_name and func_name not in tainted_funcs:
                             tainted_funcs[func_name] = {"file": str(file_path), "code": func_code[:800]}
                     for child_node in curr_node.children:
-                        collect_funcs(child_node)
+                        traverse(child_node)
 
-                collect_funcs(parsed_tree.root_node)
+                traverse(parsed_tree.root_node)
 
             except Exception:
                 pass
 
     return tainted_funcs
 
-def collect_sinks(target_dir: str, tainted_funcs: dict) -> str:
+def find_cross_file_sinks(target_dir: str, tainted_funcs: dict) -> str:
     if not tainted_funcs:
         return ""
 
@@ -242,21 +242,31 @@ def collect_sinks(target_dir: str, tainted_funcs: dict) -> str:
                         parent_func_node = curr_node
 
                     if ("call" in node_kind or "invocation" in node_kind) and parent_func_node:
-                        node_text = file_content[curr_node.start_byte:curr_node.end_byte].decode("utf-8", errors="ignore")
-
-                        if any(fn in node_text for fn in called_tainted) and has_sink(file_content, parent_func_node):
-                            origin_func = next((fn for fn in called_tainted if fn in node_text), "unknown")
-                            origin_info = tainted_funcs.get(origin_func, {})
-                            parent_text = file_content[parent_func_node.start_byte:parent_func_node.end_byte].decode("utf-8", errors="ignore")
-                            path_entry = (
-                                f"[CROSS-FILE TAINT PATH DETECTED]\n"
-                                f"  Tainted Source : {origin_func}() in {origin_info.get('file', 'unknown')}\n"
-                                f"  Propagates to  : {file_name} (line {curr_node.start_point[0] + 1})\n"
-                                f"  Caller function:\n{parent_text[:600]}\n"
-                                f"  Origin function:\n{origin_info.get('code', '')[:400]}\n"
-                            )
-                            if path_entry not in cross_paths:
-                                cross_paths.append(path_entry)
+                        # Find the identifier of the function being called
+                        call_ident = None
+                        for child in curr_node.children:
+                            if child.type == "identifier":
+                                call_ident = child
+                                break
+                            elif child.type in ("attribute", "member_expression"):
+                                for gchild in child.children:
+                                    if gchild.type == "property_identifier" or gchild.type == "identifier":
+                                        call_ident = gchild
+                                        
+                        if call_ident:
+                            func_called = file_content[call_ident.start_byte:call_ident.end_byte].decode("utf-8", errors="ignore")
+                            if func_called in called_tainted and has_sink(file_content, parent_func_node):
+                                origin_info = tainted_funcs.get(func_called, {})
+                                parent_text = file_content[parent_func_node.start_byte:parent_func_node.end_byte].decode("utf-8", errors="ignore")
+                                path_entry = (
+                                    f"[CROSS-FILE TAINT PATH DETECTED]\n"
+                                    f"  Tainted Source : {func_called}() in {origin_info.get('file', 'unknown')}\n"
+                                    f"  Propagates to  : {file_name} (line {curr_node.start_point[0] + 1})\n"
+                                    f"  Caller function:\n{parent_text[:600]}\n"
+                                    f"  Origin function:\n{origin_info.get('code', '')[:400]}\n"
+                                )
+                                if path_entry not in cross_paths:
+                                    cross_paths.append(path_entry)
 
                     for child_node in curr_node.children:
                         scan_taint(child_node, parent_func_node)
@@ -272,11 +282,11 @@ def build_context(target_dir: str) -> str:
     if not target_dir or not Path(target_dir).exists():
         return ""
 
-    tainted_funcs = collect_func(target_dir)
+    tainted_funcs = collect_tainted_functions(target_dir)
     if not tainted_funcs:
         return ""
 
-    return collect_sinks(target_dir, tainted_funcs)
+    return find_cross_file_sinks(target_dir, tainted_funcs)
 
 
 def extract_context(
