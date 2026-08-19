@@ -51,17 +51,31 @@ def scan(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
             seen_locations.add(loc_key)
 
             extra_data = finding_item.get("extra", {})
+            metadata = extra_data.get("metadata", {})
 
             clean_item = {
                 "id": finding_item.get("check_id"),
                 "path": finding_item.get("path"),
                 "start_line": finding_item.get("start", {}).get("line"),
+                "start_col": finding_item.get("start", {}).get("col"),
                 "end_line": finding_item.get("end", {}).get("line"),
+                "end_col": finding_item.get("end", {}).get("col"),
                 "severity": extra_data.get("severity"),
                 "message": extra_data.get("message"),
                 "lines": extra_data.get("lines"),
-                "cwe": extra_data.get("metadata", {}).get("cwe", []),
+                "cwe": metadata.get("cwe", []),
+                "owasp": metadata.get("owasp", []),
+                "category": metadata.get("category", ""),
+                "technology": metadata.get("technology", []),
+                "confidence": metadata.get("confidence", ""),
+                "impact": metadata.get("impact", ""),
+                "likelihood": metadata.get("likelihood", ""),
+                "references": metadata.get("references", []),
+                "shortlink": metadata.get("shortlink", ""),
+                "vulnerability_class": metadata.get("vulnerability_class", []),
                 "dataflow_trace": extra_data.get("dataflow_trace"),
+                "fix": extra_data.get("fix"),
+                "fix_regex": extra_data.get("fix_regex")
             }
 
             cleaned_findings.append(clean_item)

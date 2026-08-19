@@ -55,7 +55,7 @@ def process():
 
 ---
 
-### GAP B — Báo Cáo HTML/JSON Đầy Đủ
+### [x] GAP B — Báo Cáo HTML/JSON Đầy Đủ
 
 **Vấn đề:** Hiện tại kết quả chỉ hiển thị trên CLI (Rich console). Không có output file nào để share cho team, tích hợp CI/CD, hay hiển thị trên dashboard web.
 
@@ -72,7 +72,7 @@ def process():
 
 ---
 
-### GAP C — CI/CD Integration (GitHub Actions / GitLab)
+### [x] GAP C — CI/CD Integration (GitHub Actions / GitLab)
 
 **Vấn đề:** Chưa có cách tích hợp SINFUL vào pipeline CI/CD. Dev phải chạy tay, không thể scan tự động mỗi khi có commit/PR.
 
@@ -99,7 +99,7 @@ jobs:
 
 ---
 
-### GAP D — Scan Speed Optimization
+### [x] GAP D — Scan Speed Optimization
 
 **Vấn đề:** `time.sleep(15)` giữa mỗi Firecrawl call và `time.sleep(6)` giữa các CVE rất chậm. Với project có nhiều CVE, scan mất hàng chục phút.
 

@@ -146,3 +146,20 @@ def run_scan(target_path: str, fix: bool = False):
 
             except Exception as fix_err:
                 logger.critical(f"Failed to apply fix for {finding_item.get('id', 'Unknown')}: {fix_err}")
+
+    import json
+    from datetime import datetime
+    
+    report_dir = os.path.join(os.getcwd(), "reports")
+    os.makedirs(report_dir, exist_ok=True)
+    
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report_path = os.path.join(report_dir, f"sinful_report_{timestamp}.json")
+    
+    try:
+        with open(report_path, "w", encoding="utf-8") as f:
+            json.dump(scan_result, f, indent=2, ensure_ascii=False)
+        logger.blank()
+        logger.success(f"Detailed JSON report saved to: [bold cyan]{report_path}[/bold cyan]")
+    except Exception as e:
+        logger.warning(f"Failed to save JSON report: {e}")

@@ -41,11 +41,12 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
     scan_result = {
         "status": "processing",
         "languages": {},
+        "language_versions": {},
         "dependencies": [],
         "findings": [],
         "cves": [],
         "nvd_data": [],
-        "ai_reviews": [],
+        "rag_summary": {},
     }
 
     if target_path.startswith("http://") or target_path.startswith("https://") or target_path.startswith("git@"):
@@ -145,43 +146,55 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                     cve_ids.add(alias_id)
 
         if cve_ids:
-            for loop_idx, cve_id in enumerate(list(cve_ids)):
-                nvd_data = nvd.fetch(cve_id)
-                
-                if nvd_data:
-                    nvd.report(nvd_data)
-                    ref_links = nvd_data.get("references", [])
-                    
-                    if ref_links:
-                        nvd_data["firecrawl_poc"] = ""
-                        for ref_url in ref_links[:2]:
-                            display_ref = ref_url if len(ref_url) <= 60 else ref_url[:57] + "..."
-                            from cli.views.logger import console
-                            console.print(
-                                f"  [dim]Scraping PoC via[/dim] "
-                                f"[bold green]Firecrawl[/bold green]: "
-                                f"[dim][link={ref_url}]{display_ref}[/link][/dim]"
-                            )
-                            scraped_md = firecrawl.scrape(ref_url)
-                            
-                            if scraped_md:
-                                nvd_data["firecrawl_poc"] += f"\n\nSource: {ref_url}\n{scraped_md}"
-                            
-                            time.sleep(15)
-                            
-                    from cli.views.logger import console
-                    console.print(f"  [dim]Searching GitHub for[/dim] [bold green]{cve_id}[/bold green]...")
-                    github_data = github.search(cve_id)
-                    if "error" not in github_data:
-                        github.report(github_data)
-                        nvd_data["github_issues"] = github_data.get("github_issues", [])
-                    else:
-                        console.print(f"  [dim]GitHub search error: {github_data['error']}[/dim]")
-                                
-                    scan_result["nvd_data"].append(nvd_data)
-                
-                if loop_idx < len(cve_ids) - 1:
-                    time.sleep(6)
+            from concurrent.futures import ThreadPoolExecutor, as_completed
+            from cli.views.logger import console as cve_console
+            import threading
+
+            # Semaphore limits to 5 concurrent NVD requests (safe with NIST API key: 50req/30s)
+            nvd_semaphore = threading.Semaphore(5)
+
+            def fetch_cve(cve_id: str):
+                with nvd_semaphore:
+                    nvd_data = nvd.fetch(cve_id)
+                if not nvd_data:
+                    return None
+
+                ref_links = nvd_data.get("references", [])
+                if ref_links:
+                    nvd_data["firecrawl_poc"] = ""
+                    for ref_url in ref_links[:2]:
+                        scraped_md = firecrawl.scrape(ref_url)
+                        if scraped_md:
+                            nvd_data["firecrawl_poc"] += f"\n\nSource: {ref_url}\n{scraped_md}"
+
+                github_data = github.search(cve_id)
+                if "error" not in github_data:
+                    nvd_data["github_issues"] = github_data.get("github_issues", [])
+
+                return nvd_data
+
+            cve_id_list = list(cve_ids)
+
+            with ThreadPoolExecutor(max_workers=5) as pool:
+                future_map = {}
+                for idx, cid in enumerate(cve_id_list):
+                    future_map[pool.submit(fetch_cve, cid)] = cid
+                    # Stagger 0.5s between thread starts (safe with API key)
+                    if idx < len(cve_id_list) - 1:
+                        time.sleep(0.5)
+
+                for future in as_completed(future_map):
+                    cve_id = future_map[future]
+                    try:
+                        nvd_result = future.result()
+                        if nvd_result:
+                            cve_console.print(f"  [dim]✔ Fetched[/dim] [bold green]{cve_id}[/bold green]")
+                            nvd.report(nvd_result)
+                            scan_result["nvd_data"].append(nvd_result)
+                    except Exception as fut_err:
+                        cve_console.print(f"  [dim]Failed to fetch {cve_id}: {fut_err}[/dim]")
+
+
 
     cve_context = "No relevant supply chain vulnerabilities found in project dependencies."
     
@@ -196,6 +209,7 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
         import textwrap
         try:
             rag_summary = rag_agents.fetch(cve_data_str, model=model)
+            scan_result["rag_summary"] = rag_summary
             cve_context = json.dumps(rag_summary, indent=2)
             if "cve_id" in rag_summary and rag_summary["cve_id"] != "None":
                 console.print(f"  ├─ [cyan]◆ Analyzing {rag_summary['cve_id']} {rag_summary.get('dependency', 'Unknown')}[/cyan]")
@@ -210,6 +224,7 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
             console.print("  └─ [bold green]✔ RAG Summary generated[/bold green]")
         except Exception as e:
             console.print(f"  └─ [bold red]✖ RAG Agent failed: {e}[/bold red]")
+            scan_result["rag_summary"] = {"error": str(e)}
             cve_context = cve_data_str
     else:
         from cli.views.logger import console
@@ -237,6 +252,8 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                 ast_context = f"Error extracting AST context: {ext_err}"
                 if cross_file_context:
                     ast_context += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{cross_file_context[:1500]}"
+            
+            finding_item["ast_context"] = ast_context
 
             try:
                 import textwrap
@@ -388,10 +405,10 @@ def run_sast(target_path, rule_list=None, model=None, fix=False):
                         logger.console.print(f"  └─ [bold red]✖ Fixer Agent failed: {e}[/bold red]")
 
             logger.blank()
-            scan_result["ai_reviews"].append({"finding": finding_item, "review": ai_review})
+            finding_item["ai_review"] = ai_review
 
             if loop_idx < len(critical_findings) - 1:
-                time.sleep(5)
+                pass  # No artificial delay needed between findings
 
     if temp_dir:
         def remove_readonly(func, path, excinfo):
