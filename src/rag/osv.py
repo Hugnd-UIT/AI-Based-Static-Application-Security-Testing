@@ -80,7 +80,7 @@ def report_osv(vuln_list: List[Dict[str, Any]]):
         console.print("  [green]- No known vulnerabilities found in dependencies[/green]")
         return
 
-    console.print(f"     [bold]{len(vuln_list)} vulnerabilities detected[/bold]")
+    console.print(f"  [bold]{len(vuln_list)} vulnerabilities detected[/bold]")
     console.print()
 
     vuln_groups = {}

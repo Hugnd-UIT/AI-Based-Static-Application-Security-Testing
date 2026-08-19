@@ -130,7 +130,7 @@ def start_cli():
                 'scrollbar.arrow': 'bg:default fg:default',
                 'status-model': 'fg:ansicyan bold', 
                 'status-dot': 'fg:#6b7280',         
-                'status-path': 'fg:#9ca3af bold',        
+                'status-path': 'fg:ansibrightgreen bold',        
             })
 
             toolkit_app = Application(

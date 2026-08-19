@@ -34,7 +34,20 @@ def run_agent(
             logger.warning("[%s] API error on step %d: %s", agent_name, curr_step, api_err)
             return fallback_verdict(error_msg=str(api_err))
 
-        msg_history.append(api_msg.model_dump(exclude_unset=True))
+        assistant_msg: dict = {"role": "assistant", "content": api_msg.content}
+        if api_msg.tool_calls:
+            assistant_msg["tool_calls"] = [
+                {
+                    "id": tc.id,
+                    "type": "function",
+                    "function": {
+                        "name": tc.function.name,
+                        "arguments": tc.function.arguments,
+                    },
+                }
+                for tc in api_msg.tool_calls
+            ]
+        msg_history.append(assistant_msg)
 
         if api_msg.tool_calls:
             for tool_call in api_msg.tool_calls:

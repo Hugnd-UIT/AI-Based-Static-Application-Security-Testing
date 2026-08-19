@@ -206,13 +206,13 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
             rag_summary = rag_agents.start_rag(cve_data_str, model_name=actual_model)
             scan_result["rag_summary"] = rag_summary
             cve_context = json.dumps(rag_summary, indent=2)
-            if "cve_id" in rag_summary and rag_summary["cve_id"] != "None":
-                console.print(f"  ├─ [cyan]◆ Analyzing {rag_summary['cve_id']} {rag_summary.get('dependency', 'Unknown')}[/cyan]")
-            if "attack_vector" in rag_summary:
+            if "cve_id" in rag_summary and rag_summary["cve_id"] not in ["None", "Unknown"]:
+                console.print(f"  ├─ [cyan]◆ Analyzing {rag_summary['cve_id']} {rag_summary.get('dependency', '')}[/cyan]")
+            if "attack_vector" in rag_summary and rag_summary["attack_vector"] not in ["None", "Unknown"]:
                 wrap_width = max(60, console.width - 15)
                 for w_line in textwrap.wrap(rag_summary['attack_vector'], width=wrap_width, initial_indent="Vector: ", subsequent_indent="        "):
                     console.print(f"  │  [dim]{w_line}[/dim]")
-            if "mitigation" in rag_summary:
+            if "mitigation" in rag_summary and rag_summary["mitigation"] not in ["None", "Unknown"]:
                 wrap_width = max(60, console.width - 15)
                 for w_line in textwrap.wrap(rag_summary['mitigation'], width=wrap_width, initial_indent="Mitigation: ", subsequent_indent="            "):
                     console.print(f"  │  [dim]{w_line}[/dim]")
@@ -300,13 +300,16 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
 
                 if is_vuln:
                     logger.console.print(
-                        f"  ├─ [bold red]✖ VULNERABLE[/bold red] "
-                        f"[dim][CVSS: {verdict_data.get('cvss_estimate', 'N/A')} "
-                        f"- {verdict_data.get('severity', 'UNKNOWN')}][/dim]"
+                        f"  ├─ [bold red]✖ VULNERABLE[/bold red]"
                     )
                     logger.console.print(
-                        f"  └─ [dim]Confidence: {verdict_data.get('confidence', 'N/A')}% "
-                        f"| Class: {verdict_data.get('vuln_class', 'N/A')}[/dim]"
+                        f"  ├─ [dim][CVSS: {verdict_data.get('cvss_estimate', 'N/A')}] [{verdict_data.get('severity', 'UNKNOWN')}][/dim]"
+                    )
+                    logger.console.print(
+                        f"  ├─ [dim][Confidence: {verdict_data.get('confidence', 'N/A')}%][/dim]"
+                    )
+                    logger.console.print(
+                        f"  └─ [dim][Class: {verdict_data.get('vuln_class', 'N/A')}][/dim]"
                     )
                     scan_result["is_vulnerable"] = True
                     is_vuln_flag = True

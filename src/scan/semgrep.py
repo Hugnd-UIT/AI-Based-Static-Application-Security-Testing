@@ -136,7 +136,7 @@ def report_scan(scan_findings: List[Dict[str, Any]]):
         console.print("  [green]- No vulnerabilities detected[/green]")
         return
 
-    console.print(f"     [bold]{len(scan_findings)} vulnerabilities detected[/bold]")
+    console.print(f"  [bold]{len(scan_findings)} vulnerabilities detected[/bold]")
     console.print()
 
     for finding_item in scan_findings:
@@ -144,15 +144,11 @@ def report_scan(scan_findings: List[Dict[str, Any]]):
         rule_id = finding_item["id"]
         file_path = finding_item["path"]
         line_num = finding_item["start_line"]
-        
-        if severity_level == "ERROR":
-            console.print("  [bold red]- ERROR[/bold red]")
-            console.print(f"  [red]|[/red] Rule   [cyan]{rule_id}[/cyan]")
-            console.print(f"  [red]|[/red] File   [blue]{file_path}[/blue]")
-            console.print(f"  [red]-[/red] Line   [yellow]{line_num}[/yellow]")
-        else:
-            console.print("  [bold yellow]- WARNING[/bold yellow]")
-            console.print(f"  [yellow]|[/yellow] Rule   [cyan]{rule_id}[/cyan]")
-            console.print(f"  [yellow]|[/yellow] File   [blue]{file_path}[/blue]")
-            console.print(f"  [yellow]-[/yellow] Line   [yellow]{line_num}[/yellow]")
+
+        color_str = "yellow" if severity_level == "WARNING" else "red"
+
+        console.print(f"  ┌─ [{color_str}]{severity_level}[/{color_str}]")
+        console.print(f"  ├─ Rule   [cyan]{rule_id}[/cyan]")
+        console.print(f"  ├─ File   [dim]{file_path}[/dim]")
+        console.print(f"  └─ Line   [bold yellow]{line_num}[/bold yellow]")
         console.print()

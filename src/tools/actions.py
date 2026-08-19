@@ -4,8 +4,13 @@ import importlib
 from pathlib import Path
 
 def load_tree_sitter():
-    ts_mod = importlib.import_module("src.audit.tree-sitter")
-    return ts_mod
+    import importlib.util
+    from pathlib import Path
+    ts_path = Path(__file__).parent.parent / "audit" / "tree-sitter.py"
+    spec = importlib.util.spec_from_file_location("ts_module", str(ts_path.resolve()))
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
 
 def resolve_abs_path(target_dir: str, rel_path: str) -> Path:
     abs_path = (Path(target_dir) / rel_path).resolve()

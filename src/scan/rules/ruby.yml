@@ -66,7 +66,7 @@ rules:
       - pattern: Faraday.get(...)
       - pattern: HTTParty.get(...)
       # XSS / Open Redirect 
-      - pattern: render inline: ...
+      - pattern: 'render inline: ...'
       - pattern: redirect_to(...)
 
     pattern-sanitizers:

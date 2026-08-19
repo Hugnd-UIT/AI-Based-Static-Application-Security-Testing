@@ -90,7 +90,7 @@ rules:
       - pattern: print(...)
       - pattern: print_r(...)
       - pattern: printf(...)
-      - pattern: 'header("Location: " . ...)'        # Open Redirect 
+      - pattern: 'header("Location: " . ...)'
       # Deserialization 
       - pattern: unserialize(...)
       # LDAP 

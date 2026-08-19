@@ -51,8 +51,8 @@ rules:
       - pattern: scala.sys.process.Process(...)
       - pattern: Runtime.getRuntime.exec(...)
       - pattern: ProcessBuilder(...)
-      - pattern: "!" + ...
-      - pattern: "!!" + ...
+      - pattern: '"!" + ...'
+      - pattern: '"!!" + ...'
       # Path Traversal / File Access 
       - pattern: scala.io.Source.fromFile(...)
       - pattern: java.io.File(...)

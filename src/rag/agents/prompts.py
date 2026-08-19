@@ -34,11 +34,12 @@ Perform a rigorous Chain-of-Thought analysis to ensure you do not hallucinate.
 
 Step 1: Grounding & Identification.
 - Identify the CVE ID, Dependency Name, and Severity explicitly mentioned in the text.
-- If they are not mentioned, output "Unknown". Do NOT invent them.
+- If no CVEs are explicitly mentioned, analyze the `runtimes` (language versions) provided. Use your internal knowledge to identify any highly critical known CVEs for those specific language versions.
+- If you find no known vulnerabilities, output "None" for cve_id, dependency, attack_vector, and mitigation.
 
 Step 2: Attack Vector Extraction.
 - Locate how the vulnerability is exploited, e.g., via a specific URL parameter, malicious JSON payload, etc...
-- List the required conditions. If the conditions are not stated, output "Unknown".
+- List the required conditions. If the conditions are not stated, output "None".
 
 Step 3: Affected Functions (Sinks) Identification.
 - Find any exact code references (functions, classes, APIs) that are vulnerable.
