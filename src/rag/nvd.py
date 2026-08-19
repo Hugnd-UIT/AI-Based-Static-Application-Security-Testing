@@ -5,7 +5,6 @@ import urllib.request
 from typing import Dict, Any, Optional
 
 URL = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId="
-_API_KEY = os.environ.get("NIST_API_KEY", "")
 
 def fetch(cve_id: str, retries: int = 2) -> Optional[Dict[str, Any]]:
     if not cve_id.startswith("CVE-"):
@@ -16,8 +15,9 @@ def fetch(cve_id: str, retries: int = 2) -> Optional[Dict[str, Any]]:
     for attempt in range(retries + 1):
         try:
             api_req = urllib.request.Request(api_url)
-            if _API_KEY:
-                api_req.add_header("apiKey", _API_KEY)
+            api_key = os.environ.get("NIST_API_KEY", "")
+            if api_key:
+                api_req.add_header("apiKey", api_key)
             with urllib.request.urlopen(api_req, timeout=30) as api_resp:
                 json_data = json.loads(api_resp.read().decode("utf-8"))
                 vuln_list = json_data.get("vulnerabilities", [])
