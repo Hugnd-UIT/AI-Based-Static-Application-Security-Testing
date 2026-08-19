@@ -251,28 +251,48 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
             try:
                 import textwrap
                 logger.blank()
+                
+                max_retries = 2
+                retry_count = 0
+                trace_json = {}
+                
                 logger.console.print(f"  [bold magenta]● SCANNING AGENT[/bold magenta]{model_tag}")
-                trace_json = scan_agents.start_scan(
-                    finding_item, ast_context,
-                    model_name=actual_model,
-                    target_dir=str(target_dir),
-                    ts_module=ts_module,
-                )
-                if trace_json and "data_flow" in trace_json:
-                    finding_item["dataflow_trace"] = json.dumps(trace_json["data_flow"], indent=2)
-                    hops_count = len(trace_json["data_flow"])
+                
+                while retry_count <= max_retries:
+                    trace_json = scan_agents.start_scan(
+                        finding_item, ast_context,
+                        model_name=actual_model,
+                        target_dir=str(target_dir),
+                        ts_module=ts_module,
+                    )
+                    
+                    if trace_json and trace_json.get("data_flow"):
+                        finding_item["dataflow_trace"] = json.dumps(trace_json["data_flow"], indent=2)
+                        hops_count = len(trace_json["data_flow"])
 
-                    if trace_json.get("source_identified"):
-                        logger.console.print(f"  ├─ [cyan]◆ Source:[/cyan] [dim]{trace_json.get('source_variable', 'Unknown')}[/dim]")
-                        logger.console.print(f"  ├─ [cyan]◆ Sink:[/cyan] [dim]{trace_json.get('sink_function', 'Unknown')}[/dim]")
+                        if trace_json.get("source_identified"):
+                            logger.console.print(f"  ├─ [cyan]◆ Source:[/cyan] [dim]{trace_json.get('source_variable', 'Unknown')}[/dim]")
+                            logger.console.print(f"  ├─ [cyan]◆ Sink:[/cyan] [dim]{trace_json.get('sink_function', 'Unknown')}[/dim]")
 
-                        for hop_item in trace_json["data_flow"]:
-                            logger.console.print(f"  │  [dim]Hop {hop_item.get('step')}: {hop_item.get('variable')} -> {hop_item.get('operation')}[/dim]")
+                            for hop_item in trace_json["data_flow"]:
+                                logger.console.print(f"  │  [dim]Hop {hop_item.get('step')}: {hop_item.get('variable')} -> {hop_item.get('operation')}[/dim]")
 
-                    logger.console.print(f"  └─ [bold green]✔ {hops_count} Hops[/bold green]")
-                else:
-                    finding_item["dataflow_trace"] = "No trace available"
-                    logger.console.print(f"  └─ [bold yellow]⚠ Data flow untraceable[/bold yellow]")
+                        logger.console.print(f"  └─ [bold green]✔ {hops_count} Hops[/bold green]")
+                        break
+                    
+                    elif trace_json and trace_json.get("surrogate_sink_proposed"):
+                        surrogate_func = trace_json.get("surrogate_function", "Unknown")
+                        finding_item["surrogate_sink_context"] = f"Original sink was unreachable. We are now treating '{surrogate_func}' as the sink. Use find_callers('{surrogate_func}') if needed."
+                        retry_count += 1
+                        
+                    else:
+                        finding_item["dataflow_trace"] = "No trace available"
+                        logger.console.print(f"  └─ [bold yellow]⚠ Data flow untraceable[/bold yellow]")
+                        break
+                
+                if retry_count > max_retries:
+                    finding_item["dataflow_trace"] = "No trace available (max retries reached)"
+                    logger.console.print(f"  └─ [bold yellow]⚠ Data flow untraceable after {max_retries} retries[/bold yellow]")
             except Exception as scan_err:
                 logger.console.print(f"  └─ [bold red]✖ Data Flow Tracing failed: {scan_err}[/bold red]")
                 finding_item["dataflow_trace"] = f"Trace Error: {scan_err}"

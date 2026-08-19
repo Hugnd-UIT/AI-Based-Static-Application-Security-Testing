@@ -161,6 +161,8 @@ SUBMIT_VERDICT_SCHEMA = {
                 "hops_traced": {"type": "integer"},
                 "cross_file": {"type": "boolean"},
                 "is_flow_unbroken": {"type": "boolean"},
+                "surrogate_sink_proposed": {"type": "boolean"},
+                "surrogate_function": {"type": "string"},
                 "poc_type": {"type": "string"},
                 "description": {"type": "string"},
                 "payload": {"type": "string"},

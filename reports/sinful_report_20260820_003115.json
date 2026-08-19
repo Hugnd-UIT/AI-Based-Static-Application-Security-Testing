@@ -1,0 +1,1300 @@
+{
+  "status": "success",
+  "data": {
+    "status": "processing",
+    "languages": {
+      "python": 6,
+      "c++": 1,
+      "c#": 1,
+      "go": 1,
+      "java": 1,
+      "javascript": 1,
+      "php": 1,
+      "ruby": 1
+    },
+    "language_versions": {
+      "python": "Python 3.14.4",
+      "c++": "g++ (Ubuntu 15.2.0-16ubuntu1) 15.2.0",
+      "c#": "Not Installed",
+      "go": "Not Installed",
+      "java": "Not Installed",
+      "javascript": "Not Installed",
+      "php": "Not Installed",
+      "ruby": "Not Installed"
+    },
+    "dependencies": [],
+    "findings": [
+      {
+        "id": "src.scan.rules.sinful-taint-go",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/go_vulns.go",
+        "start_line": 12,
+        "start_col": 12,
+        "end_line": 12,
+        "end_col": 25,
+        "severity": "CRITICAL",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 100,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "No trace available",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "package main\n\nimport (\n\t\"database/sql\"\n\t\"net/http\"\n\t\"os/exec\"\n)\n\nfunc updateSettings(w http.ResponseWriter, r *http.Request) {\n    // Zero-day IDOR\n\tdb, _ := sql.Open(\"mysql\", \"user:pass@/dbname\")\n\tuserID := r.URL.Query().Get(\"user_id\")\n\tsetting := r.URL.Query().Get(\"setting\")\n\tdb.Exec(\"UPDATE settings SET value = ? WHERE user_id = ?\", setting, userID)\n}\n\nfunc ping(w http.ResponseWriter, r *http.Request) {\n    // Known vuln: Command Injection\n\tip := r.URL.Query().Get(\"ip\")\n\tcmd := exec.Command(\"ping\", \"-c\", \"1\", ip)\n\tcmd.Run()\n}\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "SQL Injection, Command Injection",
+        "reasoning": "User-controlled input from URL query parameters is directly used in SQL queries and command execution without any sanitization.",
+        "attack_vector": "An attacker can manipulate the 'user_id', 'setting', and 'ip' parameters in the URL to execute arbitrary SQL commands or inject malicious commands.",
+        "source_identified": true,
+        "source_variable": "userID, setting, ip",
+        "sink_identified": true,
+        "sink_function": "db.Exec, exec.Command",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "userID",
+            "operation": "URL query parameter",
+            "line": 14
+          },
+          {
+            "step": 2,
+            "variable": "setting",
+            "operation": "URL query parameter",
+            "line": 14
+          },
+          {
+            "step": 3,
+            "variable": "ip",
+            "operation": "URL query parameter",
+            "line": 19
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": false,
+        "is_flow_unbroken": true,
+        "poc_type": "Manual",
+        "description": "The vulnerability can be exploited by manipulating the URL parameters to execute arbitrary SQL commands or inject malicious commands.",
+        "payload": "user_id=1; DROP TABLE settings;--&setting=malicious_value&ip=127.0.0.1; rm -rf /",
+        "explanation": "The payload manipulates the 'user_id', 'setting', and 'ip' parameters to execute arbitrary SQL commands and inject malicious commands.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/go_vulns.go",
+            "old_code": "userID := r.URL.Query().Get(\"user_id\")\nsetting := r.URL.Query().Get(\"setting\")\nip := r.URL.Query().Get(\"ip\")",
+            "new_code": "userID := sql.EscapeString(r.URL.Query().Get(\"user_id\"))\nsetting := sql.EscapeString(r.URL.Query().Get(\"setting\"))\nip := sql.EscapeString(r.URL.Query().Get(\"ip\"))"
+          }
+        ],
+        "poc": {
+          "verdict": "UNKNOWN",
+          "confidence": 0,
+          "severity": "INFO",
+          "vuln_class": "N/A",
+          "reasoning": "Agent loop did not complete. max_steps exceeded",
+          "raw_response": ""
+        }
+      },
+      {
+        "id": "src.scan.rules.sinful-taint-go",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/go_vulns.go",
+        "start_line": 14,
+        "start_col": 2,
+        "end_line": 14,
+        "end_col": 77,
+        "severity": "CRITICAL",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 90,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"userID\",\n    \"operation\": \"assignment\",\n    \"line\": 13\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"setting\",\n    \"operation\": \"assignment\",\n    \"line\": 14\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"userID, setting\",\n    \"operation\": \"sink\",\n    \"line\": 15\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "package main\n\nimport (\n\t\"database/sql\"\n\t\"net/http\"\n\t\"os/exec\"\n)\n\nfunc updateSettings(w http.ResponseWriter, r *http.Request) {\n    // Zero-day IDOR\n\tdb, _ := sql.Open(\"mysql\", \"user:pass@/dbname\")\n\tuserID := r.URL.Query().Get(\"user_id\")\n\tsetting := r.URL.Query().Get(\"setting\")\n\tdb.Exec(\"UPDATE settings SET value = ? WHERE user_id = ?\", setting, userID)\n}\n\nfunc ping(w http.ResponseWriter, r *http.Request) {\n    // Known vuln: Command Injection\n\tip := r.URL.Query().Get(\"ip\")\n\tcmd := exec.Command(\"ping\", \"-c\", \"1\", ip)\n\tcmd.Run()\n}\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "SQL Injection",
+        "reasoning": "Unsanitized user input 'userID' and 'setting' flows directly to SQL sink without any sanitization.",
+        "attack_vector": "An attacker can manipulate the 'user_id' and 'setting' parameters in the URL to execute arbitrary SQL commands.",
+        "source_identified": true,
+        "source_variable": "userID, setting",
+        "sink_identified": true,
+        "sink_function": "db.Exec",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "userID",
+            "operation": "assignment",
+            "line": 13
+          },
+          {
+            "step": 2,
+            "variable": "setting",
+            "operation": "assignment",
+            "line": 14
+          },
+          {
+            "step": 3,
+            "variable": "userID, setting",
+            "operation": "sink",
+            "line": 15
+          }
+        ],
+        "hops_traced": 2,
+        "cross_file": false,
+        "is_flow_unbroken": true,
+        "poc_type": "SQL Injection",
+        "description": "SQL Injection vulnerability due to lack of input sanitization.",
+        "payload": "user_id=1; DROP TABLE settings;--&setting=malicious_value",
+        "explanation": "The lack of input sanitization allows an attacker to inject SQL commands.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/go_vulns.go",
+            "old_code": "db.Exec(\"UPDATE settings SET value = ? WHERE user_id = ?\", setting, userID)",
+            "new_code": "stmt, _ := db.Prepare(\"UPDATE settings SET value = ? WHERE user_id = ?\")\nstmt.Exec(setting, userID)"
+          }
+        ],
+        "poc": {
+          "verdict": "VULNERABLE",
+          "severity": "CRITICAL",
+          "confidence": 100,
+          "cvss_estimate": 9.8,
+          "vuln_class": "IDOR",
+          "reasoning": "Tainted userID from URL query parameter flows directly to SQL query without sanitization.",
+          "attack_vector": "http://example.com/updateSettings?user_id=1&setting=malicious_value",
+          "source_identified": true,
+          "source_variable": "userID",
+          "sink_identified": true,
+          "sink_function": "db.Exec",
+          "data_flow": [
+            {
+              "step": 1,
+              "variable": "userID",
+              "operation": "assignment",
+              "line": 13
+            },
+            {
+              "step": 2,
+              "variable": "setting",
+              "operation": "assignment",
+              "line": 14
+            },
+            {
+              "step": 3,
+              "variable": "userID, setting",
+              "operation": "sink",
+              "line": 15
+            }
+          ],
+          "hops_traced": 2,
+          "cross_file": false,
+          "is_flow_unbroken": true,
+          "poc_type": "HTTP REQUEST",
+          "description": "Exploits IDOR vulnerability to update another user's settings.",
+          "payload": "GET /updateSettings?user_id=1&setting=malicious_value HTTP/1.1\\r\\nHost: example.com\\r\\n\\r\\n",
+          "explanation": "The userID parameter is directly used in a SQL query without validation, allowing an attacker to modify settings for any user by specifying their user_id."
+        }
+      },
+      {
+        "id": "src.scan.rules.sinful-taint-go",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/go_vulns.go",
+        "start_line": 19,
+        "start_col": 8,
+        "end_line": 19,
+        "end_col": 21,
+        "severity": "CRITICAL",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 100,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"request.args.get('id')\",\n    \"operation\": \"HTTP parameter extraction\",\n    \"line\": 2\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"uid\",\n    \"operation\": \"Assignment\",\n    \"line\": 5\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"uid\",\n    \"operation\": \"SQL query construction\",\n    \"line\": 8\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "\t\"database/sql\"\n\t\"net/http\"\n\t\"os/exec\"\n)\n\nfunc updateSettings(w http.ResponseWriter, r *http.Request) {\n    // Zero-day IDOR\n\tdb, _ := sql.Open(\"mysql\", \"user:pass@/dbname\")\n\tuserID := r.URL.Query().Get(\"user_id\")\n\tsetting := r.URL.Query().Get(\"setting\")\n\tdb.Exec(\"UPDATE settings SET value = ? WHERE user_id = ?\", setting, userID)\n}\n\nfunc ping(w http.ResponseWriter, r *http.Request) {\n    // Known vuln: Command Injection\n\tip := r.URL.Query().Get(\"ip\")\n\tcmd := exec.Command(\"ping\", \"-c\", \"1\", ip)\n\tcmd.Run()\n}\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "SQL Injection",
+        "reasoning": "Tainted data flows from user-controlled source (request.args.get('id')) to dangerous sink (SQL query construction) without sanitization.",
+        "attack_vector": "An attacker can manipulate the 'id' parameter to inject malicious SQL code, potentially leading to unauthorized access or data manipulation.",
+        "source_identified": true,
+        "source_variable": "request.args.get('id')",
+        "sink_identified": true,
+        "sink_function": "SQL query construction",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "request.args.get('id')",
+            "operation": "HTTP parameter extraction",
+            "line": 2
+          },
+          {
+            "step": 2,
+            "variable": "uid",
+            "operation": "Assignment",
+            "line": 5
+          },
+          {
+            "step": 3,
+            "variable": "uid",
+            "operation": "SQL query construction",
+            "line": 8
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": false,
+        "is_flow_unbroken": true,
+        "poc_type": "SQL Injection",
+        "description": "SQL Injection vulnerability in the updateSettings function.",
+        "payload": "user_id=1; DROP TABLE settings;--",
+        "explanation": "The payload injects a SQL command to drop the settings table, demonstrating the vulnerability.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/go_vulns.go",
+            "old_code": "db.Exec(\"UPDATE settings SET value = ? WHERE user_id = ?\", setting, userID)",
+            "new_code": "db.Exec(\"UPDATE settings SET value = ? WHERE user_id = ?\", setting, userID)"
+          }
+        ],
+        "poc": {
+          "verdict": "UNKNOWN",
+          "confidence": 0,
+          "severity": "INFO",
+          "vuln_class": "N/A",
+          "reasoning": "Agent loop did not complete. max_steps exceeded",
+          "raw_response": ""
+        }
+      },
+      {
+        "id": "javascript.express.security.audit.express-check-csurf-middleware-usage.express-check-csurf-middleware-usage",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/node_vulns.js",
+        "start_line": 2,
+        "start_col": 7,
+        "end_line": 2,
+        "end_col": 22,
+        "severity": "CRITICAL",
+        "message": "A CSRF middleware was not detected in your express application. Ensure you are either using one such as `csurf` or `csrf` (see rule references) and/or you are properly doing CSRF validation in your routes with a token or cookies.",
+        "lines": "requires login",
+        "cwe": [
+          "CWE-352: Cross-Site Request Forgery (CSRF)"
+        ],
+        "owasp": [
+          "A01:2021 - Broken Access Control",
+          "A01:2025 - Broken Access Control"
+        ],
+        "category": "security",
+        "technology": [
+          "javascript",
+          "typescript",
+          "express"
+        ],
+        "confidence": 95,
+        "impact": "HIGH",
+        "likelihood": "LOW",
+        "references": [
+          "https://www.npmjs.com/package/csurf",
+          "https://www.npmjs.com/package/csrf",
+          "https://cheatsheetseries.owasp.org/cheatsheets/Cross-Site_Request_Forgery_Prevention_Cheat_Sheet.html"
+        ],
+        "shortlink": "https://sg.run/BxzR",
+        "vulnerability_class": [
+          "Cross-Site Request Forgery (CSRF)"
+        ],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"req.args.get('id')\",\n    \"operation\": \"Assignment\",\n    \"line\": 1\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"uid\",\n    \"operation\": \"Assignment\",\n    \"line\": 6\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"uid\",\n    \"operation\": \"SQL Query\",\n    \"line\": 9\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "const express = require('express');\nconst app = express();\nconst db = require('./db');\n\napp.post('/update_profile', (req, res) => {\n    // Zero-day IDOR: Updating another user's profile without auth check\n    let target_user = req.body.user_id;\n    let new_email = req.body.email;\n    db.query(`UPDATE users SET email = ? WHERE id = ?`, [new_email, target_user]);\n    res.send(\"Profile updated\");\n});\n\napp.get('/ping', (req, res) => {\n    // Known vuln: Command injection\n    const exec = require('child_process').exec;\n    exec('ping -c 1 ' + req.query.ip, (err, stdout, stderr) => {\n        res.send(stdout);\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "IDOR",
+        "reasoning": "Unsanitized user input 'req.args.get('id')' flows directly to SQL query in 'node_vulns.js' without any validation or sanitization. This allows for Insecure Direct Object Reference (IDOR) attacks where an attacker can manipulate the 'id' parameter to access or modify unauthorized data.",
+        "attack_vector": "An attacker can exploit this vulnerability by manipulating the 'id' parameter in the request to access or modify data belonging to other users. For example, by setting 'id' to another user's ID, an attacker can update their profile information without proper authorization.",
+        "source_identified": true,
+        "source_variable": "req.args.get('id')",
+        "sink_identified": true,
+        "sink_function": "db.query",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "req.args.get('id')",
+            "operation": "Assignment",
+            "line": 1
+          },
+          {
+            "step": 2,
+            "variable": "uid",
+            "operation": "Assignment",
+            "line": 6
+          },
+          {
+            "step": 3,
+            "variable": "uid",
+            "operation": "SQL Query",
+            "line": 9
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": false,
+        "is_flow_unbroken": true,
+        "poc_type": "Manual",
+        "description": "The vulnerability can be exploited by sending a POST request to '/update_profile' with a manipulated 'user_id' parameter.",
+        "payload": "POST /update_profile HTTP/1.1\\r\\nContent-Type: application/json\\r\\n\\r\\n{\"user_id\": \"1\", \"email\": \"attacker@example.com\"}",
+        "explanation": "The 'user_id' parameter is directly used in the SQL query without any validation or sanitization, allowing an attacker to update the email of any user by specifying their 'user_id'.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/node_vulns.js",
+            "old_code": "let target_user = req.body.user_id;\\nlet new_email = req.body.email;\\ndb.query(`UPDATE users SET email = ? WHERE id = ?`, [new_email, target_user]);",
+            "new_code": "let target_user = req.body.user_id;\\nlet new_email = req.body.email;\\n// Validate and sanitize user input\\nif (!isValidUserId(target_user)) {\\n    res.status(400).send(\"Invalid user ID\");\\n    return;\\n}\\nif (!isValidEmail(new_email)) {\\n    res.status(400).send(\"Invalid email\");\\n    return;\\n}\\ndb.query(`UPDATE users SET email = ? WHERE id = ?`, [new_email, target_user]);"
+          }
+        ],
+        "poc": {
+          "verdict": "VULNERABLE",
+          "severity": "HIGH",
+          "confidence": 95,
+          "cvss_estimate": 7.5,
+          "vuln_class": "IDOR",
+          "reasoning": "Unsanitized user input in req.body.user_id is directly used in SQL query without authentication check.",
+          "attack_vector": "POST /update_profile HTTP/1.1\\nContent-Type: application/json\\n\\n{\"user_id\": \"1\", \"email\": \"attacker@example.com\"}",
+          "source_identified": true,
+          "source_variable": "req.body.user_id",
+          "sink_identified": true,
+          "sink_function": "db.query",
+          "data_flow": [
+            {
+              "step": 1,
+              "variable": "req.body.user_id",
+              "operation": "Assignment",
+              "line": 6
+            },
+            {
+              "step": 2,
+              "variable": "target_user",
+              "operation": "Assignment",
+              "line": 6
+            },
+            {
+              "step": 3,
+              "variable": "target_user",
+              "operation": "SQL Query",
+              "line": 9
+            }
+          ],
+          "hops_traced": 3,
+          "cross_file": false,
+          "is_flow_unbroken": true,
+          "poc_type": "HTTP REQUEST",
+          "description": "Exploits IDOR vulnerability to update another user's email",
+          "payload": "POST /update_profile HTTP/1.1\\nContent-Type: application/json\\n\\n{\"user_id\": \"1\", \"email\": \"attacker@example.com\"}",
+          "explanation": "The endpoint allows updating any user's email by providing their user_id without authentication.",
+          "patches": [
+            {
+              "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/node_vulns.js",
+              "old_code": "let target_user = req.body.user_id;",
+              "new_code": "let target_user = req.user.id; // Use authenticated user's ID"
+            }
+          ]
+        }
+      },
+      {
+        "id": "php.lang.security.eval-use.eval-use",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/php_vulns.php",
+        "start_line": 12,
+        "start_col": 1,
+        "end_line": 12,
+        "end_col": 13,
+        "severity": "CRITICAL",
+        "message": "Evaluating non-constant commands. This can lead to command injection.",
+        "lines": "requires login",
+        "cwe": [
+          "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+        ],
+        "owasp": [
+          "A01:2017 - Injection",
+          "A03:2021 - Injection",
+          "A05:2025 - Injection"
+        ],
+        "category": "security",
+        "technology": [
+          "php"
+        ],
+        "confidence": 100,
+        "impact": "HIGH",
+        "likelihood": "LOW",
+        "references": [
+          "https://www.php.net/manual/en/function.eval",
+          "https://github.com/FloeDesignTechnologies/phpcs-security-audit/blob/master/Security/Sniffs/BadFunctions/NoEvalsSniff.php"
+        ],
+        "shortlink": "https://sg.run/J9AP",
+        "vulnerability_class": [
+          "Command Injection"
+        ],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"$code\",\n    \"operation\": \"assignment\",\n    \"line\": 9\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"$_GET['code']\",\n    \"operation\": \"source\",\n    \"line\": 9\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "<?php\n$db = new mysqli(\"localhost\", \"user\", \"pass\", \"mydb\");\n\n// Zero-day IDOR: Deleting arbitrary item\n$item_id = $_POST['item_id'];\n$stmt = $db->prepare(\"DELETE FROM items WHERE id = ?\");\n$stmt->bind_param(\"i\", $item_id);\n$stmt->execute();\n\n// Known vuln: Eval injection\n$code = $_GET['code'];\neval($code);\n?>\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "Command Injection",
+        "reasoning": "Direct taint path from $_GET['code'] to eval() without any sanitization.",
+        "attack_vector": "An attacker can execute arbitrary PHP code by sending malicious input in the 'code' parameter.",
+        "source_identified": true,
+        "source_variable": "$_GET['code']",
+        "sink_identified": true,
+        "sink_function": "eval()",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "$code",
+            "operation": "assignment",
+            "line": 9
+          },
+          {
+            "step": 2,
+            "variable": "$_GET['code']",
+            "operation": "source",
+            "line": 9
+          }
+        ],
+        "hops_traced": 2,
+        "cross_file": false,
+        "is_flow_unbroken": true,
+        "poc_type": "HTTP Parameter Injection",
+        "description": "Arbitrary PHP code execution via the 'code' parameter.",
+        "payload": "?code=system('cat /etc/passwd');",
+        "explanation": "The 'code' parameter is directly passed to eval(), allowing arbitrary PHP code execution.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/php_vulns.php",
+            "old_code": "$code = $_GET['code'];\neval($code);",
+            "new_code": "// Removed dangerous eval call\n$code = $_GET['code'];\n// Sanitize input or avoid eval entirely"
+          }
+        ],
+        "poc": {
+          "verdict": "VULNERABLE",
+          "severity": "CRITICAL",
+          "confidence": 100,
+          "cvss_estimate": 9.8,
+          "vuln_class": "Command Injection",
+          "reasoning": "User-controlled input from $_GET['code'] flows directly to eval() without sanitization.",
+          "attack_vector": "http://example.com/vulnerable.php?code=system('cat /etc/passwd');",
+          "source_identified": true,
+          "source_variable": "$_GET['code']",
+          "sink_identified": true,
+          "sink_function": "eval()",
+          "data_flow": [
+            {
+              "step": 1,
+              "variable": "$code",
+              "operation": "assignment",
+              "line": 9
+            },
+            {
+              "step": 2,
+              "variable": "$_GET['code']",
+              "operation": "source",
+              "line": 9
+            }
+          ],
+          "hops_traced": 1,
+          "cross_file": false,
+          "is_flow_unbroken": true,
+          "poc_type": "HTTP REQUEST",
+          "description": "Arbitrary command execution via eval() injection",
+          "payload": "http://example.com/vulnerable.php?code=system('cat /etc/passwd');",
+          "explanation": "The vulnerable endpoint takes user input from the 'code' parameter and directly evaluates it using PHP's eval() function, allowing arbitrary command execution.",
+          "patches": [
+            {
+              "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/php_vulns.php",
+              "old_code": "$code = $_GET['code'];\neval($code);",
+              "new_code": "// Removed vulnerable eval() call\n$code = $_GET['code'];\n// Sanitize or remove user-controlled input\n// $code = sanitize_input($code);\n// eval($code);"
+            }
+          ]
+        }
+      },
+      {
+        "id": "src.scan.rules.sinful-taint-python",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+        "start_line": 20,
+        "start_col": 5,
+        "end_line": 20,
+        "end_col": 38,
+        "severity": "CRITICAL",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 95,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"user_id\",\n    \"operation\": \"Assignment from request.args.get('id')\",\n    \"line\": 4\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"uid\",\n    \"operation\": \"Assignment from get_user_input()\",\n    \"line\": 6\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"uid\",\n    \"operation\": \"Concatenation in SQL query\",\n    \"line\": 10\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "from flask import Flask, request, render_template_string\n\napp = Flask(__name__)\n\n# Hardcoded credentials\nAWS_ACCESS_KEY = \"AKIAIOSFODNN7EXAMPLE\"\nAWS_SECRET_KEY = \"wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY\"\n\n@app.route('/user')\ndef get_user():\n    user_id = request.args.get('id')\n    # SQL Injection\n    query = \"SELECT * FROM users WHERE id = ?\"\n    conn = sqlite3.connect('database.db')\n    cursor = conn.cursor()\n    cursor.execute(query, (user_id,))\n    result = cursor.fetchall()\n    return str(result)\n\n@app.route('/ping')\ndef ping_host():\n    ip = request.args.get('ip')\n    # Command Injection\n    command = [\"ping\", \"-c\", \"1\", ip]\n    output = subprocess.run(command, capture_output=True, text=True)\n    return output.stdout\n\n@app.route('/hello')\ndef xss_example():\n    name = request.args.get('name')\n    # Reflected XSS\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "SQL Injection",
+        "reasoning": "Unsanitized user input flows from request.args.get('id') through get_user_input() and process_data() to a raw SQL query execution point.",
+        "attack_vector": "An attacker could submit malicious SQL via the 'id' parameter to manipulate the database.",
+        "source_identified": true,
+        "source_variable": "request.args.get('id')",
+        "sink_identified": true,
+        "sink_function": "conn.execute",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "user_id",
+            "operation": "Assignment from request.args.get('id')",
+            "line": 15
+          },
+          {
+            "step": 2,
+            "variable": "uid",
+            "operation": "Assignment from get_user_input()",
+            "line": 6
+          },
+          {
+            "step": 3,
+            "variable": "uid",
+            "operation": "Concatenation in SQL query",
+            "line": 10
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": true,
+        "is_flow_unbroken": true,
+        "poc_type": "SQL Injection",
+        "description": "SQL injection through user-controlled input",
+        "payload": "1' OR '1'='1",
+        "explanation": "The payload bypasses authentication by exploiting the lack of parameterized queries.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+            "old_code": "cursor.execute(query, (user_id,))",
+            "new_code": "cursor.execute(query, (user_id,)) # Use parameterized queries"
+          }
+        ],
+        "poc": {
+          "verdict": "UNKNOWN",
+          "confidence": 0,
+          "severity": "INFO",
+          "vuln_class": "N/A",
+          "reasoning": "Agent loop did not complete. max_steps exceeded",
+          "raw_response": ""
+        }
+      },
+      {
+        "id": "src.scan.rules.sinful-taint-python",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+        "start_line": 29,
+        "start_col": 14,
+        "end_line": 29,
+        "end_col": 69,
+        "severity": "CRITICAL",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 90,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"user_id\",\n    \"operation\": \"Assignment\",\n    \"line\": 15\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"user_id\",\n    \"operation\": \"Passed as parameter\",\n    \"line\": 18\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "def get_user():\n    user_id = request.args.get('id')\n    # SQL Injection\n    query = \"SELECT * FROM users WHERE id = ?\"\n    conn = sqlite3.connect('database.db')\n    cursor = conn.cursor()\n    cursor.execute(query, (user_id,))\n    result = cursor.fetchall()\n    return str(result)\n\n@app.route('/ping')\ndef ping_host():\n    ip = request.args.get('ip')\n    # Command Injection\n    command = [\"ping\", \"-c\", \"1\", ip]\n    output = subprocess.run(command, capture_output=True, text=True)\n    return output.stdout\n\n@app.route('/hello')\ndef xss_example():\n    name = request.args.get('name')\n    # Reflected XSS\n    template = \"<h1>Hello {{ name }}!</h1>\"\n    return render_template_string(template, name=name)\n\n@app.route('/read')\ndef read_file():\n    filename = request.args.get('file')\n    # Path Traversal\n    filepath = os.path.join('/var/www/html', filename)\n    with open(filepath, 'r') as f:\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "SQL Injection",
+        "reasoning": "Tainted data flows from user-controlled source to dangerous sink without any sanitization.",
+        "attack_vector": "An attacker can inject malicious SQL queries via the 'id' parameter.",
+        "source_identified": true,
+        "source_variable": "user_id",
+        "sink_identified": true,
+        "sink_function": "cursor.execute",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "user_id",
+            "operation": "Assignment",
+            "line": 15
+          },
+          {
+            "step": 2,
+            "variable": "user_id",
+            "operation": "Passed as parameter",
+            "line": 20
+          }
+        ],
+        "hops_traced": 2,
+        "cross_file": true,
+        "is_flow_unbroken": true,
+        "poc_type": "SQL Injection",
+        "description": "SQL injection vulnerability due to unsanitized user input in SQL query.",
+        "payload": "'; DROP TABLE users; --",
+        "explanation": "The payload can be used to drop the users table in the database.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+            "old_code": "cursor.execute(query, (user_id,))",
+            "new_code": "cursor.execute(query, (sanitize(user_id),))"
+          }
+        ],
+        "poc": {
+          "verdict": "VULNERABLE",
+          "severity": "CRITICAL",
+          "confidence": 95,
+          "cvss_estimate": 9.8,
+          "vuln_class": "SQL Injection",
+          "reasoning": "Tainted data flows from user-controlled source (request.args.get('id')) to dangerous sink (cursor.execute(query, (user_id,))) without proper sanitization.",
+          "attack_vector": "http://example.com/user?id=1' UNION SELECT username, password FROM users--",
+          "source_identified": true,
+          "source_variable": "user_id",
+          "sink_identified": true,
+          "sink_function": "cursor.execute",
+          "data_flow": [
+            {
+              "step": 1,
+              "variable": "user_id",
+              "operation": "Assignment",
+              "line": 15
+            },
+            {
+              "step": 2,
+              "variable": "user_id",
+              "operation": "Passed as parameter",
+              "line": 18
+            }
+          ],
+          "hops_traced": 2,
+          "cross_file": false,
+          "is_flow_unbroken": true,
+          "poc_type": "HTTP REQUEST",
+          "description": "SQL Injection via user-controlled input in the 'id' parameter",
+          "payload": "GET /user?id=1' UNION SELECT username, password FROM users-- HTTP/1.1\r\nHost: example.com\r\n\r\n",
+          "explanation": "This payload exploits the SQL injection vulnerability by using a UNION-based attack to extract sensitive data from the database.",
+          "patches": [
+            {
+              "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+              "old_code": "cursor.execute(query, (user_id,))",
+              "new_code": "cursor.execute(query, (user_id,)) # Patched with parameterized query"
+            }
+          ]
+        }
+      },
+      {
+        "id": "src.scan.rules.sinful-taint-python",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+        "start_line": 44,
+        "start_col": 10,
+        "end_line": 44,
+        "end_col": 29,
+        "severity": "CRITICAL",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 95,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"user_id\",\n    \"operation\": \"assignment\",\n    \"line\": 15\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"query\",\n    \"operation\": \"string concatenation\",\n    \"line\": 17\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"query\",\n    \"operation\": \"SQL execution\",\n    \"line\": 18\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "    output = subprocess.run(command, capture_output=True, text=True)\n    return output.stdout\n\n@app.route('/hello')\ndef xss_example():\n    name = request.args.get('name')\n    # Reflected XSS\n    template = \"<h1>Hello {{ name }}!</h1>\"\n    return render_template_string(template, name=name)\n\n@app.route('/read')\ndef read_file():\n    filename = request.args.get('file')\n    # Path Traversal\n    filepath = os.path.join('/var/www/html', filename)\n    with open(filepath, 'r') as f:\n        return f.read()\n\n@app.route('/load')\ndef insecure_deserialization():\n    data = request.args.get('data')\n    # Insecure Deserialization\n    try:\n        obj = json.loads(data)\n    except json.JSONDecodeError:\n        return \"Invalid JSON data\", 400\n    return \"Loaded\"\n\nif __name__ == '__main__':\n    app.run(debug=False)\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "SQL Injection",
+        "reasoning": "User-controlled input from request.args.get('id') flows directly to a SQL query without sanitization.",
+        "attack_vector": "An attacker can inject malicious SQL commands via the 'id' parameter.",
+        "source_identified": true,
+        "source_variable": "request.args.get('id')",
+        "sink_identified": true,
+        "sink_function": "cursor.execute",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "user_id",
+            "operation": "assignment",
+            "line": 15
+          },
+          {
+            "step": 2,
+            "variable": "query",
+            "operation": "string concatenation",
+            "line": 17
+          },
+          {
+            "step": 3,
+            "variable": "query",
+            "operation": "SQL execution",
+            "line": 18
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": true,
+        "is_flow_unbroken": true,
+        "poc_type": "SQL Injection",
+        "description": "SQL injection vulnerability due to unsanitized user input.",
+        "payload": "' OR '1'='1",
+        "explanation": "The payload can be used to bypass authentication or extract sensitive data.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+            "old_code": "cursor.execute(query, (user_id,))",
+            "new_code": "cursor.execute('SELECT * FROM users WHERE id=?', (user_id,))"
+          }
+        ],
+        "poc": {
+          "verdict": "VULNERABLE",
+          "severity": "CRITICAL",
+          "confidence": 95,
+          "cvss_estimate": 9.8,
+          "vuln_class": "SQL Injection",
+          "reasoning": "Tainted data flows from user-controlled source (request.args.get('id')) to SQL query execution (conn.execute) without proper sanitization.",
+          "attack_vector": "http://localhost:5000/user?id=1%20UNION%20SELECT%20username,%20password%20FROM%20users",
+          "source_identified": true,
+          "source_variable": "request.args.get('id')",
+          "sink_identified": true,
+          "sink_function": "conn.execute",
+          "data_flow": [
+            {
+              "step": 1,
+              "variable": "user_id",
+              "operation": "assignment",
+              "line": 15
+            },
+            {
+              "step": 2,
+              "variable": "query",
+              "operation": "string concatenation",
+              "line": 17
+            },
+            {
+              "step": 3,
+              "variable": "query",
+              "operation": "SQL execution",
+              "line": 18
+            }
+          ],
+          "hops_traced": 3,
+          "cross_file": false,
+          "is_flow_unbroken": true,
+          "poc_type": "HTTP REQUEST",
+          "description": "SQL Injection in user endpoint",
+          "payload": "http://localhost:5000/user?id=1%20UNION%20SELECT%20username,%20password%20FROM%20users",
+          "explanation": "The user_id parameter is directly concatenated into a SQL query without proper sanitization, allowing for SQL injection attacks."
+        }
+      },
+      {
+        "id": "src.scan.rules.sinful-taint-go",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/go_vulns.go",
+        "start_line": 13,
+        "start_col": 13,
+        "end_line": 13,
+        "end_col": 26,
+        "severity": "HIGH",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 90,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"userID\",\n    \"operation\": \"Assignment\",\n    \"line\": 12\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"setting\",\n    \"operation\": \"Assignment\",\n    \"line\": 13\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"db.Exec()\",\n    \"operation\": \"SQL Query Execution\",\n    \"line\": 15\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "package main\n\nimport (\n\t\"database/sql\"\n\t\"net/http\"\n\t\"os/exec\"\n)\n\nfunc updateSettings(w http.ResponseWriter, r *http.Request) {\n    // Zero-day IDOR\n\tdb, _ := sql.Open(\"mysql\", \"user:pass@/dbname\")\n\tuserID := r.URL.Query().Get(\"user_id\")\n\tsetting := r.URL.Query().Get(\"setting\")\n\tdb.Exec(\"UPDATE settings SET value = ? WHERE user_id = ?\", setting, userID)\n}\n\nfunc ping(w http.ResponseWriter, r *http.Request) {\n    // Known vuln: Command Injection\n\tip := r.URL.Query().Get(\"ip\")\n\tcmd := exec.Command(\"ping\", \"-c\", \"1\", ip)\n\tcmd.Run()\n}\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 7.5,
+        "vuln_class": "SQL Injection",
+        "reasoning": "Tainted data flows from user-controlled source to SQL query execution without sanitization.",
+        "attack_vector": "An attacker can inject malicious SQL code through the 'user_id' parameter.",
+        "source_identified": true,
+        "source_variable": "userID",
+        "sink_identified": true,
+        "sink_function": "db.Exec()",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "userID",
+            "operation": "Assignment",
+            "line": 12
+          },
+          {
+            "step": 2,
+            "variable": "setting",
+            "operation": "Assignment",
+            "line": 13
+          },
+          {
+            "step": 3,
+            "variable": "db.Exec()",
+            "operation": "SQL Query Execution",
+            "line": 15
+          }
+        ],
+        "hops_traced": 2,
+        "cross_file": false,
+        "is_flow_unbroken": true,
+        "poc_type": "SQL Injection",
+        "description": "SQL Injection vulnerability due to unsanitized user input in SQL query.",
+        "payload": "user_id=1; DROP TABLE settings;--",
+        "explanation": "The user input is directly used in an SQL query without any sanitization, allowing for SQL injection.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/go_vulns.go",
+            "old_code": "db.Exec(\"UPDATE settings SET value = ? WHERE user_id = ?\", setting, userID)",
+            "new_code": "db.Exec(\"UPDATE settings SET value = ? WHERE user_id = ?\", setting, sql.EscapeString(userID))"
+          }
+        ],
+        "poc": {
+          "verdict": "UNKNOWN",
+          "confidence": 0,
+          "severity": "INFO",
+          "vuln_class": "N/A",
+          "reasoning": "Agent loop did not complete. max_steps exceeded",
+          "raw_response": ""
+        }
+      },
+      {
+        "id": "src.scan.rules.sinful-taint-javascript",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/node_vulns.js",
+        "start_line": 9,
+        "start_col": 5,
+        "end_line": 9,
+        "end_col": 82,
+        "severity": "HIGH",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 90,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"new_email\",\n    \"operation\": \"Assignment\",\n    \"line\": 8\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"target_user\",\n    \"operation\": \"Assignment\",\n    \"line\": 8\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"new_email and target_user\",\n    \"operation\": \"Passed to db.query\",\n    \"line\": 9\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "const express = require('express');\nconst app = express();\nconst db = require('./db');\n\napp.post('/update_profile', (req, res) => {\n    // Zero-day IDOR: Updating another user's profile without auth check\n    let target_user = req.body.user_id;\n    let new_email = req.body.email;\n    db.query(`UPDATE users SET email = ? WHERE id = ?`, [new_email, target_user]);\n    res.send(\"Profile updated\");\n});\n\napp.get('/ping', (req, res) => {\n    // Known vuln: Command injection\n    const exec = require('child_process').exec;\n    exec('ping -c 1 ' + req.query.ip, (err, stdout, stderr) => {\n        res.send(stdout);\n    });\n});\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 7.5,
+        "vuln_class": "SQL Injection",
+        "reasoning": "Tainted data flows from user-controlled source to dangerous sink without sanitization.",
+        "attack_vector": "An attacker can inject SQL commands into the query by providing malicious input in the 'email' and 'user_id' fields.",
+        "source_identified": true,
+        "source_variable": "req.body.email and req.body.user_id",
+        "sink_identified": true,
+        "sink_function": "db.query",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "new_email",
+            "operation": "Assignment",
+            "line": 8
+          },
+          {
+            "step": 2,
+            "variable": "target_user",
+            "operation": "Assignment",
+            "line": 8
+          },
+          {
+            "step": 3,
+            "variable": "new_email and target_user",
+            "operation": "Passed to db.query",
+            "line": 9
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": false,
+        "is_flow_unbroken": true,
+        "poc_type": "SQL Injection",
+        "description": "SQL Injection vulnerability due to lack of input sanitization.",
+        "payload": "email=test' OR '1'='1&user_id=1",
+        "explanation": "The payload can be used to bypass authentication and update the email of any user.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/node_vulns.js",
+            "old_code": "db.query(`UPDATE users SET email = ? WHERE id = ?`, [new_email, target_user]);",
+            "new_code": "db.query(`UPDATE users SET email = ? WHERE id = ?`, [sanitize(new_email), sanitize(target_user)]);"
+          }
+        ],
+        "poc": {
+          "verdict": "VULNERABLE",
+          "severity": "CRITICAL",
+          "confidence": 100,
+          "cvss_estimate": 9.8,
+          "vuln_class": "IDOR",
+          "reasoning": "User-controlled 'user_id' parameter is directly used in SQL query without proper authorization checks.",
+          "attack_vector": "An attacker can update another user's profile by sending a POST request to /update_profile with a different user_id.",
+          "source_identified": true,
+          "source_variable": "req.body.user_id",
+          "sink_identified": true,
+          "sink_function": "db.query",
+          "data_flow": [
+            {
+              "step": 1,
+              "variable": "req.body.user_id",
+              "operation": "Assignment",
+              "line": 8
+            },
+            {
+              "step": 2,
+              "variable": "req.body.user_id",
+              "operation": "Used in SQL query",
+              "line": 9
+            }
+          ],
+          "hops_traced": 1,
+          "cross_file": false,
+          "is_flow_unbroken": true,
+          "poc_type": "HTTP REQUEST",
+          "description": "Proof of Concept for IDOR vulnerability in /update_profile endpoint.",
+          "payload": "POST /update_profile HTTP/1.1\\r\\nHost: localhost\\r\\nContent-Type: application/json\\r\\n\\r\\n{\"user_id\": \"2\", \"email\": \"attacker@example.com\"}",
+          "explanation": "This PoC demonstrates how an attacker can update another user's profile by sending a POST request to /update_profile with a different user_id.",
+          "patches": [
+            {
+              "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/node_vulns.js",
+              "old_code": "let target_user = req.body.user_id;",
+              "new_code": "let target_user = req.user.id; // Use authenticated user's ID"
+            }
+          ]
+        }
+      },
+      {
+        "id": "src.scan.rules.sinful-taint-javascript",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/node_vulns.js",
+        "start_line": 16,
+        "start_col": 5,
+        "end_line": 18,
+        "end_col": 7,
+        "severity": "HIGH",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 90,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"request.args.get('id')\",\n    \"operation\": \"HTTP parameter extraction\",\n    \"line\": 3\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"uid\",\n    \"operation\": \"Assignment\",\n    \"line\": 4\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"uid\",\n    \"operation\": \"SQL query construction\",\n    \"line\": 8\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "const express = require('express');\nconst app = express();\nconst db = require('./db');\n\napp.post('/update_profile', (req, res) => {\n    // Zero-day IDOR: Updating another user's profile without auth check\n    let target_user = req.body.user_id;\n    let new_email = req.body.email;\n    db.query(`UPDATE users SET email = ? WHERE id = ?`, [new_email, target_user]);\n    res.send(\"Profile updated\");\n});\n\napp.get('/ping', (req, res) => {\n    // Known vuln: Command injection\n    const exec = require('child_process').exec;\n    exec('ping -c 1 ' + req.query.ip, (err, stdout, stderr) => {\n        res.send(stdout);\n    });\n});\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 7.5,
+        "vuln_class": "SQL Injection",
+        "reasoning": "Unsanitized user input flows directly to SQL query construction in process_data()",
+        "attack_vector": "An attacker can inject SQL commands by manipulating the 'id' parameter in the HTTP request",
+        "source_identified": true,
+        "source_variable": "request.args.get('id')",
+        "sink_identified": true,
+        "sink_function": "conn.execute",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "request.args.get('id')",
+            "operation": "HTTP parameter extraction",
+            "line": 3
+          },
+          {
+            "step": 2,
+            "variable": "uid",
+            "operation": "Assignment",
+            "line": 4
+          },
+          {
+            "step": 3,
+            "variable": "uid",
+            "operation": "SQL query construction",
+            "line": 8
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": true,
+        "is_flow_unbroken": true,
+        "poc_type": "SQL Injection",
+        "description": "SQL injection vulnerability through user-controlled input",
+        "payload": "1' OR '1'='1",
+        "explanation": "The payload can manipulate the SQL query to execute arbitrary commands",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py",
+            "old_code": "return request.args.get('id')",
+            "new_code": "return sqlite3.connect('test.db').execute('SELECT id FROM users WHERE id = ?', (request.args.get('id'),)).fetchone()[0]"
+          }
+        ],
+        "poc": {
+          "verdict": "VULNERABLE",
+          "severity": "CRITICAL",
+          "confidence": 95,
+          "cvss_estimate": 9.8,
+          "vuln_class": "IDOR",
+          "reasoning": "Tainted data flows from user-controlled source to dangerous sink without proper validation or sanitization.",
+          "attack_vector": "POST /update_profile HTTP/1.1\\nContent-Type: application/json\\n\\n{\"user_id\": \"1\", \"email\": \"attacker@example.com\"}",
+          "source_identified": true,
+          "source_variable": "req.body.user_id",
+          "sink_identified": true,
+          "sink_function": "db.query",
+          "data_flow": [
+            {
+              "step": 1,
+              "variable": "req.body.user_id",
+              "operation": "HTTP parameter extraction",
+              "line": 3
+            },
+            {
+              "step": 2,
+              "variable": "target_user",
+              "operation": "Assignment",
+              "line": 4
+            },
+            {
+              "step": 3,
+              "variable": "target_user",
+              "operation": "SQL query construction",
+              "line": 8
+            }
+          ],
+          "hops_traced": 3,
+          "cross_file": false,
+          "is_flow_unbroken": true,
+          "poc_type": "HTTP REQUEST",
+          "description": "Exploits IDOR vulnerability to update another user's profile",
+          "payload": "POST /update_profile HTTP/1.1\\nContent-Type: application/json\\n\\n{\"user_id\": \"1\", \"email\": \"attacker@example.com\"}",
+          "explanation": "The vulnerability allows an attacker to update the email of any user by manipulating the user_id parameter in the request body.",
+          "patches": [
+            {
+              "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/node_vulns.js",
+              "old_code": "let target_user = req.body.user_id;",
+              "new_code": "let target_user = sanitize(req.body.user_id);"
+            }
+          ]
+        }
+      },
+      {
+        "id": "python.flask.security.audit.render-template-string.render-template-string",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+        "start_line": 37,
+        "start_col": 12,
+        "end_line": 37,
+        "end_col": 55,
+        "severity": "HIGH",
+        "message": "Found a template created with string formatting. This is susceptible to server-side template injection and cross-site scripting attacks.",
+        "lines": "requires login",
+        "cwe": [
+          "CWE-96: Improper Neutralization of Directives in Statically Saved Code ('Static Code Injection')"
+        ],
+        "owasp": [
+          "A03:2021 - Injection",
+          "A05:2025 - Injection"
+        ],
+        "category": "security",
+        "technology": [
+          "flask"
+        ],
+        "confidence": 90,
+        "impact": "MEDIUM",
+        "likelihood": "LOW",
+        "references": [
+          "https://nvisium.com/blog/2016/03/09/exploring-ssti-in-flask-jinja2.html"
+        ],
+        "shortlink": "https://sg.run/8yjE",
+        "vulnerability_class": [
+          "Code Injection"
+        ],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"name\",\n    \"operation\": \"assignment\",\n    \"line\": 33\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"name\",\n    \"operation\": \"passed to render_template_string\",\n    \"line\": 33\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "    return str(result)\n\n@app.route('/ping')\ndef ping_host():\n    ip = request.args.get('ip')\n    # Command Injection\n    command = [\"ping\", \"-c\", \"1\", ip]\n    output = subprocess.run(command, capture_output=True, text=True)\n    return output.stdout\n\n@app.route('/hello')\ndef xss_example():\n    name = request.args.get('name')\n    # Reflected XSS\n    template = \"<h1>Hello {{ name }}!</h1>\"\n    return render_template_string(template, name=name)\n\n@app.route('/read')\ndef read_file():\n    filename = request.args.get('file')\n    # Path Traversal\n    filepath = os.path.join('/var/www/html', filename)\n    with open(filepath, 'r') as f:\n        return f.read()\n\n@app.route('/load')\ndef insecure_deserialization():\n    data = request.args.get('data')\n    # Insecure Deserialization\n    try:\n        obj = json.loads(data)\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 7.5,
+        "vuln_class": "Server-Side Template Injection",
+        "reasoning": "The variable 'name' is directly passed to render_template_string without any sanitization, creating a potential vulnerability to server-side template injection and cross-site scripting attacks.",
+        "attack_vector": "An attacker can inject malicious payloads into the 'name' parameter, which will be rendered by the server, leading to server-side template injection and cross-site scripting attacks.",
+        "source_identified": true,
+        "source_variable": "name",
+        "sink_identified": true,
+        "sink_function": "render_template_string",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "name",
+            "operation": "assignment",
+            "line": 33
+          },
+          {
+            "step": 2,
+            "variable": "name",
+            "operation": "passed to render_template_string",
+            "line": 33
+          }
+        ],
+        "hops_traced": 2,
+        "cross_file": false,
+        "is_flow_unbroken": true,
+        "poc_type": "Injection",
+        "description": "Server-Side Template Injection and Cross-Site Scripting",
+        "payload": "Malicious payload in the 'name' parameter",
+        "explanation": "The lack of sanitization allows for the injection of malicious payloads into the 'name' parameter, which are then rendered by the server, leading to server-side template injection and cross-site scripting attacks.",
+        "patches": [
+          {
+            "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+            "old_code": "name = request.args.get('name')\n    template = \"<h1>Hello {{ name }}!</h1>\"\n    return render_template_string(template, name=name)",
+            "new_code": "name = request.args.get('name')\n    template = \"<h1>Hello {{ name }}!</h1>\"\n    return render_template_string(template, name=mark_safe(escape(name)))"
+          }
+        ],
+        "poc": {
+          "verdict": "VULNERABLE",
+          "severity": "CRITICAL",
+          "confidence": 95,
+          "cvss_estimate": 9.8,
+          "vuln_class": "Server-Side Template Injection",
+          "reasoning": "Unsanitized user input is directly passed to render_template_string, allowing server-side template injection and cross-site scripting attacks.",
+          "attack_vector": "http://example.com/hello?name={{7*7}}",
+          "source_identified": true,
+          "source_variable": "name",
+          "sink_identified": true,
+          "sink_function": "render_template_string",
+          "data_flow": [
+            {
+              "step": 1,
+              "variable": "name",
+              "operation": "assignment",
+              "line": 33
+            },
+            {
+              "step": 2,
+              "variable": "name",
+              "operation": "passed to render_template_string",
+              "line": 33
+            }
+          ],
+          "hops_traced": 2,
+          "cross_file": false,
+          "is_flow_unbroken": true,
+          "poc_type": "HTTP REQUEST",
+          "description": "Server-Side Template Injection via render_template_string",
+          "payload": "GET /hello?name={{7*7}} HTTP/1.1\r\nHost: example.com\r\n\r\n",
+          "explanation": "The payload {{7*7}} is rendered as 49, demonstrating server-side template injection.",
+          "patches": [
+            {
+              "file_path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+              "old_code": "name = request.args.get('name')\n    # Reflected XSS\n    template = \"<h1>Hello {{ name }}!</h1>\"\n    return render_template_string(template, name=name)",
+              "new_code": "name = request.args.get('name')\n    # Reflected XSS\n    template = \"<h1>Hello {{ name }}!</h1>\"\n    return render_template_string(template, name=Markup.escape(name))"
+            }
+          ]
+        }
+      },
+      {
+        "id": "src.scan.rules.sinful-taint-go",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/go_vulns.go",
+        "start_line": 20,
+        "start_col": 9,
+        "end_line": 20,
+        "end_col": 44,
+        "severity": "WARNING",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": "",
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"uid\",\n    \"operation\": \"assignment\",\n    \"line\": 4\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"uid\",\n    \"operation\": \"SQL query concatenation\",\n    \"line\": 7\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "\t\"net/http\"\n\t\"os/exec\"\n)\n\nfunc updateSettings(w http.ResponseWriter, r *http.Request) {\n    // Zero-day IDOR\n\tdb, _ := sql.Open(\"mysql\", \"user:pass@/dbname\")\n\tuserID := r.URL.Query().Get(\"user_id\")\n\tsetting := r.URL.Query().Get(\"setting\")\n\tdb.Exec(\"UPDATE settings SET value = ? WHERE user_id = ?\", setting, userID)\n}\n\nfunc ping(w http.ResponseWriter, r *http.Request) {\n    // Known vuln: Command Injection\n\tip := r.URL.Query().Get(\"ip\")\n\tcmd := exec.Command(\"ping\", \"-c\", \"1\", ip)\n\tcmd.Run()\n}\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n"
+      },
+      {
+        "id": "src.scan.rules.sinful-taint-python",
+        "path": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/vulnerable_code/python_vulns.py",
+        "start_line": 43,
+        "start_col": 16,
+        "end_line": 43,
+        "end_col": 55,
+        "severity": "WARNING",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": "",
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "No trace available",
+        "fix": null,
+        "fix_regex": null,
+        "ast_context": "    command = [\"ping\", \"-c\", \"1\", ip]\n    output = subprocess.run(command, capture_output=True, text=True)\n    return output.stdout\n\n@app.route('/hello')\ndef xss_example():\n    name = request.args.get('name')\n    # Reflected XSS\n    template = \"<h1>Hello {{ name }}!</h1>\"\n    return render_template_string(template, name=name)\n\n@app.route('/read')\ndef read_file():\n    filename = request.args.get('file')\n    # Path Traversal\n    filepath = os.path.join('/var/www/html', filename)\n    with open(filepath, 'r') as f:\n        return f.read()\n\n@app.route('/load')\ndef insecure_deserialization():\n    data = request.args.get('data')\n    # Insecure Deserialization\n    try:\n        obj = json.loads(data)\n    except json.JSONDecodeError:\n        return \"Invalid JSON data\", 400\n    return \"Loaded\"\n\nif __name__ == '__main__':\n    app.run(debug=False)\n\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n"
+      }
+    ],
+    "cves": [],
+    "nvd_data": [],
+    "rag_summary": {
+      "cve_id": "None",
+      "dependency": "None",
+      "severity": "None",
+      "attack_vector": "None",
+      "mitigation": "None",
+      "analysis": [],
+      "functions": [],
+      "summary": "No known vulnerabilities for the provided runtime versions."
+    },
+    "cross_file_context": "[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_input() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/fileA.py\n  Propagates to  : fileB.py (line 6)\n  Caller function:\ndef process_data():\n    # Taint propagates here\n    uid = get_user_input()\n    \n    conn = sqlite3.connect('test.db')\n    # Vulnerable sink execution\n    conn.execute('SELECT * FROM users WHERE id=' + uid)\n  Origin function:\ndef get_user_input():\n    # Vulnerable HTTP source\n    return request.args.get('id')\n\n[CROSS-FILE TAINT PATH DETECTED]\n  Tainted Source : get_user_id() in /mnt/c/Users/ASUS/Documents/AI-Based SAST/samples/cross_file_test/auth.py\n  Propagates to  : db.py (line 5)\n  Caller function:\ndef fetch_records():\n    uid = get_user_id()\n    conn = sqlite3.connect(\"app.db\")\n    conn.execute(\"SELECT * FROM records WHERE user_id = \" + uid)\n  Origin function:\ndef get_user_id():\n    return request.args.get(\"user_id\")\n",
+    "is_vulnerable": true
+  }
+}

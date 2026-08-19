@@ -12,12 +12,16 @@ def start_scan(
     from main import MODELS
     resolved_model = model_name or MODELS[0]
 
+    extra_context = ""
+    if finding_item.get("surrogate_sink_context"):
+        extra_context = f"\n\n[RETRY WITH SURROGATE SINK]\n{finding_item['surrogate_sink_context']}"
+
     user_message = USER_TEMPLATE.format(
         rule  = finding_item.get("id", "N/A"),
         msg   = finding_item.get("message", ""),
         path  = finding_item.get("path", ""),
         dflow = finding_item.get("dataflow_trace", "No dataflow trace provided."),
-        code  = source_code,
+        code  = source_code + extra_context,
     )
 
     return run_agent(

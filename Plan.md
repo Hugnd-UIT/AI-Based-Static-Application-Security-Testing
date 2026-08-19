@@ -133,15 +133,36 @@ $\Rightarrow$ *Kết luận: Đây là điểm sếp ĂN ĐỨT Argus! Argus ch�
 
 ---
 
-## Lưu ý về thứ tự agent (trả lời thắc mắc của sếp)
+## Giải ngố cực mạnh: Con HACK chạy ở đâu? Và Argus có chính xác những con nào?
 
-Thứ tự hiện tại: `Scan → Audit → Hack → Fix` — **ĐÃ ĐÚNG** và không cần thay đổi.
+Sếp đang bị nhầm lẫn giữa **con HACK của sếp** và **con PoC của Argus**. Hai con này làm nhiệm vụ HOÀN TOÀN KHÁC NHAU và chạy ở hai thời điểm KHÁC NHAU. Để em giải thích rạch ròi:
 
-Con Hack chạy sau Audit là thiết kế hợp lý:
-- Audit xác nhận VULNERABLE trước
-- Hack chỉ tốn token khi đã chắc chắn là lỗi thật
+### 1. Con Hack Agent của sếp chạy ở đâu?
+**Nó vẫn chạy SAU Audit Agent như hiện tại.**
+- **Tại sao?** Vì con Hack của sếp dùng để viết mã khai thác (exploit payload) cho cái lỗ hổng nằm trong **SOURCE CODE của sếp** (ví dụ file `app.py`). Nếu Audit chưa xác nhận đó là lỗ hổng thật (VULNERABLE), thì Hack chạy làm gì cho tốn tiền? 
+$\rightarrow$ Thứ tự của sếp: `Scan (tìm đường) -> Audit (chốt lỗi) -> Hack (viết mã hack) -> Fix (sửa lỗi)`. **Không có gì thay đổi hết!**
 
-Điều Argus làm khác là có thêm "PoC Agent" để verify CVE dependency (Upgrade 3 phía trên), không phải thay đổi thứ tự Hack Agent hiện tại của sếp.
+### 2. Vậy con PoC Agent của Argus là gì? Tại sao nó chạy TRƯỚC?
+Con PoC của Argus **KHÔNG HỀ** sinh mã hack cho source code của sếp. Nó dùng để test các lỗ hổng (CVE) của **THƯ VIỆN BÊN THỨ 3** (Dependencies).
+Ví dụ: Code sếp dùng thư viện `log4j`.
+- Con RAG lên mạng tải về CVE của `log4j`.
+- Con PoC Agent của Argus sẽ nhảy vào: *"Ê để tao đọc CVE này xem trong project này có bị dính không, tao thử viết code hack cái thư viện này xem"*. 
+- Nếu nó hack được $\rightarrow$ Trích xuất ra các **Sink** nguy hiểm của thư viện đó $\rightarrow$ Quăng cho CodeQL quét (tương đương con Scan của sếp).
+$\rightarrow$ Do đó, con PoC Agent của Argus (chính là Upgrade 3 trong plan) bắt buộc phải chạy **TRƯỚC** khi vào vòng lặp Scan.
+
+### 3. Tóm tắt 5 con Agent chính tả của Argus (Viết rõ không lửng lơ)
+Trong bài báo mục 1 (Introduction), Argus có chính xác 5 con Agents:
+
+1. **Dependency Scanning Agent**: Đọc file `pom.xml`, `package.json` xem sếp xài thư viện gì.
+2. **Information Collecting Agent (RAG)**: Lên NVD, OSV, Github cào tất cả CVE của mấy cái thư viện đó về.
+3. **PoC Generating Agent**: (Chính là con PoC Verifier em đề xuất ở Upgrade 3). Thử khai thác mấy cái CVE kia xem có chạy được không. Nếu chạy được thì trích xuất SINK.
+4. **Data Flow Scanning Agent**: Dùng CodeQL quét từ Source đến Sink. (Có thêm kỹ thuật lùi Recursion - Upgrade 1). Tương đương con **Scan Agent** của sếp.
+5. **Data Flow Reviewing Agent**: Kiểm tra từng bước luồng dữ liệu xem có bị if/else chặn không. Tương đương con **Audit Agent** của sếp.
+
+**Sếp thấy chưa?** 
+- Argus làm chó gì có con nào viết mã khai thác thẳng vào code của sếp (Hack Agent)!
+- Argus cũng làm chó gì có con nào tự động vá lỗi cho code của sếp (Fix Agent)!
+$\Rightarrow$ Nên em mới bảo sếp đẻ thêm 2 con Hack và Fix ở cuối là sếp **ĂN ĐỨT** Argus. Sếp chỉ bị khuyết đúng đoạn xử lý Thư viện (PoC CVE) và đoạn Chữa luồng gãy (Recursion) của nó thôi!
 
 ---
 
