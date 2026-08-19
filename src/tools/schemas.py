@@ -167,6 +167,22 @@ SUBMIT_VERDICT_SCHEMA = {
                 "description": {"type": "string"},
                 "payload": {"type": "string"},
                 "explanation": {"type": "string"},
+                "exploitable": {
+                    "type": "boolean",
+                    "description": "For PoC Verifier: True if the CVE can be exploited in the current context."
+                },
+                "extra_sinks": {
+                    "type": "array",
+                    "description": "For Sink Expander: List of new dangerous sink patterns discovered from the CVE context.",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "pattern": {"type": "string", "description": "Regex or literal pattern to search for."},
+                            "severity": {"type": "string", "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW"]},
+                            "description": {"type": "string"}
+                        }
+                    }
+                },
                 "patches": {
                     "type": "array",
                     "items": {
@@ -188,3 +204,5 @@ SCAN_TOOL_SET  = [READ_FILE_SCHEMA, FIND_FUNCTION_SCHEMA, FIND_CALLERS_SCHEMA, S
 AUDIT_TOOL_SET = [READ_FILE_SCHEMA, TRACE_VARIABLE_SCHEMA, FIND_FUNCTION_SCHEMA, FIND_CALLERS_SCHEMA, SEARCH_PATTERN_SCHEMA, SUBMIT_VERDICT_SCHEMA]
 HACK_TOOL_SET  = [READ_FILE_SCHEMA, SEARCH_PATTERN_SCHEMA, FIND_FUNCTION_SCHEMA, SUBMIT_VERDICT_SCHEMA]
 FIX_TOOL_SET   = [READ_FILE_SCHEMA, SEARCH_PATTERN_SCHEMA, FIND_FUNCTION_SCHEMA, SUBMIT_VERDICT_SCHEMA]
+POC_VERIFY_TOOL_SET = [READ_FILE_SCHEMA, SEARCH_PATTERN_SCHEMA, FIND_FUNCTION_SCHEMA, SUBMIT_VERDICT_SCHEMA]
+SINK_EXPAND_TOOL_SET = [SUBMIT_VERDICT_SCHEMA]

@@ -216,9 +216,65 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                 wrap_width = max(60, console.width - 15)
                 for w_line in textwrap.wrap(rag_summary['mitigation'], width=wrap_width, initial_indent="Mitigation: ", subsequent_indent="            "):
                     console.print(f"  │  [dim]{w_line}[/dim]")
-            console.print("  └─ [bold green]✔ RAG completed![/bold green]")
+            
+            console.print(f"  [bold magenta]● VERIFYING AGENT[/bold magenta]{model_tag}")
+            from src.rag.agents import verifier
+            poc_result = verifier.start_verify(cve_context, model_name=actual_model, target_dir=str(target_dir), ts_module=ts_module)
+            
+            is_exploitable = poc_result.get("exploitable", True)
+            if not is_exploitable:
+                console.print(f"  └─ [bold yellow]⚠ CVE is NOT exploitable in this codebase[/bold yellow]")
+                cve_context += "\nNOTE: PoC Verifier determined this CVE is NOT exploitable in the current codebase."
+            else:
+                conf = poc_result.get('confidence', 100)
+                console.print(f"  └─ [bold green]✔ CVE is exploitable! \[Confidence: {conf}%][/bold green]")
+                if poc_result.get("reasoning"):
+                    console.print(f"     [dim]Reason: {poc_result['reasoning']}[/dim]")
+                
+                console.print(f"  [bold magenta]● EXPANDING AGENT[/bold magenta]{model_tag}")
+                from src.rag.agents import expander
+                expand_result = expander.start_expand(cve_context, model_name=actual_model, target_dir=str(target_dir), ts_module=ts_module)
+                
+                extra_sinks = expand_result.get("extra_sinks", [])
+                if extra_sinks:
+                    console.print(f"  ├─ [cyan]◆ Extracted {len(extra_sinks)} new sink patterns[/cyan]")
+                    from src.tools.actions import search_pattern
+                    for sink in extra_sinks:
+                        pat = sink.get("pattern", "")
+                        console.print(f"  │  [dim]Searching for: {pat}[/dim]")
+                        if pat:
+                            try:
+                                search_res = search_pattern({"pattern": pat}, str(target_dir))
+                                if search_res.startswith("[PATTERN"):
+                                    lines = search_res.split("\n")[1:]
+                                    for line in lines:
+                                        if line.startswith("  ") and ":" in line:
+                                            parts = line.strip().split(":", 2)
+                                            if len(parts) >= 2:
+                                                file_path = parts[0]
+                                                try:
+                                                    line_num = int(parts[1])
+                                                except ValueError:
+                                                    line_num = 1
+                                                
+                                                desc = sink.get("description", pat)
+                                                new_finding = {
+                                                    "id": f"dynamic-sink-{pat}",
+                                                    "message": f"Dynamically expanded sink from CVE: {desc}",
+                                                    "path": file_path,
+                                                    "start_line": line_num,
+                                                    "end_line": line_num,
+                                                }
+                                                scan_findings.append(new_finding)
+                            except Exception as e:
+                                pass
+                    console.print("  └─ [bold green]✔ Sinks injected![/bold green]")
+                else:
+                    console.print("  └─ [dim]No extra sinks extracted.[/dim]")
+
+            console.print("  └─ [bold green]✔ Supply Chain Analysis completed![/bold green]")
         except Exception as rag_err:
-            console.print(f"  └─ [bold red]✖ RAG failed: {rag_err}[/bold red]")
+            console.print(f"  └─ [bold red]✖ RAG/Supply Chain failed: {rag_err}[/bold red]")
             scan_result["rag_summary"] = {"error": str(rag_err)}
             cve_context = cve_data_str
     else:
