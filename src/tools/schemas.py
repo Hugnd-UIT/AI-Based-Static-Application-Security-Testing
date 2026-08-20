@@ -1,4 +1,4 @@
-READ_FILE_SCHEMA = {
+READ_SCHEMA = {
     "type": "function",
     "function": {
         "name": "read_file",
@@ -24,7 +24,7 @@ READ_FILE_SCHEMA = {
     },
 }
 
-TRACE_VARIABLE_SCHEMA = {
+TRACE_SCHEMA = {
     "type": "function",
     "function": {
         "name": "trace_variable",
@@ -46,7 +46,7 @@ TRACE_VARIABLE_SCHEMA = {
     },
 }
 
-FIND_FUNCTION_SCHEMA = {
+FUNC_SCHEMA = {
     "type": "function",
     "function": {
         "name": "find_function",
@@ -64,7 +64,7 @@ FIND_FUNCTION_SCHEMA = {
     },
 }
 
-FIND_CALLERS_SCHEMA = {
+CALLER_SCHEMA = {
     "type": "function",
     "function": {
         "name": "find_callers",
@@ -82,7 +82,7 @@ FIND_CALLERS_SCHEMA = {
     },
 }
 
-SEARCH_PATTERN_SCHEMA = {
+SEARCH_SCHEMA = {
     "type": "function",
     "function": {
         "name": "search_pattern",
@@ -104,7 +104,7 @@ SEARCH_PATTERN_SCHEMA = {
     },
 }
 
-SUBMIT_VERDICT_SCHEMA = {
+VERDICT_SCHEMA = {
     "type": "function",
     "function": {
         "name": "submit_verdict",
@@ -160,8 +160,8 @@ SUBMIT_VERDICT_SCHEMA = {
                 },
                 "hops_traced": {"type": "integer"},
                 "cross_file": {"type": "boolean"},
-                "is_flow_unbroken": {"type": "boolean"},
-                "surrogate_sink_proposed": {"type": "boolean"},
+                "flow_unbroken": {"type": "boolean"},
+                "use_surrogate": {"type": "boolean"},
                 "surrogate_function": {"type": "string"},
                 "poc_type": {"type": "string"},
                 "description": {"type": "string"},
@@ -200,9 +200,9 @@ SUBMIT_VERDICT_SCHEMA = {
     },
 }
 
-SCAN_TOOL_SET  = [READ_FILE_SCHEMA, TRACE_VARIABLE_SCHEMA, FIND_FUNCTION_SCHEMA, FIND_CALLERS_SCHEMA, SUBMIT_VERDICT_SCHEMA]
-AUDIT_TOOL_SET = [READ_FILE_SCHEMA, TRACE_VARIABLE_SCHEMA, FIND_FUNCTION_SCHEMA, FIND_CALLERS_SCHEMA, SEARCH_PATTERN_SCHEMA, SUBMIT_VERDICT_SCHEMA]
-HACK_TOOL_SET  = [READ_FILE_SCHEMA, SEARCH_PATTERN_SCHEMA, FIND_FUNCTION_SCHEMA, SUBMIT_VERDICT_SCHEMA]
-FIX_TOOL_SET   = [READ_FILE_SCHEMA, SEARCH_PATTERN_SCHEMA, FIND_FUNCTION_SCHEMA, SUBMIT_VERDICT_SCHEMA]
-POC_VERIFY_TOOL_SET = [READ_FILE_SCHEMA, SEARCH_PATTERN_SCHEMA, FIND_FUNCTION_SCHEMA, SUBMIT_VERDICT_SCHEMA]
-SINK_EXPAND_TOOL_SET = [SEARCH_PATTERN_SCHEMA, SUBMIT_VERDICT_SCHEMA]
+SCAN_TOOLS  = [READ_SCHEMA, TRACE_SCHEMA, FUNC_SCHEMA, CALLER_SCHEMA, VERDICT_SCHEMA]
+AUDIT_TOOLS = [READ_SCHEMA, TRACE_SCHEMA, FUNC_SCHEMA, CALLER_SCHEMA, SEARCH_SCHEMA, VERDICT_SCHEMA]
+HACK_TOOLS  = [READ_SCHEMA, SEARCH_SCHEMA, FUNC_SCHEMA, VERDICT_SCHEMA]
+FIX_TOOLS   = [READ_SCHEMA, SEARCH_SCHEMA, FUNC_SCHEMA, VERDICT_SCHEMA]
+VERIFY_TOOLS = [READ_SCHEMA, SEARCH_SCHEMA, FUNC_SCHEMA, VERDICT_SCHEMA]
+EXPAND_TOOLS = [SEARCH_SCHEMA, VERDICT_SCHEMA]

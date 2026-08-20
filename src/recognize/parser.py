@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 import re
 import xml.etree.ElementTree as ET
@@ -19,12 +19,14 @@ DEPS = {
 
 def parse_php(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
+
     try:
         with open(file_path, "r", encoding="utf-8") as file_handle:
             json_data = json.load(file_handle)
             req_dict = {**json_data.get("require", {}), **json_data.get("require-dev", {})}
 
             for pkg_name, pkg_version in req_dict.items():
+
                 if pkg_name == "php" or "/" not in pkg_name:
                     continue
 
@@ -35,12 +37,15 @@ def parse_php(file_path: str) -> List[Dict[str, str]]:
                         "version": pkg_version.strip("^~<>="),
                     }
                 )
+
     except Exception:
         pass
+
     return parsed_deps
 
 def parse_npm(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
+
     try:
         with open(file_path, "r", encoding="utf-8") as file_handle:
             json_data = json.load(file_handle)
@@ -50,14 +55,18 @@ def parse_npm(file_path: str) -> List[Dict[str, str]]:
                 parsed_deps.append(
                     {"ecosystem": "npm", "package": pkg_name, "version": pkg_version.strip("^~<>=")}
                 )
+
     except Exception:
         pass
+
     return parsed_deps
 
 def parse_pypi(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
+
     try:
         with open(file_path, "r", encoding="utf-8") as file_handle:
+
             for line_text in file_handle:
                 line_text = line_text.strip()
 
@@ -68,11 +77,13 @@ def parse_pypi(file_path: str) -> List[Dict[str, str]]:
                 line_text = line_text.split(";")[0].strip()
 
                 version_match = re.search(r'([><=!~]+)\s*([\w.]+)', line_text)
+
                 if version_match:
                     pkg_name = line_text[:version_match.start()].strip()
                     pkg_version = version_match.group(2).strip()
                     # Strip bracket extras from package name
                     pkg_name = re.sub(r'\[.*?\]', '', pkg_name).strip()
+
                     if pkg_name:
                         parsed_deps.append(
                             {
@@ -81,9 +92,11 @@ def parse_pypi(file_path: str) -> List[Dict[str, str]]:
                                 "version": pkg_version,
                             }
                         )
+
                 else:
                     # Bare package name with no version
                     pkg_name = re.sub(r'\[.*?\]', '', line_text).strip()
+
                     if pkg_name:
                         parsed_deps.append(
                             {
@@ -92,12 +105,15 @@ def parse_pypi(file_path: str) -> List[Dict[str, str]]:
                                 "version": "",
                             }
                         )
+
     except Exception:
         pass
+
     return parsed_deps
 
 def parse_maven(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
+
     try:
         xml_tree = ET.parse(file_path)
         xml_root = xml_tree.getroot()
@@ -112,33 +128,42 @@ def parse_maven(file_path: str) -> List[Dict[str, str]]:
             pkg_version = dep_node.find(f"{xml_ns}version")
 
             if group_id is not None and artifact_id is not None and pkg_version is not None:
+
                 if "$" not in pkg_version.text:
                     pkg_name = f"{group_id.text}:{artifact_id.text}"
                     parsed_deps.append(
                         {"ecosystem": "maven", "package": pkg_name, "version": pkg_version.text}
                     )
+
     except Exception:
         pass
+
     return parsed_deps
 
 def parse_go(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
+
     try:
         with open(file_path, "r", encoding="utf-8") as file_handle:
             file_content = file_handle.read()
             regex_matches = re.findall(r"([a-zA-Z0-9.\-_/]+)\s+v([0-9a-zA-Z.\-_]+)", file_content)
 
             for pkg_name, pkg_version in regex_matches:
+
                 if pkg_name != "go":
                     parsed_deps.append({"ecosystem": "go", "package": pkg_name, "version": pkg_version})
+
     except Exception:
         pass
+
     return parsed_deps
 
 def parse_ruby(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
+
     try:
         with open(file_path, "r", encoding="utf-8") as file_handle:
+
             for line_text in file_handle:
                 line_text = line_text.strip()
 
@@ -155,12 +180,15 @@ def parse_ruby(file_path: str) -> List[Dict[str, str]]:
                         parsed_deps.append(
                             {"ecosystem": "rubygems", "package": pkg_name, "version": pkg_version}
                         )
+
     except Exception:
         pass
+
     return parsed_deps
 
 def parse_csproj(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
+
     try:
         xml_tree = ET.parse(file_path)
         xml_root = xml_tree.getroot()
@@ -171,12 +199,15 @@ def parse_csproj(file_path: str) -> List[Dict[str, str]]:
 
             if pkg_name and pkg_version:
                 parsed_deps.append({"ecosystem": "nuget", "package": pkg_name, "version": pkg_version})
+
     except Exception:
         pass
+
     return parsed_deps
 
 def parse_nuget(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
+
     try:
         xml_tree = ET.parse(file_path)
         xml_root = xml_tree.getroot()
@@ -187,11 +218,13 @@ def parse_nuget(file_path: str) -> List[Dict[str, str]]:
 
             if pkg_name and pkg_version:
                 parsed_deps.append({"ecosystem": "nuget", "package": pkg_name, "version": pkg_version})
+
     except Exception:
         pass
+
     return parsed_deps
 
-def parse_all_deps(target_path: str) -> List[Dict[str, str]]:
+def parse_deps(target_path: str) -> List[Dict[str, str]]:
     dir_path = Path(target_path)
 
     if not dir_path.exists() or not dir_path.is_dir():
@@ -206,20 +239,28 @@ def parse_all_deps(target_path: str) -> List[Dict[str, str]]:
             full_path = os.path.join(root_dir, file_name)
 
             if file_name in DEPS:
+
                 if file_name == "composer.json":
                     parsed_deps.extend(parse_php(full_path))
+
                 elif file_name == "package.json":
                     parsed_deps.extend(parse_npm(full_path))
+
                 elif file_name == "requirements.txt":
                     parsed_deps.extend(parse_pypi(full_path))
+
                 elif file_name == "pom.xml":
                     parsed_deps.extend(parse_maven(full_path))
+
                 elif file_name == "go.mod":
                     parsed_deps.extend(parse_go(full_path))
+
                 elif file_name == "Gemfile":
                     parsed_deps.extend(parse_ruby(full_path))
+
                 elif file_name == "packages.config":
                     parsed_deps.extend(parse_nuget(full_path))
+
             elif file_name.endswith(".csproj"):
                 parsed_deps.extend(parse_csproj(full_path))
 
@@ -237,5 +278,7 @@ def report_deps(parsed_deps: List[Dict[str, str]]):
     from cli.views.logger import console
     console.print(f"  [cyan]{len(parsed_deps)}[/cyan] dependencies detected")
     console.print()
+
     for dep_item in parsed_deps:
         console.print(f"  - [magenta]{dep_item['ecosystem']}[/magenta] [blue]{dep_item['package']}[/blue] v{dep_item['version']}")
+

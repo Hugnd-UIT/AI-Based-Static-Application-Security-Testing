@@ -1,4 +1,5 @@
 rules:
+
   - id: sinful-taint-javascript
     mode: taint
     message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
@@ -7,130 +8,234 @@ rules:
 
     pattern-sources:
       # Express / Node HTTP 
+
       - pattern: req.query
+
       - pattern: req.query.$FIELD
+
       - pattern: req.body
+
       - pattern: req.body.$FIELD
+
       - pattern: req.params
+
       - pattern: req.params.$FIELD
+
       - pattern: req.headers
+
       - pattern: req.headers[$FIELD]
+
       - pattern: req.cookies
+
       - pattern: req.cookies[$FIELD]
+
       - pattern: req.get(...)
+
       - pattern: req.file
+
       - pattern: req.files
       # Koa 
+
       - pattern: ctx.query
+
       - pattern: ctx.request.body
+
       - pattern: ctx.params
+
       - pattern: ctx.cookies.get(...)
+
       - pattern: ctx.headers
       # Fastify 
+
       - pattern: request.query
+
       - pattern: request.body
+
       - pattern: request.params
+
       - pattern: request.headers
       # Next.js 
+
       - pattern: $CTX.query
-      - pattern: $REQ.query
+
+      - pattern: $USE_REQ.query
+
       - pattern: searchParams.get(...)
+
       - pattern: useSearchParams().get(...)
       # Browser DOM 
+
       - pattern: document.location.hash
+
       - pattern: document.location.search
+
       - pattern: window.location.href
+
       - pattern: location.search
+
       - pattern: location.hash
+
       - pattern: document.referrer
+
       - pattern: document.URL
+
       - pattern: document.cookie
       # General 
-      - pattern: process.env.$VAR
+
+      - pattern: process.env.$GET_VAR
+
       - pattern: process.argv
 
     pattern-sinks:
       # SQL Injection 
-      - pattern: $DB.query(...)
-      - pattern: $DB.execute(...)
+
+      - pattern: $USE_DB.query(...)
+
+      - pattern: $USE_DB.execute(...)
+
       - pattern: $POOL.query(...)
+
       - pattern: $CLIENT.query(...)
+
       - pattern: $KNEX.raw(...)
+
       - pattern: $SEQUELIZE.query(...)
       # NoSQL Injection MongoDB 
+
       - pattern: $COLLECTION.find(...)
+
       - pattern: $COLLECTION.findOne(...)
+
       - pattern: $COLLECTION.updateOne(...)
+
       - pattern: $COLLECTION.deleteOne(...)
+
       - pattern: $COLLECTION.aggregate(...)
-      - pattern: $MODEL.findOne(...)
-      - pattern: $MODEL.find(...)
+
+      - pattern: $GET_MODEL.findOne(...)
+
+      - pattern: $GET_MODEL.find(...)
       # Command Injection 
+
       - pattern: exec(...)
+
       - pattern: execSync(...)
+
       - pattern: spawn(...)
+
       - pattern: spawnSync(...)
+
       - pattern: child_process.exec(...)
+
       - pattern: child_process.spawn(...)
+
       - pattern: child_process.execSync(...)
+
       - pattern: child_process.fork(...)
       # Code Execution 
+
       - pattern: eval(...)
+
       - pattern: new Function(...)
+
       - pattern: setTimeout($X, ...)
+
       - pattern: setInterval($X, ...)
+
       - pattern: vm.runInThisContext(...)
+
       - pattern: vm.runInNewContext(...)
       # Path Traversal / File Access 
+
       - pattern: fs.readFile(...)
+
       - pattern: fs.readFileSync(...)
+
       - pattern: fs.writeFile(...)
+
       - pattern: fs.writeFileSync(...)
+
       - pattern: fs.unlink(...)
+
       - pattern: fs.rmdir(...)
+
       - pattern: require(...)
+
       - pattern: import(...)
       # SSRF 
+
       - pattern: fetch(...)
+
       - pattern: axios.get(...)
+
       - pattern: axios.post(...)
+
       - pattern: axios.request(...)
+
       - pattern: http.get(...)
+
       - pattern: https.get(...)
+
       - pattern: got(...)
+
       - pattern: request(...)
       # XSS / DOM Injection 
+
       - pattern: $EL.innerHTML = ...
+
       - pattern: $EL.outerHTML = ...
+
       - pattern: $EL.insertAdjacentHTML(...)
+
       - pattern: document.write(...)
+
       - pattern: document.writeln(...)
+
       - pattern: $RES.send(...)
+
       - pattern: $RES.write(...)
       # Prototype Pollution 
+
       - pattern: $OBJ[$KEY] = ...
+
       - pattern: _.merge($OBJ, ...)
+
       - pattern: Object.assign($OBJ, ...)
       # Open Redirect 
+
       - pattern: $RES.redirect(...)
+
       - pattern: window.location.href = ...
+
       - pattern: window.location.replace(...)
 
     pattern-sanitizers:
       # SQL 
+
       - pattern: $CLIENT.escape(...)
+
       - pattern: mysql.escape(...)
       # HTML 
+
       - pattern: DOMPurify.sanitize(...)
+
       - pattern: sanitizeHtml(...)
+
       - pattern: escape(...)
       # Path 
+
       - pattern: path.basename(...)
+
       - pattern: path.resolve(...)
       # URL 
+
       - pattern: encodeURIComponent(...)
+
       - pattern: encodeURI(...)
       # Type casting 
+
       - pattern: parseInt(...)
+
       - pattern: parseFloat(...)
+
       - pattern: Number(...)

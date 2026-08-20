@@ -1,4 +1,5 @@
 rules:
+
   - id: sinful-taint-rust
     mode: taint
     message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
@@ -7,73 +8,127 @@ rules:
 
     pattern-sources:
       # Actix-web 
+
       - pattern: web::Query($PARAMS)
+
       - pattern: web::Form($PARAMS)
+
       - pattern: web::Json($PARAMS)
+
       - pattern: web::Path($PARAMS)
-      - pattern: $REQ.query_string()
-      - pattern: $REQ.headers()
-      - pattern: $REQ.match_info().get(...)
+
+      - pattern: $USE_REQ.query_string()
+
+      - pattern: $USE_REQ.headers()
+
+      - pattern: $USE_REQ.match_info().get(...)
       # Rocket 
+
       - pattern: rocket::form::Form(...)
+
       - pattern: rocket::serde::json::Json(...)
-      - pattern: $REQ.headers().get(...)
+
+      - pattern: $USE_REQ.headers().get(...)
+
       - pattern: $COOKIES.get(...)
       # Axum 
+
       - pattern: axum::extract::Query($PARAMS)
+
       - pattern: axum::extract::Form($PARAMS)
+
       - pattern: axum::extract::Json($PARAMS)
+
       - pattern: axum::extract::Path($PARAMS)
       # General 
+
       - pattern: std::env::var(...)
+
       - pattern: std::env::args()
 
     pattern-sinks:
       # SQL Injection 
-      - pattern: $DB.execute(...)
-      - pattern: $DB.query(...)
-      - pattern: $DB.fetch(...)
+
+      - pattern: $USE_DB.execute(...)
+
+      - pattern: $USE_DB.query(...)
+
+      - pattern: $USE_DB.fetch(...)
+
       - pattern: sqlx::query(...)
+
       - pattern: sqlx::query_as(...)
+
       - pattern: diesel::sql_query(...)
+
       - pattern: diesel::dsl::sql(...)
+
       - pattern: rusqlite::Connection::execute(...)
       # Command Injection 
+
       - pattern: std::process::Command::new(...)
+
       - pattern: Command::new(...)
-      - pattern: $CMD.arg(...)
-      - pattern: $CMD.args(...)
+
+      - pattern: $RUN_CMD.arg(...)
+
+      - pattern: $RUN_CMD.args(...)
       # Path Traversal / File Access 
+
       - pattern: std::fs::read(...)
+
       - pattern: std::fs::read_to_string(...)
+
       - pattern: std::fs::write(...)
+
       - pattern: std::fs::remove_file(...)
+
       - pattern: std::fs::File::open(...)
+
       - pattern: std::fs::File::create(...)
+
       - pattern: std::path::Path::new(...)
       # SSRF 
+
       - pattern: reqwest::get(...)
+
       - pattern: reqwest::Client::new().get(...)
+
       - pattern: reqwest::blocking::get(...)
+
       - pattern: hyper::Client::new().get(...)
+
       - pattern: ureq::get(...)
       # Deserialization 
+
       - pattern: serde_json::from_str(...)
+
       - pattern: serde_json::from_slice(...)
+
       - pattern: serde_yaml::from_str(...)
+
       - pattern: bincode::deserialize(...)
+
       - pattern: ciborium::de::from_reader(...)
       # Code Execution unsafe 
+
       - pattern: libc::system(...)
+
       - pattern: libc::execve(...)
 
     pattern-sanitizers:
       # SQL — use parameterized/bind approach 
+
       - pattern: sqlx::query(...)                   # with bind usage 
       # Path 
+
       - pattern: std::path::Path::new(...).file_name()
+
       - pattern: std::path::Path::new(...).canonicalize()
       # Type casting safe conversion 
+
       - pattern: $VAL.parse::<i32>()
+
       - pattern: $VAL.parse::<u64>()
+
       - pattern: $VAL.parse::<f64>()

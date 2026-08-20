@@ -11,16 +11,18 @@ try:
     from main import start_sast
     from cli.views import logger
     from rich.panel import Panel
+
 except ImportError:
     print("Error: Cannot import the main module of Sinful SAST.")
     sys.exit(1)
 
-def generate_sarif_report(scan_findings, output_path):
+def gen_sarif(scan_findings, output_path):
     sarif_rules = {}
     sarif_results = []
     
     for finding_item in scan_findings:
         rule_id = finding_item.get("check_id") or finding_item.get("rule_id", "VULN-001")
+
         if rule_id not in sarif_rules:
             sarif_rules[rule_id] = {
                 "id": rule_id,
@@ -31,6 +33,7 @@ def generate_sarif_report(scan_findings, output_path):
         
         file_path = finding_item.get("path") or finding_item.get("file", "unknown")
         line_num = finding_item.get("start") or finding_item.get("line") or getattr(finding_item.get("start"), "line", 1)
+
         if isinstance(line_num, dict):
             line_num = line_num.get("line", 1)
             
@@ -69,7 +72,7 @@ def generate_sarif_report(scan_findings, output_path):
     with open(output_path, "w", encoding="utf-8") as output_file:
         json.dump(sarif_data, output_file, indent=2)
 
-def start_ci_workflow():
+def run_ci():
     cli_parser = argparse.ArgumentParser(description="Sinful SAST CI Scanner")
     cli_parser.add_argument("--exit-code", type=int, default=1, help="Exit code when vulnerabilities are found")
     cli_parser.add_argument("--severity", type=str, default="ERROR,WARNING", help="Comma-separated severities to block on")
@@ -91,23 +94,26 @@ def start_ci_workflow():
     
     try:
         scan_result = start_sast(target_dir)
+
     except Exception as scan_err:
+
         if cli_args.format != "sarif":
-            logger.console.print("[cyan]━━━ CI WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
-            logger.console.print(f"[red]✖ Exception occurred during scanning: {scan_err}[/red]\n")
+            logger.console.print("[cyan]â”â”â” CI WORKFLOW â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”[/cyan]\n")
+            logger.console.print(f"[red]âœ– Exception occurred during scanning: {scan_err}[/red]\n")
         sys.exit(1)
 
     if scan_result.get("status") == "error":
+
         if cli_args.format != "sarif":
-            logger.console.print("[cyan]━━━ CI WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
-            logger.console.print(f"[red]✖ Scan failed: {scan_result.get('message')}[/red]\n")
+            logger.console.print("[cyan]â”â”â” CI WORKFLOW â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”[/cyan]\n")
+            logger.console.print(f"[red]âœ– Scan failed: {scan_result.get('message')}[/red]\n")
         sys.exit(1)
 
     scan_data = scan_result.get("data", {})
     scan_findings = scan_data.get("findings", [])
     
     if cli_args.format == "sarif":
-        generate_sarif_report(scan_findings, cli_args.output)
+        gen_sarif(scan_findings, cli_args.output)
         print(f"SARIF report generated: {cli_args.output}")
     
     blocked_severities = [severity_item.strip().upper() for severity_item in cli_args.severity.split(",")]
@@ -115,28 +121,30 @@ def start_ci_workflow():
     is_vulnerable = count_blocked > 0
 
     if cli_args.format != "sarif":
-        logger.console.print("[cyan]━━━ CI WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
-        logger.console.print("Environment     [green]✓ VERIFIED[/green]")
-        logger.console.print("Security Scan   [green]✓ COMPLETED[/green]")
+        logger.console.print("[cyan]â”â”â” CI WORKFLOW â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”[/cyan]\n")
+        logger.console.print("Environment     [green]âœ“ VERIFIED[/green]")
+        logger.console.print("Security Scan   [green]âœ“ COMPLETED[/green]")
         
         if is_vulnerable:
-            logger.console.print(f"Findings        [red]✖ {count_blocked}[/red]")
-            logger.console.print("Security Gate   [red]✖ FAILED[/red]\n")
-            logger.console.print("[cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
-            logger.console.print("[bold red]✖ CI WORKFLOW FAILED[/bold red]\n")
+            logger.console.print(f"Findings        [red]âœ– {count_blocked}[/red]")
+            logger.console.print("Security Gate   [red]âœ– FAILED[/red]\n")
+            logger.console.print("[cyan]â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”[/cyan]\n")
+            logger.console.print("[bold red]âœ– CI WORKFLOW FAILED[/bold red]\n")
             
             logger.console.print(f"{count_blocked} issue(s) matched the configured severity threshold.")
             logger.console.print("Pipeline blocked.\n")
             logger.console.print(f"[dim]Exit code: {cli_args.exit_code}[/dim]")
             sys.exit(cli_args.exit_code)
+
         else:
-            logger.console.print("Findings        [green]✓ 0[/green]")
-            logger.console.print("Security Gate   [green]✓ PASSED[/green]\n")
-            logger.console.print("[cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
-            logger.console.print("[bold green]✓ CI WORKFLOW PASSED[/bold green]\n")
+            logger.console.print("Findings        [green]âœ“ 0[/green]")
+            logger.console.print("Security Gate   [green]âœ“ PASSED[/green]\n")
+            logger.console.print("[cyan]â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”[/cyan]\n")
+            logger.console.print("[bold green]âœ“ CI WORKFLOW PASSED[/bold green]\n")
             logger.console.print("No issues matched the configured severity threshold.\n")
             logger.console.print("[dim]Exit code: 0[/dim]")
             sys.exit(0)
 
 if __name__ == "__main__":
-    start_ci_workflow()
+    run_ci()
+

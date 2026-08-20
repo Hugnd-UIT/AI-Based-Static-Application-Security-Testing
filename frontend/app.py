@@ -15,7 +15,7 @@ app.mount(
     "/static", StaticFiles(directory=Path(__file__).parent / "static"), name="static"
 )
 
-tmps = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
+get_tmps = Jinja2Templates(directory=str(Path(__file__).parent / "templates"))
 
 
 class Req(BaseModel):
@@ -23,27 +23,28 @@ class Req(BaseModel):
 
 
 @app.get("/", response_class=HTMLResponse)
-async def s_home(r: Request):
-    return tmps.TemplateResponse(request=r, name="pages/home.html")
+async def show_home(get_req: Request):
+
+    return get_tmps.TemplateResponse(request=get_req, name="pages/home.html")
 
 
 @app.post("/api/scan")
-async def a_scan(r: Req):
+async def api_scan(get_req: Req):
 
-    u = r.u
+    get_url = get_req.u
 
-    if not u.startswith("http"):
+    if not get_url.startswith("http"):
         raise HTTPException(status_code=400, detail="Invalid URL")
 
     try:
-        from main import run_sast
+        from main import run_scan
 
-        res = run_sast(u)
+        get_res = run_scan(get_url)
 
-        if res.get("status") == "error":
-            raise HTTPException(status_code=500, detail=res.get("message"))
+        if get_res.get("status") == "error":
+            raise HTTPException(status_code=500, detail=get_res.get("message"))
 
-        return res
+        return get_res
 
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as get_err:
+        raise HTTPException(status_code=500, detail=str(get_err))

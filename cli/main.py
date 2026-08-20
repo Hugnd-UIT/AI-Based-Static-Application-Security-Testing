@@ -37,6 +37,7 @@ def start_cli():
     display_header()
 
     while True:
+
         try:
             term_width = console.width
             grey_color = "\x1b[48;2;55;55;55m"
@@ -65,8 +66,11 @@ def start_cli():
                 
                 def get_completions(self, doc_context, complete_evt):
                     text_input = doc_context.text_before_cursor
+
                     if text_input.startswith('/'):
+
                         for cmd_key, cmd_desc in self.cli_commands.items():
+
                             if cmd_key.startswith(text_input.lower()):
                                 yield Completion(
                                     cmd_key, 
@@ -124,10 +128,13 @@ def start_cli():
             try:
                 print()
                 target_cmd = toolkit_app.run()
+
                 if target_cmd is None:
                     break
+
             except Exception:
                 target_cmd = input(f"\x1b[1A{grey_color}{' '*term_width}\n  \x1b[36m\x1b[1m>\x1b[22m\x1b[0m{grey_color} Enter path or command: \x1b[K\n{' '*term_width}{reset_color}\x1b[1A\x1b[25D")
+
                 if not target_cmd:
                     break
 
@@ -140,6 +147,7 @@ def start_cli():
 
         except KeyboardInterrupt:
             break
+
         except EOFError:
             break
 

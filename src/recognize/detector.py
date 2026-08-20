@@ -1,4 +1,4 @@
-import os
+﻿import os
 from pathlib import Path
 from typing import Dict
 
@@ -61,7 +61,7 @@ def detect_langs(target_path: str) -> Dict[str, int]:
 
 import subprocess
 
-def get_lang_versions(lang_counts: Dict[str, int]) -> Dict[str, str]:
+def get_versions(lang_counts: Dict[str, int]) -> Dict[str, str]:
     lang_versions = {}
     cmd_list = {
         "php": ["php", "-v"],
@@ -77,14 +77,19 @@ def get_lang_versions(lang_counts: Dict[str, int]) -> Dict[str, str]:
     }
     
     for lang_name in lang_counts.keys():
+
         if lang_name in cmd_list:
+
             try:
                 cmd_result = subprocess.run(cmd_list[lang_name], capture_output=True, text=True, timeout=5)
                 cmd_output = cmd_result.stdout.strip() if cmd_result.stdout.strip() else cmd_result.stderr.strip()
+
                 if cmd_output:
                     lang_versions[lang_name] = cmd_output.split('\n')[0].strip()
+
                 else:
                     lang_versions[lang_name] = "Unknown"
+
             except (FileNotFoundError, subprocess.TimeoutExpired):
                 lang_versions[lang_name] = "Not Installed"
                 
@@ -104,11 +109,14 @@ def report_langs(lang_counts: Dict[str, int], lang_versions: Dict[str, str] = No
     
     console.print(f"  [cyan]{len(lang_counts)}[/cyan] languages detected")
     console.print()
+
     for lang_name, file_count in sorted_langs:
         version_str = ""
+
         if lang_versions and lang_name in lang_versions:
             lang_ver = lang_versions[lang_name]
             short_ver = lang_ver[:30] + "..." if len(lang_ver) > 30 else lang_ver
             version_str = f" [dim]- Runtime: {short_ver}[/dim]"
             
         console.print(f"  - [yellow]{lang_name.capitalize()}[/yellow]: {file_count} files{version_str}")
+

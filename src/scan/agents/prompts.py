@@ -33,10 +33,10 @@ STEP 5 HANDLING BROKEN FLOWS (BACKWARD RECURSION)
   2. Identify the function that CONTAINS the sink.
   3. Call find_callers(function_name) to find out who calls this function.
   4. Select the most relevant upstream caller and propose it as a `surrogate_sink` and `surrogate_function` in submit_verdict.
-  5. Set `surrogate_sink_proposed = true` and leave `data_flow` empty. The system will retry with this new sink.
+  5. Set `use_surrogate = true` and leave `data_flow` empty. The system will retry with this new sink.
 
 STEP 6 SUBMIT
-  Call submit_verdict() with the full data_flow array (if found) OR with `surrogate_sink_proposed = true`.
+  Call submit_verdict() with the full data_flow array (if found) OR with `use_surrogate = true`.
   Set verdict = "VULNERABLE" if source is external/untrusted or if proposing a surrogate sink.
   Set verdict = "SAFE" if source is internal/trusted or data is a constant.
 

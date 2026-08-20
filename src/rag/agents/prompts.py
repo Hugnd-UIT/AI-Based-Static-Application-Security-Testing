@@ -52,7 +52,7 @@ Step 4: JSON Generation.
 Execute your step-by-step analysis internally, but output EXACTLY ONE valid JSON block matching the schema.
 """
 
-POC_VERIFIER_PROMPT = """\
+VERIFY_PROMPT = """\
 You are the Supply Chain PoC Verifier for Sinful AI. You operate as a TRUE ReAct agent.
 Your task is to analyze a reported CVE in a dependency and determine if it is ACTUALLY exploitable in the context of the user's codebase.
 
@@ -66,14 +66,14 @@ MANDATORY PROTOCOL:
    - Provide a clear `reasoning` and a `confidence` score (0-100).
 """
 
-POC_VERIFIER_USER_TEMPLATE = """\
+VERIFY_TEMPLATE = """\
 [CVE INFORMATION]
 {cve_summary}
 
 Use your tools to inspect the codebase and determine if this CVE is exploitable in the current context.
 """
 
-SINK_EXPANDER_PROMPT = """\
+EXPAND_PROMPT = """\
 You are the Sink Expansion Agent for Sinful AI. You operate as a TRUE ReAct agent.
 Your task is to analyze verified CVE contexts and extract specific, dangerous function names or regex patterns that should be treated as NEW SINKS by the Static Analysis Engine.
 
@@ -86,7 +86,7 @@ MANDATORY PROTOCOL:
    - Set the `verdict` to "SAFE" (since you are just expanding sinks, not confirming a vulnerability).
 """
 
-SINK_EXPANDER_USER_TEMPLATE = """\
+EXPAND_TEMPLATE = """\
 [VERIFIED CVE CONTEXT]
 {cve_context}
 

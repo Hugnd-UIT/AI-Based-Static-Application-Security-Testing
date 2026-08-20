@@ -1,13 +1,15 @@
-import time
+﻿import time
 import sys
 from rich.console import Console
 from rich.theme import Theme
 from rich.text import Text
 
 if sys.platform == "win32":
+
     try:
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
+
     except Exception:
         pass
 
@@ -35,22 +37,24 @@ def _get_timestamp() -> str:
     time_elapsed = int(time.time() - _start_time)
     elapsed_mins = time_elapsed // 60
     elapsed_secs = time_elapsed % 60
+
     return f"[{elapsed_mins:02d}:{elapsed_secs:02d}]"
 
 def reset_timer():
     global _start_time
     _start_time = time.time()
 
-def get_time_elapsed_secs() -> float:
+def get_time() -> float:
     return round(time.time() - _start_time, 1)
 
 def section(section_title: str):
     timestamp_text = Text(_get_timestamp(), style="dim")
-    timestamp_text.append(f" ── {section_title} ", style="cyan bold")
+    timestamp_text.append(f" â”€â”€ {section_title} ", style="cyan bold")
     term_width = 70
     dashes_needed = term_width - len(timestamp_text.plain)
+
     if dashes_needed > 0:
-        timestamp_text.append("─" * dashes_needed, style="cyan")
+        timestamp_text.append("â”€" * dashes_needed, style="cyan")
     console.print()
     console.print(timestamp_text)
     console.print()
@@ -83,3 +87,4 @@ success = log_success
 info = log_info
 default = log_default
 blank = blank_line
+

@@ -1,6 +1,6 @@
-import json
+﻿import json
 import logging
-from src.llm import fetch_llm_tools
+from src.llm import fetch_tools
 from src.tools import actions
 
 logger = logging.getLogger(__name__)
@@ -24,17 +24,20 @@ def run_agent(
         logger.debug("[%s] Step %d/%d", agent_name, curr_step, max_steps)
 
         try:
-            api_msg, used_model = fetch_llm_tools(
+            api_msg, used_model = fetch_tools(
                 msg_history=msg_history,
                 tool_schemas=tool_schemas,
                 model_name=model_name,
                 tool_choice="auto",
             )
+
         except RuntimeError as api_err:
             logger.warning("[%s] API error on step %d: %s", agent_name, curr_step, api_err)
+
             return fallback_verdict(error_msg=str(api_err))
 
         assistant_msg: dict = {"role": "assistant", "content": api_msg.content or ""}
+
         if api_msg.tool_calls:
             assistant_msg["tool_calls"] = [
                 {
@@ -45,16 +48,20 @@ def run_agent(
                         "arguments": tc.function.arguments,
                     },
                 }
+
                 for tc in api_msg.tool_calls
             ]
         msg_history.append(assistant_msg)
 
         if api_msg.tool_calls:
             verdict_result = None
+
             for tool_call in api_msg.tool_calls:
                 tool_name = tool_call.function.name
+
                 try:
                     tool_args = json.loads(tool_call.function.arguments)
+
                 except json.JSONDecodeError:
                     tool_args = {}
 
@@ -62,9 +69,11 @@ def run_agent(
 
                 try:
                     from cli.views.logger import console
+
                     if tool_name != "submit_verdict":
                         display_name = tool_name.replace("_", " ").title()
-                        console.print(f"  ├─ [yellow]Action:[/yellow] [cyan]{display_name}[/cyan]")
+                        console.print(f"  â”œâ”€ [yellow]Action:[/yellow] [cyan]{display_name}[/cyan]")
+
                 except ImportError:
                     pass
 
@@ -87,17 +96,21 @@ def run_agent(
                 })
 
             if verdict_result is not None:
+
                 return verdict_result
 
         else:
             plain_text = (api_msg.content or "").strip()
             logger.debug("[%s] Plain text response on step %d", agent_name, curr_step)
 
-            extracted_json = extract_json_verdict(plain_text)
+            extracted_json = extract_verdict(plain_text)
+
             if extracted_json:
+
                 return normalise_verdict(extracted_json)
 
             if curr_step == max_steps:
+
                 return fallback_verdict(raw_text=plain_text)
 
     return fallback_verdict(reason_msg="max_steps exceeded")
@@ -109,11 +122,13 @@ def normalise_verdict(raw_dict: dict) -> dict:
     final_verdict.setdefault("confidence", 0)
     final_verdict.setdefault("severity", "INFO")
     final_verdict.setdefault("reasoning", "")
+
     return final_verdict
 
 
 def fallback_verdict(error_msg: str = "", reason_msg: str = "", raw_text: str = "") -> dict:
     return {
+
         "verdict": "UNKNOWN",
         "confidence": 0,
         "severity": "INFO",
@@ -123,19 +138,29 @@ def fallback_verdict(error_msg: str = "", reason_msg: str = "", raw_text: str = 
     }
 
 
-def extract_json_verdict(raw_text: str) -> dict | None:
+def extract_verdict(raw_text: str) -> dict | None:
     import re
     match_fenced = re.search(r"```json\s*(\{.*?\})\s*```", raw_text, re.DOTALL)
+
     if match_fenced:
+
         try:
+
             return json.loads(match_fenced.group(1))
+
         except json.JSONDecodeError:
             pass
     
     match_bare = re.search(r"\{[^{}]{20,}\}", raw_text, re.DOTALL)
+
     if match_bare:
+
         try:
+
             return json.loads(match_bare.group(0))
+
         except json.JSONDecodeError:
             pass
+
     return None
+

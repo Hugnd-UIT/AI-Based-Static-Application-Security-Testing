@@ -1,7 +1,7 @@
-import os
+﻿import os
 import requests
 
-def search_github_issues(keyword: str) -> dict:
+def search_github(keyword: str) -> dict:
     api_token = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
 
     req_headers = {
@@ -18,6 +18,7 @@ def search_github_issues(keyword: str) -> dict:
         
         issue_items = json_data.get("items", [])[:10]
         search_results = []
+
         for issue_item in issue_items:
             issue_title = issue_item.get("title", "")
             issue_body = issue_item.get("body", "")
@@ -37,8 +38,10 @@ def search_github_issues(keyword: str) -> dict:
                 """
                 score_resp = fetch_llm(score_prompt, is_json=True)
                 score = score_resp.get("score", 0)
+
                 if isinstance(score, (int, float)) and score < 70:
                     continue
+
             except Exception:
                 pass
                 
@@ -53,15 +56,20 @@ def search_github_issues(keyword: str) -> dict:
                 break
                 
         return {"github_issues": search_results}
+
     except Exception as search_err:
+
         return {"error": str(search_err)}
 
 def report_github(report_data: dict):
     from cli.views import logger
+
     if "error" in report_data:
         logger.warning(f"GitHub Scrape Error: {report_data['error']}")
         return
         
     issue_list = report_data.get("github_issues", [])
+
     if issue_list:
         logger.console.print(f"  [dim]Found {len(issue_list)} related GitHub issues.[/dim]")
+

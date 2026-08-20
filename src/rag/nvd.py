@@ -6,16 +6,19 @@ from typing import Dict, Any, Optional
 
 URL = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId="
 
-def fetch_nvd_cve(cve_id: str, max_retries: int = 2) -> Optional[Dict[str, Any]]:
+def fetch_cve(cve_id: str, max_retries: int = 2) -> Optional[Dict[str, Any]]:
     if not cve_id.startswith("CVE-"):
+
         return None
 
     api_url = f"{URL}{cve_id}"
 
     for curr_attempt in range(max_retries + 1):
+
         try:
             api_req = urllib.request.Request(api_url)
-            api_key = os.environ.get("NIST_API_KEY", "")
+            api_key = os.environ.get("NIST_KEY", "")
+
             if api_key:
                 api_req.add_header("apiKey", api_key)
             api_req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
@@ -24,6 +27,7 @@ def fetch_nvd_cve(cve_id: str, max_retries: int = 2) -> Optional[Dict[str, Any]]
                 vuln_list = json_data.get("vulnerabilities", [])
 
                 if not vuln_list:
+
                     return None
 
                 cve_data = vuln_list[0].get("cve", {})
@@ -31,6 +35,7 @@ def fetch_nvd_cve(cve_id: str, max_retries: int = 2) -> Optional[Dict[str, Any]]
                 desc_text = "No description available."
 
                 for desc_item in desc_list:
+
                     if desc_item.get("lang") == "en":
                         desc_text = desc_item.get("value")
                         break
@@ -49,6 +54,7 @@ def fetch_nvd_cve(cve_id: str, max_retries: int = 2) -> Optional[Dict[str, Any]]
                 ref_urls = [ref.get("url") for ref in cve_data.get("references", [])]
 
                 return {
+
                     "cve_id": cve_id,
                     "description": desc_text,
                     "base_score": base_score,
@@ -57,18 +63,25 @@ def fetch_nvd_cve(cve_id: str, max_retries: int = 2) -> Optional[Dict[str, Any]]
                 }
 
         except urllib.error.HTTPError as http_err:
+
             if http_err.code == 403:
+
                 if curr_attempt < max_retries:
                     time.sleep(6 * (curr_attempt + 1))
                     continue
+
                 print(f"[!] NVD API Rate Limit Exceeded for {cve_id} after {max_retries + 1} attempts")
+
             else:
                 print(f"[!] HTTP Error fetching {cve_id}: {http_err.code}")
             break
+
         except Exception as fetch_err:
+
             if curr_attempt < max_retries:
                 time.sleep(6 * (curr_attempt + 1))
                 continue
+
             print(f"[!] Failed to fetch NVD data for {cve_id}: {fetch_err}")
             break
 
@@ -91,8 +104,10 @@ def report_nvd(cve_data: Dict[str, Any]):
     console.print(f"  │")
     
     ref_links = cve_data.get("references", [])[:2] if cve_data.get("references") else []
+
     if ref_links:
         console.print(f"  ├─ [bold magenta]FIRECRAWL[/bold magenta]")
+
         for idx, ref_url in enumerate(ref_links):
             short_url = ref_url if len(ref_url) <= 60 else ref_url[:60] + "..."
             tree_char = "└─" if idx == len(ref_links) - 1 else "├─"

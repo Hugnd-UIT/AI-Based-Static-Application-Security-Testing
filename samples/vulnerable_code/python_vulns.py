@@ -7,8 +7,8 @@ from flask import Flask, request, render_template_string
 app = Flask(__name__)
 
 # Hardcoded credentials
-AWS_ACCESS_KEY = "AKIAIOSFODNN7EXAMPLE"
-AWS_SECRET_KEY = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
+AWS_ACCESS = "AKIAIOSFODNN7EXAMPLE"
+AWS_SECRET = "wJalrXUtnFEMI/K7MDENG/bPxRfiCYEXAMPLEKEY"
 
 @app.route('/user')
 def get_user():

@@ -1,6 +1,6 @@
 from src.fix.agents.prompts import SYSTEM_PROMPT, USER_TEMPLATE
 from src.tools.handlers import run_agent
-from src.tools.schemas import FIX_TOOL_SET
+from src.tools.schemas import FIX_TOOLS
 
 def start_fix(
     finding_item: dict,
@@ -23,9 +23,10 @@ def start_fix(
     )
 
     return run_agent(
+
         system_prompt   = SYSTEM_PROMPT,
         initial_message = user_message,
-        tool_schemas    = FIX_TOOL_SET,
+        tool_schemas    = FIX_TOOLS,
         target_dir      = target_dir,
         ts_module       = ts_module,
         model_name      = resolved_model,

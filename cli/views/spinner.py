@@ -10,4 +10,5 @@ def show_spinner(spin_message: str, target_func, *args, **kwargs):
     
     with Live(grid, console=console, refresh_per_second=12.5, transient=True):
         func_result = target_func(*args, **kwargs)
+
     return func_result

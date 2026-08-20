@@ -66,25 +66,34 @@ PUB_SUB = {
     }
 }
 
-def is_framework_entrypoint(code_text: str, file_ext: str) -> bool:
+def check_entrypoint(code_text: str, file_ext: str) -> bool:
     patterns = ENTRYPOINTS.get(file_ext, [])
+
     for pattern in patterns:
+
         if re.search(pattern, code_text):
+
             return True
+
     return False
 
-def extract_pubsub_events(code_text: str, file_ext: str):
+def extract_events(code_text: str, file_ext: str):
     group_key = None
+
     if file_ext in (".js", ".ts"):
         group_key = "js_ts"
+
     elif file_ext == ".java":
         group_key = "java"
+
     elif file_ext == ".cs":
         group_key = "csharp"
+
     elif file_ext == ".py":
         group_key = "python"
         
     if not group_key:
+
         return [], []
         
     pub_pattern = PUB_SUB[group_key]["publish"]

@@ -1,6 +1,6 @@
 from src.scan.agents.prompts import SYSTEM_PROMPT, USER_TEMPLATE
 from src.tools.handlers import run_agent
-from src.tools.schemas import SCAN_TOOL_SET
+from src.tools.schemas import SCAN_TOOLS
 
 def start_scan(
     finding_item: dict,
@@ -13,8 +13,9 @@ def start_scan(
     resolved_model = model_name or MODELS[0]
 
     extra_context = ""
-    if finding_item.get("surrogate_sink_context"):
-        extra_context = f"\n\n[RETRY WITH SURROGATE SINK]\n{finding_item['surrogate_sink_context']}"
+
+    if finding_item.get("sink_context"):
+        extra_context = f"\n\n[RETRY WITH SURROGATE SINK]\n{finding_item['sink_context']}"
 
     user_message = USER_TEMPLATE.format(
         rule  = finding_item.get("id", "N/A"),
@@ -25,9 +26,10 @@ def start_scan(
     )
 
     return run_agent(
+
         system_prompt   = SYSTEM_PROMPT,
         initial_message = user_message,
-        tool_schemas    = SCAN_TOOL_SET,
+        tool_schemas    = SCAN_TOOLS,
         target_dir      = target_dir,
         ts_module       = ts_module,
         model_name      = resolved_model,

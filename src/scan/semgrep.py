@@ -44,23 +44,29 @@ def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, A
         scan_cmd.extend(["--config", rule_name])
 
     custom_rules = Path(__file__).parent / "rules"
+
     if custom_rules.exists() and custom_rules.is_dir():
         scan_cmd.extend(["--config", str(custom_rules)])
 
     scan_cmd.append(str(dir_path))
 
     try:
+
         try:
             cmd_result = subprocess.run(scan_cmd, capture_output=True, text=True, timeout=600)
+
         except (FileNotFoundError, PermissionError):
             fallback_cmd = ["python", "-m", "semgrep"] + scan_cmd[1:]
             cmd_result = subprocess.run(fallback_cmd, capture_output=True, text=True, timeout=600)
 
         output_text = cmd_result.stdout.strip()
+
         if not output_text:
+
             return []
             
         json_start = output_text.find('{')
+
         if json_start != -1:
             output_text = output_text[json_start:]
 
@@ -75,8 +81,10 @@ def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, A
             start_line = finding_item.get("start", {}).get("line")
             
             loc_key = f"{file_path}:{start_line}"
+
             if loc_key in seen_locations:
                 continue
+
             seen_locations.add(loc_key)
 
             extra_data = finding_item.get("extra", {})
@@ -113,18 +121,22 @@ def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, A
 
     except subprocess.TimeoutExpired:
         print("[!] Semgrep scan timed out")
+
         return []
 
     except json.JSONDecodeError:
         print("[!] Failed to parse Semgrep JSON output.")
+
         return []
 
     except FileNotFoundError:
         print("[!] Semgrep is not installed or blocked. Please run: pip install semgrep")
+
         return []
         
     except PermissionError:
         print("[!] Permission denied when running Semgrep.")
+
         return []
 
 from cli.views import logger
@@ -133,6 +145,7 @@ def report_scan(scan_findings: List[Dict[str, Any]]):
     logger.section("SAST")
 
     from cli.views.logger import console
+
     if not scan_findings:
         console.print("  [green]- No vulnerabilities detected[/green]")
         return
@@ -147,10 +160,13 @@ def report_scan(scan_findings: List[Dict[str, Any]]):
         line_num = finding_item["start_line"]
 
         sev_upper = severity_level.upper()
+
         if sev_upper in ["ERROR", "CRITICAL", "HIGH"]:
             color_str = "red"
+
         elif sev_upper in ["WARNING", "MEDIUM"]:
             color_str = "yellow"
+
         else:
             color_str = "cyan"
 

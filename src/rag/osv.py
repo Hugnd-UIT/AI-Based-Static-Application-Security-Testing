@@ -1,4 +1,4 @@
-import json
+﻿import json
 import urllib.request
 from typing import Dict, List, Any
 
@@ -14,16 +14,19 @@ ECO = {
     "nuget": "NuGet",
 }
 
-def check_osv_vulns(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+def check_osv(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
     if not parsed_deps:
+
         return []
 
     query_list = []
 
     for dep_item in parsed_deps:
-        # Skip packages without a pinned version — OSV returns ALL vulns for any version
+        # Skip packages without a pinned version â€” OSV returns ALL vulns for any version
+
         if not dep_item.get("version"):
             continue
+
         ecosystem_name = ECO.get(dep_item["ecosystem"], dep_item["ecosystem"])
         query_dict = {
             "package": {"name": dep_item["package"], "ecosystem": ecosystem_name},
@@ -41,6 +44,7 @@ def check_osv_vulns(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
             vuln_list = []
 
             for loop_idx, result_item in enumerate(results_list):
+
                 if "vulns" in result_item:
                     pkg_info = parsed_deps[loop_idx]
 
@@ -48,11 +52,13 @@ def check_osv_vulns(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
                         alias_list = vuln_item.get("aliases", [])
 
                         if not alias_list and vuln_item.get("id", "").startswith("GHSA"):
+
                             try:
                                 api_url = f"https://api.osv.dev/v1/vulns/{vuln_item['id']}"
                                 with urllib.request.urlopen(api_url, timeout=10) as alias_resp:
                                     alias_data = json.loads(alias_resp.read().decode("utf-8"))
                                     alias_list = alias_data.get("aliases", [])
+
                             except Exception:
                                 pass
 
@@ -68,15 +74,19 @@ def check_osv_vulns(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
                                 "references": [ref.get("url") for ref in vuln_item.get("references", [])],
                             }
                         )
+
             return vuln_list
+
     except Exception as api_err:
         print(f"[!] Failed to connect to OSV API: {api_err}")
+
         return []
 
 from cli.views import logger
 
 def report_osv(vuln_list: List[Dict[str, Any]]):
     from cli.views.logger import console
+
     if not vuln_list:
         console.print("  [green]- No known vulnerabilities found in dependencies[/green]")
         return
@@ -88,12 +98,13 @@ def report_osv(vuln_list: List[Dict[str, Any]]):
 
     for vuln_item in vuln_list:
         pkg_name = f"{vuln_item['package']} v{vuln_item['version']}"
+
         if pkg_name not in vuln_groups:
             vuln_groups[pkg_name] = []
         vuln_groups[pkg_name].append(vuln_item)
 
     for pkg_name, issue_list in vuln_groups.items():
-        console.print(f"  ● [magenta]{pkg_name}[/magenta]")
+        console.print(f"  â— [magenta]{pkg_name}[/magenta]")
 
         for loop_idx, issue_item in enumerate(issue_list):
             cve_str = ", ".join(c for c in issue_item["cve"] if str(c).startswith("CVE"))
@@ -102,8 +113,9 @@ def report_osv(vuln_list: List[Dict[str, Any]]):
             summary_text = issue_item['summary'][:80] + "..." if len(issue_item['summary']) > 80 else issue_item['summary']
             
             is_last = (loop_idx == len(issue_list) - 1)
-            display_prefix = "  └─" if is_last else "  ├─"
+            display_prefix = "  â””â”€" if is_last else "  â”œâ”€"
             
             console.print(f"{display_prefix} [red]{vuln_id}{display_cve}[/red]: {summary_text}")
         
         console.print()
+
