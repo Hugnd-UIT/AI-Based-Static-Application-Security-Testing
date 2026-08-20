@@ -23,6 +23,6 @@ def start_expand(
         target_dir      = target_dir,
         ts_module       = ts_module,
         model_name      = resolved_model,
-        max_steps       = 3,
+        max_steps       = 6,
         agent_name      = "SINK_EXPANDER",
     )

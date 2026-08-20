@@ -36,6 +36,10 @@ SOURCES = [
     "params[", "request.env",
     "getParameter", "getHeader", "getCookies",
     "Request.Query", "Request.Form", "Request.Headers",
+    # C/C++
+    "getenv", "gets", "scanf", "fscanf", "recv", "recvfrom", "fread", "read", "std::cin", "getline",
+    # Go
+    "http.Request", "c.Query", "c.PostForm", "c.Param",
 ]
 
 SINKS = [
@@ -46,6 +50,30 @@ SINKS = [
     "render_template_string", "pickle.loads", "yaml.load",
     "os.system", "os.popen",
     "strcpy", "sprintf", "gets",
+    # C/C++ Memory & Command
+    "memcpy", "strcat", "execl", "execv", "printf", "fopen", "unlink", "remove",
+]
+
+SANITIZERS = [
+    # Python
+    r"escape\(", r"sanitize\(", r"clean\(", r"validate\(",
+    r"bleach\.clean", r"markupsafe", r"html\.escape",
+    r"parameterized", r"prepared", r"cursor\.execute.*%s",
+    # JS/TS
+    r"DOMPurify\.sanitize", r"encodeURIComponent", r"escapeHTML",
+    r"validator\.escape", r"xss\(",
+    # Java
+    r"PreparedStatement", r"escapeXml", r"ESAPI\.encoder",
+    r"HtmlUtils\.htmlEscape",
+    # PHP
+    r"htmlspecialchars", r"htmlentities", r"filter_var",
+    r"mysqli_real_escape_string", r"pg_escape_string",
+    # C/C++
+    r"strlcpy", r"strlcat", r"snprintf",
+    # Go
+    r"html\.EscapeString", r"template\.HTMLEscapeString",
+    # Generic
+    r"allowlist", r"whitelist", r"permit",
 ]
 
 def extract_code(source_code: bytes, ast_node) -> str:
@@ -93,17 +121,25 @@ def find_callers(root_node, target_name: str, source_code: bytes):
     def traverse_callers(curr_node, func_node):
         node_kind = curr_node.type.lower()
 
-        if "function" in node_kind or "method" in node_kind or "declaration" in node_kind:
+        if is_func(node_kind):
             func_node = curr_node
 
         if "call" in node_kind or "invocation" in node_kind:
+            call_ident = None
             for child_node in curr_node.children:
                 if child_node.type == "identifier":
-                    node_val = extract_code(source_code, child_node)
-
-                    if node_val == target_name and func_node:
-                        if func_node not in caller_list:
-                            caller_list.append(func_node)
+                    call_ident = child_node
+                    break
+                elif child_node.type in ("attribute", "member_expression", "field_expression"):
+                    for gchild_node in child_node.children:
+                        if "identifier" in gchild_node.type:
+                            call_ident = gchild_node
+                            
+            if call_ident:
+                node_val = extract_code(source_code, call_ident)
+                if node_val == target_name and func_node:
+                    if func_node not in caller_list:
+                        caller_list.append(func_node)
 
         for child_node in curr_node.children:
             traverse_callers(child_node, func_node)
@@ -154,10 +190,16 @@ def is_func(node_kind: str) -> bool:
         or "method" in node_kind
     )
 
-def has_source(file_content: bytes, curr_node) -> bool:
+from src.audit.frameworks import is_framework_entrypoint
+
+def has_source(file_content: bytes, curr_node, file_ext: str = "") -> bool:
     try:
         node_text = file_content[curr_node.start_byte:curr_node.end_byte].decode("utf-8", errors="ignore")
-        return any(source_str in node_text for source_str in SOURCES)
+        if any(source_str in node_text for source_str in SOURCES):
+            return True
+        if file_ext and is_framework_entrypoint(node_text, file_ext):
+            return True
+        return False
     except Exception:
         return False
 
@@ -190,7 +232,7 @@ def get_tainted_funcs(target_dir: str) -> dict:
 
                 def traverse_tree(curr_node):
                     node_kind = curr_node.type.lower()
-                    if is_func(node_kind) and has_source(file_content, curr_node):
+                    if is_func(node_kind) and has_source(file_content, curr_node, file_ext):
                         func_name = get_node_name(curr_node, file_content)
                         func_code = file_content[curr_node.start_byte:curr_node.end_byte].decode("utf-8", errors="ignore")
                         if func_name and func_name not in tainted_funcs:
@@ -277,15 +319,50 @@ def find_cross_sinks(target_dir: str, tainted_funcs: dict) -> str:
 
     return "\n".join(cross_paths)
 
+from src.audit.frameworks import extract_pubsub_events
+
+def build_pubsub_map(target_dir: str) -> str:
+    if not target_dir or not Path(target_dir).exists():
+        return ""
+
+    pubsub_info = []
+    
+    for root_dir, sub_dirs, file_list in os.walk(target_dir):
+        sub_dirs[:] = [d for d in sub_dirs if d not in {".git", "node_modules", "vendor", ".venv", "__pycache__"}]
+        for file_name in file_list:
+            file_ext = Path(file_name).suffix.lower()
+            if file_ext not in LANG: continue
+            
+            file_path = Path(root_dir) / file_name
+            try:
+                with open(file_path, "r", encoding="utf-8", errors="ignore") as f:
+                    code_text = f.read()
+                
+                published, subscribed = extract_pubsub_events(code_text, file_ext)
+                if published:
+                    pubsub_info.append(f"[EVENT PUBLISHER IN {file_name}]\nEmits: {', '.join(published)}")
+                if subscribed:
+                    pubsub_info.append(f"[EVENT SUBSCRIBER IN {file_name}]\nListens to: {', '.join(subscribed)}")
+            except Exception:
+                pass
+                
+    return "\n\n".join(pubsub_info)
+
 def build_context(target_dir: str) -> str:
     if not target_dir or not Path(target_dir).exists():
         return ""
 
     tainted_funcs = get_tainted_funcs(target_dir)
-    if not tainted_funcs:
-        return ""
-
-    return find_cross_sinks(target_dir, tainted_funcs)
+    cross_sinks = find_cross_sinks(target_dir, tainted_funcs) if tainted_funcs else ""
+    pubsub_map = build_pubsub_map(target_dir)
+    
+    context = ""
+    if cross_sinks:
+        context += cross_sinks + "\n\n"
+    if pubsub_map:
+        context += "=== EVENT BUS / PUB-SUB ARCHITECTURE ===\n" + pubsub_map + "\n"
+        
+    return context
 
 
 def extract_context(
@@ -306,10 +383,7 @@ def extract_context(
         return extract_chunk(file_path, start_line, end_line)
 
     try:
-        ts_parser = Parser()
-        ts_lang = Language(LANG[file_ext])
-
-        ts_parser.set_language(ts_lang)
+        ts_parser = Parser(Language(LANG[file_ext]))
 
         with open(file_path, "rb") as file_obj:
             source_code = file_obj.read()
@@ -425,6 +499,10 @@ def resolve_aliases(file_path: str, var_name: str) -> str:
                 "assignment", "augmented_assignment",
                 "variable_declarator", "local_variable_declaration",
                 "expression_statement",
+                "declaration", "init_declarator", "assignment_expression",
+                "update_expression",
+                "short_var_declaration", "assignment_statement",
+                "call_expression", "call", "return_statement"
             ):
                 node_text = source_code[curr_node.start_byte:curr_node.end_byte]
                 if var_bytes in node_text:

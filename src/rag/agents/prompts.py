@@ -80,7 +80,8 @@ Your task is to analyze verified CVE contexts and extract specific, dangerous fu
 MANDATORY PROTOCOL:
 1. REVIEW CVE CONTEXT: Identify the specific functions, methods, or API endpoints that are vulnerable.
 2. EXTRACT PATTERNS: Formulate literal strings or regex patterns that would match the usage of these vulnerable sinks in the source code.
-3. SUBMIT VERDICT: Call `submit_verdict`.
+3. VERIFY PATTERNS (Required): Call `search_pattern` to ensure the patterns you extracted actually match something in the codebase. Refine your patterns if necessary.
+4. SUBMIT VERDICT: Call `submit_verdict`.
    - Provide the new sink patterns in the `extra_sinks` array.
    - Set the `verdict` to "SAFE" (since you are just expanding sinks, not confirming a vulnerability).
 """

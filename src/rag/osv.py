@@ -21,6 +21,9 @@ def check_osv_vulns(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
     query_list = []
 
     for dep_item in parsed_deps:
+        # Skip packages without a pinned version — OSV returns ALL vulns for any version
+        if not dep_item.get("version"):
+            continue
         ecosystem_name = ECO.get(dep_item["ecosystem"], dep_item["ecosystem"])
         query_dict = {
             "package": {"name": dep_item["package"], "ecosystem": ecosystem_name},

@@ -27,7 +27,8 @@ RULES = [
     "p/ruby",
     "p/trailofbits",
     "p/jwt",
-
+    "p/c",
+    "p/cpp",
 ]
 
 def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
@@ -140,12 +141,12 @@ def report_scan(scan_findings: List[Dict[str, Any]]):
     console.print()
 
     for finding_item in scan_findings:
-        severity_level = finding_item["severity"]
+        severity_level = finding_item.get("severity") or "WARNING"
         rule_id = finding_item["id"]
         file_path = finding_item["path"]
         line_num = finding_item["start_line"]
 
-        color_str = "yellow" if severity_level == "WARNING" else "red"
+        color_str = "red" if severity_level == "ERROR" else "yellow"
 
         console.print(f"  ┌─ [{color_str}]{severity_level}[/{color_str}]")
         console.print(f"  ├─ Rule   [cyan]{rule_id}[/cyan]")

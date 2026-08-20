@@ -61,18 +61,37 @@ def parse_pypi(file_path: str) -> List[Dict[str, str]]:
             for line_text in file_handle:
                 line_text = line_text.strip()
 
-                if not line_text or line_text.startswith("#"):
+                if not line_text or line_text.startswith("#") or line_text.startswith("-"):
                     continue
 
-                if "==" in line_text:
-                    pkg_name, pkg_version = line_text.split("==", 1)
-                    parsed_deps.append(
-                        {
-                            "ecosystem": "pypi",
-                            "package": pkg_name.strip(),
-                            "version": pkg_version.strip(),
-                        }
-                    )
+                # Strip extras like package[extra]==1.0 and env markers
+                line_text = line_text.split(";")[0].strip()
+
+                version_match = re.search(r'([><=!~]+)\s*([\w.]+)', line_text)
+                if version_match:
+                    pkg_name = line_text[:version_match.start()].strip()
+                    pkg_version = version_match.group(2).strip()
+                    # Strip bracket extras from package name
+                    pkg_name = re.sub(r'\[.*?\]', '', pkg_name).strip()
+                    if pkg_name:
+                        parsed_deps.append(
+                            {
+                                "ecosystem": "pypi",
+                                "package": pkg_name,
+                                "version": pkg_version,
+                            }
+                        )
+                else:
+                    # Bare package name with no version
+                    pkg_name = re.sub(r'\[.*?\]', '', line_text).strip()
+                    if pkg_name:
+                        parsed_deps.append(
+                            {
+                                "ecosystem": "pypi",
+                                "package": pkg_name,
+                                "version": "",
+                            }
+                        )
     except Exception:
         pass
     return parsed_deps

@@ -24,8 +24,15 @@ def check_code_usage(target_dir: str, cve_list: List[Dict[str, Any]], ts_module)
 
         is_reachable = False
         for text_token in cve_tokens:
-            for file_ext, lang_name in ts_module.LANG.items():
-                ts_parser = ts_module.Parser(ts_module.Language(lang_name))
+            for file_ext, lang_obj in ts_module.LANG.items():
+                try:
+                    ts_parser = ts_module.Parser(ts_module.Language(lang_obj))
+                except Exception:
+                    try:
+                        ts_parser = ts_module.Parser()
+                        ts_parser.set_language(ts_module.Language(lang_obj))
+                    except Exception:
+                        continue
                 caller_ctx = ts_module.find_global_callers(target_dir, text_token, file_ext, ts_parser)
                 if caller_ctx:
                     is_reachable = True

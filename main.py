@@ -43,7 +43,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
         "findings": [],
         "cves": [],
         "nvd_data": [],
-        "rag_summary": {},
+        "rag_summaries": [],
     }
 
     if target_path.startswith("http://") or target_path.startswith("https://") or target_path.startswith("git@"):
@@ -93,10 +93,8 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
     scan_result["dependencies"] = parsed_deps
     dep_parser.report_deps(parsed_deps)
 
-    scan_findings = semgrep.scan_code(str(target_dir), rule_list)
-    scan_result["findings"] = scan_findings
-    semgrep.report_scan(scan_findings)
-
+    scan_findings = []
+    
     try:
         cross_context = ts_module.build_context(str(target_dir))
         if cross_context:
@@ -191,97 +189,124 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                         cve_console.print(f"  [dim]Failed to fetch {cve_id}: {fut_err}[/dim]")
 
     cve_context = "No relevant supply chain vulnerabilities found in project dependencies."
+    cve_context_parts = []
     
-    if scan_result["cves"] or scan_result["nvd_data"] or scan_result.get("language_versions"):
-        cve_data_str = json.dumps({
-            "osv": scan_result["cves"], 
-            "nvd": scan_result["nvd_data"],
-            "runtimes": scan_result.get("language_versions")
-        }, indent=2)
+    if scan_result["nvd_data"] or scan_result["cves"]:
         from cli.views.logger import console
         logger.section("MULTI-AGENT")
-        console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{model_tag}")
         import textwrap
-        try:
-            rag_summary = rag_agents.start_rag(cve_data_str, model_name=actual_model)
-            scan_result["rag_summary"] = rag_summary
-            cve_context = json.dumps(rag_summary, indent=2)
-            if "cve_id" in rag_summary and rag_summary["cve_id"] not in ["None", "Unknown"]:
-                console.print(f"  ├─ [cyan]◆ Analyzing {rag_summary['cve_id']} {rag_summary.get('dependency', '')}[/cyan]")
-            if "attack_vector" in rag_summary and rag_summary["attack_vector"] not in ["None", "Unknown"]:
-                wrap_width = max(60, console.width - 15)
-                for w_line in textwrap.wrap(rag_summary['attack_vector'], width=wrap_width, initial_indent="Vector: ", subsequent_indent="        "):
-                    console.print(f"  │  [dim]{w_line}[/dim]")
-            if "mitigation" in rag_summary and rag_summary["mitigation"] not in ["None", "Unknown"]:
-                wrap_width = max(60, console.width - 15)
-                for w_line in textwrap.wrap(rag_summary['mitigation'], width=wrap_width, initial_indent="Mitigation: ", subsequent_indent="            "):
-                    console.print(f"  │  [dim]{w_line}[/dim]")
-            
-            console.print(f"  [bold magenta]● VERIFYING AGENT[/bold magenta]{model_tag}")
-            from src.rag.agents import verifier
-            poc_result = verifier.start_verify(cve_context, model_name=actual_model, target_dir=str(target_dir), ts_module=ts_module)
-            
-            is_exploitable = poc_result.get("exploitable", True)
-            if not is_exploitable:
-                console.print(f"  └─ [bold yellow]⚠ CVE is NOT exploitable in this codebase[/bold yellow]")
-                cve_context += "\nNOTE: PoC Verifier determined this CVE is NOT exploitable in the current codebase."
-            else:
-                conf = poc_result.get('confidence', 100)
-                console.print(f"  └─ [bold green]✔ CVE is exploitable! \[Confidence: {conf}%][/bold green]")
-                if poc_result.get("reasoning"):
-                    console.print(f"     [dim]Reason: {poc_result['reasoning']}[/dim]")
-                
-                console.print(f"  [bold magenta]● EXPANDING AGENT[/bold magenta]{model_tag}")
-                from src.rag.agents import expander
-                expand_result = expander.start_expand(cve_context, model_name=actual_model, target_dir=str(target_dir), ts_module=ts_module)
-                
-                extra_sinks = expand_result.get("extra_sinks", [])
-                if extra_sinks:
-                    console.print(f"  ├─ [cyan]◆ Extracted {len(extra_sinks)} new sink patterns[/cyan]")
-                    from src.tools.actions import search_pattern
-                    for sink in extra_sinks:
-                        pat = sink.get("pattern", "")
-                        console.print(f"  │  [dim]Searching for: {pat}[/dim]")
-                        if pat:
-                            try:
-                                search_res = search_pattern({"pattern": pat}, str(target_dir))
-                                if search_res.startswith("[PATTERN"):
-                                    lines = search_res.split("\n")[1:]
-                                    for line in lines:
-                                        if line.startswith("  ") and ":" in line:
-                                            parts = line.strip().split(":", 2)
-                                            if len(parts) >= 2:
-                                                file_path = parts[0]
-                                                try:
-                                                    line_num = int(parts[1])
-                                                except ValueError:
-                                                    line_num = 1
-                                                
-                                                desc = sink.get("description", pat)
-                                                new_finding = {
-                                                    "id": f"dynamic-sink-{pat}",
-                                                    "message": f"Dynamically expanded sink from CVE: {desc}",
-                                                    "path": file_path,
-                                                    "start_line": line_num,
-                                                    "end_line": line_num,
-                                                }
-                                                scan_findings.append(new_finding)
-                            except Exception as e:
-                                pass
-                    console.print("  └─ [bold green]✔ Sinks injected![/bold green]")
-                else:
-                    console.print("  └─ [dim]No extra sinks extracted.[/dim]")
 
-            console.print("  └─ [bold green]✔ Supply Chain Analysis completed![/bold green]")
-        except Exception as rag_err:
-            console.print(f"  └─ [bold red]✖ RAG/Supply Chain failed: {rag_err}[/bold red]")
-            scan_result["rag_summary"] = {"error": str(rag_err)}
-            cve_context = cve_data_str
+        cves_to_process = scan_result["nvd_data"]
+        if not cves_to_process and scan_result["cves"]:
+             cves_to_process = scan_result["cves"]
+
+        for cve_idx, single_cve_data in enumerate(cves_to_process):
+            console.print(f"\n  [bold magenta]● RAG AGENT[/bold magenta] (CVE {cve_idx+1}/{len(cves_to_process)}){model_tag}")
+            
+            cve_data_str = json.dumps({
+                "cve_info": single_cve_data,
+                "runtimes": scan_result.get("language_versions")
+            }, indent=2)
+            
+            try:
+                rag_summary = rag_agents.start_rag(cve_data_str, model_name=MODELS[4]) # RAG Agent Role
+                scan_result["rag_summaries"].append(rag_summary)
+
+                if "cve_id" in rag_summary and rag_summary["cve_id"] not in ["None", "Unknown"]:
+                    console.print(f"  ├─ [cyan]◆ Analyzing {rag_summary['cve_id']} {rag_summary.get('dependency', '')}[/cyan]")
+                if "attack_vector" in rag_summary and rag_summary["attack_vector"] not in ["None", "Unknown"]:
+                    wrap_width = max(60, console.width - 15)
+                    for w_line in textwrap.wrap(rag_summary['attack_vector'], width=wrap_width, initial_indent="Vector: ", subsequent_indent="        "):
+                        console.print(f"  │  [dim]{w_line}[/dim]")
+                if "mitigation" in rag_summary and rag_summary["mitigation"] not in ["None", "Unknown"]:
+                    wrap_width = max(60, console.width - 15)
+                    for w_line in textwrap.wrap(rag_summary['mitigation'], width=wrap_width, initial_indent="Mitigation: ", subsequent_indent="            "):
+                        console.print(f"  │  [dim]{w_line}[/dim]")
+                
+                verifier_brief = {
+                    "cve_id": rag_summary.get("cve_id"),
+                    "dependency": rag_summary.get("dependency"),
+                    "vulnerable_functions": rag_summary.get("functions", []),
+                    "attack_vector": rag_summary.get("attack_vector"),
+                }
+                single_cve_context = json.dumps(verifier_brief, indent=2)
+                cve_context_parts.append(single_cve_context)
+                cve_context = "\n\n---\n\n".join(cve_context_parts)
+                
+                role_model = get_role_model(3)
+                console.print(f"  ├─ [bold magenta]● VERIFYING AGENT[/bold magenta] [[cyan]{role_model}[/cyan]]")
+                from src.rag.agents import verifier
+                poc_result = verifier.start_verify(cve_context, model_name=role_model, target_dir=str(target_dir), ts_module=ts_module) # Verifier Agent Role
+                
+                is_exploitable = poc_result.get("exploitable", False)
+                if "error" in poc_result or not is_exploitable:
+                    console.print(f"  │  └─ [bold yellow]⚠ CVE is NOT exploitable in this codebase[/bold yellow]")
+                    if "error" in poc_result:
+                        console.print(f"  │     [dim]Reason: {poc_result['error']}[/dim]")
+                    cve_context += "\nNOTE: PoC Verifier determined this CVE is NOT exploitable in the current codebase."
+                else:
+                    conf = poc_result.get('confidence', 100)
+                    console.print(f"  │  └─ [bold green]✔ CVE is exploitable! \\[Confidence: {conf}%][/bold green]")
+                    if poc_result.get("reasoning"):
+                        console.print(f"  │     [dim]Reason: {poc_result['reasoning']}[/dim]")
+                    
+                    console.print(f"  ├─ [bold magenta]● EXPANDING AGENT[/bold magenta] [[cyan]{role_model}[/cyan]]")
+                    from src.rag.agents import expander
+                    expand_result = expander.start_expand(cve_context, model_name=role_model, target_dir=str(target_dir), ts_module=ts_module) # Expander Agent Role
+                    
+                    extra_sinks = expand_result.get("extra_sinks", [])
+                    if extra_sinks:
+                        console.print(f"  │  ├─ [cyan]◆ Extracted {len(extra_sinks)} new sink patterns[/cyan]")
+                        from src.tools.actions import search_pattern
+                        for sink in extra_sinks:
+                            pat = sink.get("pattern", "")
+                            console.print(f"  │  │  [dim]Searching for: {pat}[/dim]")
+                            if pat:
+                                try:
+                                    search_res = search_pattern({"pattern": pat}, str(target_dir))
+                                    if search_res.startswith("[PATTERN"):
+                                        lines = search_res.split("\n")[1:]
+                                        for line in lines:
+                                            if line.startswith("  ") and ":" in line:
+                                                parts = line.strip().split(":", 2)
+                                                if len(parts) >= 2:
+                                                    file_path = parts[0]
+                                                    try:
+                                                        line_num = int(parts[1])
+                                                    except ValueError:
+                                                        line_num = 1
+                                                    
+                                                    desc = sink.get("description", pat)
+                                                    new_finding = {
+                                                        "id": f"dynamic-sink-{pat}",
+                                                        "message": f"Dynamically expanded sink from CVE: {desc}",
+                                                        "path": file_path,
+                                                        "start_line": line_num,
+                                                        "end_line": line_num,
+                                                        "severity": sink.get("severity", "WARNING")
+                                                    }
+                                                    scan_findings.append(new_finding)
+                                except Exception as e:
+                                    pass
+                        console.print("  │  └─ [bold green]✔ Sinks injected![/bold green]")
+                    else:
+                        console.print("  │  └─ [dim]No extra sinks extracted.[/dim]")
+
+                console.print("  └─ [bold green]✔ Supply Chain Analysis completed![/bold green]")
+            except Exception as rag_err:
+                console.print(f"  └─ [bold red]✖ RAG/Supply Chain failed: {rag_err}[/bold red]")
     else:
         from cli.views.logger import console
         logger.section("MULTI-AGENT")
         console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{model_tag}")
         console.print("  └─ [dim]No dependencies found! Skip![/dim]")
+
+    # Run Semgrep after Expander so we can combine findings
+    semgrep_findings = semgrep.scan_code(str(target_dir), rule_list)
+    scan_findings.extend(semgrep_findings)
+    scan_result["findings"] = scan_findings
+    
+    semgrep.report_scan(scan_findings)
 
     if not scan_findings:
         pass
@@ -317,7 +342,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                 while retry_count <= max_retries:
                     trace_json = scan_agents.start_scan(
                         finding_item, ast_context,
-                        model_name=actual_model,
+                        model_name=MODELS[2], # Scanning Agent Role
                         target_dir=str(target_dir),
                         ts_module=ts_module,
                     )
@@ -340,6 +365,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                         surrogate_func = trace_json.get("surrogate_function", "Unknown")
                         finding_item["surrogate_sink_context"] = f"Original sink was unreachable. We are now treating '{surrogate_func}' as the sink. Use find_callers('{surrogate_func}') if needed."
                         retry_count += 1
+                        logger.console.print(f"  ├─ [yellow]⚠ Flow broken → Surrogate: {surrogate_func} (retry {retry_count}/{max_retries})[/yellow]")
                         
                     else:
                         finding_item["dataflow_trace"] = "No trace available"
@@ -361,7 +387,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
 
                 verdict_data = audit_agents.start_audit(
                     finding_item, ast_context, cve_context,
-                    model_name=actual_model,
+                    model_name=MODELS[0], # Auditing Agent Role
                     target_dir=str(target_dir),
                     ts_module=ts_module,
                 )
@@ -399,33 +425,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
             except Exception as audit_err:
                 logger.console.print(f"  ├─ [bold red]✖ Auditor Agent failed: {audit_err}[/bold red]")
 
-            if is_vuln_flag:
-                try:
-                    logger.blank()
-                    logger.console.print(f"  [bold magenta]● HACKING AGENT[/bold magenta]{model_tag}")
-                    from src.hack.agents import models as hack_agents
-                    poc_json = hack_agents.start_hack(
-                        finding_item, ast_context, cve_context,
-                        model_name=actual_model,
-                        target_dir=str(target_dir),
-                        ts_module=ts_module,
-                    )
-                    finding_item["poc"] = poc_json
-                    if poc_json and "poc_type" in poc_json:
-                        logger.console.print(f"  ├─ [cyan]◆ Type:[/cyan] [dim]{poc_json['poc_type']}[/dim]")
-                        if "description" in poc_json:
-                            wrap_width = max(60, logger.console.width - 10)
-                            for w_line in textwrap.wrap(poc_json['description'], width=wrap_width):
-                                logger.console.print(f"  │  [dim]{w_line}[/dim]")
-                        if "payload" in poc_json:
-                            logger.console.print(f"  │  [bold red]Payload:[/bold red]")
-                            for p_line in poc_json['payload'].split('\n'):
-                                logger.console.print(f"  │    [dim]{p_line}[/dim]")
-                        logger.console.print(f"  └─ [bold green]✔ PoC: {poc_json['poc_type']}[/bold green]")
-                    else:
-                        logger.console.print(f"  └─ [bold yellow]⚠ Failed to generate PoC[/bold yellow]")
-                except Exception as hack_err:
-                    logger.console.print(f"  └─ [bold red]✖ Hacker Agent failed: {hack_err}[/bold red]")
+
 
                 if auto_fix:
                     try:
@@ -498,7 +498,12 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
     logger.console.print(summary_panel)
     logger.blank()
 
-    scan_findings.sort(key=lambda item_val: float(item_val.get("cvss_estimate", 0)), reverse=True)
+    def safe_cvss(item_val):
+        try:
+            return float(item_val.get("cvss_estimate", 0))
+        except (TypeError, ValueError):
+            return 0.0
+    scan_findings.sort(key=safe_cvss, reverse=True)
     scan_result["findings"] = scan_findings
 
     return {"status": "success", "data": scan_result}

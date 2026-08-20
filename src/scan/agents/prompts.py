@@ -19,10 +19,10 @@ STEP 2 IDENTIFY SINK ARGUMENTS
 
 STEP 3 TRACE BACKWARDS (hop by hop)
   For each sink argument:
+  Call trace_variable() to find where the variable is assigned, mutated, or aliased (CRITICAL for C/C++ pointers).
   Call find_function() if the argument comes from a function call.
-  Call find_callers() if you need to trace who supplies tainted data.
-  Follow every assignment until you reach an external input (source) or a
-    trusted constant.
+  Call find_callers() if you need to trace who supplies tainted data interprocedurally.
+  Follow every assignment until you reach an external input (source) or a trusted constant.
 
 STEP 4 DOCUMENT HOPS
   Record every assignment, function call, or data transformation in order.

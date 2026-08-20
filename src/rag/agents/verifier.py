@@ -23,6 +23,6 @@ def start_verify(
         target_dir      = target_dir,
         ts_module       = ts_module,
         model_name      = resolved_model,
-        max_steps       = 8,
+        max_steps       = 12,
         agent_name      = "POC_VERIFIER",
     )

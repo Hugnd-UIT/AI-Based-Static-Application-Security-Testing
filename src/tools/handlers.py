@@ -34,7 +34,7 @@ def run_agent(
             logger.warning("[%s] API error on step %d: %s", agent_name, curr_step, api_err)
             return fallback_verdict(error_msg=str(api_err))
 
-        assistant_msg: dict = {"role": "assistant", "content": api_msg.content}
+        assistant_msg: dict = {"role": "assistant", "content": api_msg.content or ""}
         if api_msg.tool_calls:
             assistant_msg["tool_calls"] = [
                 {
@@ -50,6 +50,7 @@ def run_agent(
         msg_history.append(assistant_msg)
 
         if api_msg.tool_calls:
+            verdict_result = None
             for tool_call in api_msg.tool_calls:
                 tool_name = tool_call.function.name
                 try:
@@ -74,7 +75,8 @@ def run_agent(
                         "content": json.dumps({"status": "verdict_accepted"}),
                     })
                     logger.debug("[%s] submit_verdict received stopping.", agent_name)
-                    return normalise_verdict(tool_args)
+                    verdict_result = normalise_verdict(tool_args)
+                    continue
 
                 exec_result = actions.execute_tool(tool_name, tool_args, target_dir, ts_module)
 
@@ -83,6 +85,9 @@ def run_agent(
                     "tool_call_id": tool_call.id,
                     "content": str(exec_result) if not isinstance(exec_result, str) else exec_result,
                 })
+
+            if verdict_result is not None:
+                return verdict_result
 
         else:
             plain_text = (api_msg.content or "").strip()

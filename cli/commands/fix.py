@@ -25,11 +25,6 @@ def process_command(user_command: str) -> bool:
         display_help()
         return True
 
-    if cmd_lower.startswith("/model"):
-        from cli.commands.model import choose_model
-        choose_model(user_command)
-        return True
-
     if cmd_lower.startswith("/scan"):
         scan_target = cmd_raw[5:].strip()
         if scan_target:

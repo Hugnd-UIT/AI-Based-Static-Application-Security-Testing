@@ -105,7 +105,6 @@ def find_callers(tool_args: dict, target_dir: str, ts_module=None) -> str:
 
     try:
         tree_sitter = ts_module or load_tree_sitter()
-        from tree_sitter import Language, Parser
 
         caller_results = []
         skip_dirs = {".git", "node_modules", "vendor", ".venv", "__pycache__"}
@@ -120,7 +119,7 @@ def find_callers(tool_args: dict, target_dir: str, ts_module=None) -> str:
                 try:
                     with open(file_path, "rb") as file_handle:
                         source_code = file_handle.read()
-                    ts_parser = Parser(Language(tree_sitter.LANG[file_ext]))
+                    ts_parser = tree_sitter.Parser(tree_sitter.Language(tree_sitter.LANG[file_ext]))
                     parsed_tree = ts_parser.parse(source_code)
                     caller_nodes = tree_sitter.find_callers(parsed_tree.root_node, func_name, source_code)
                     for caller_node in caller_nodes:

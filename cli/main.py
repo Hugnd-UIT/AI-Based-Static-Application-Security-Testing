@@ -20,14 +20,8 @@ def display_header():
     header_text.append(">_ Sinful AI", style="bold cyan")
     header_text.append(" v1.0.0\n\n", style="dim")
 
-    from main import MODELS
-    default_model = MODELS[0]
-
-    header_text.append("model:     ", style="dim")
-    header_text.append(f"{default_model:<25}", style="bold white")
-    header_text.append(" /model", style="bold cyan")
-    header_text.append(" to change\n", style="dim")
-
+    header_text.append("Welcome back!\n", style="bold cyan")
+    
     header_text.append("directory: ", style="dim")
     header_text.append(working_dir, style="white")
 
@@ -64,7 +58,6 @@ def start_cli():
                     self.cli_commands = {
                         '/scan': 'Run a security scan without fixing',
                         '/auto-fix': 'Run a security scan and automatically fix using AI',
-                        '/model': 'Select or view other AI model to use',
                         '/clear': 'Clear terminal',
                         '/help': 'Show list of commands',
                         '/exit': 'Exit terminal',
@@ -89,23 +82,10 @@ def start_cli():
             buffer_win = Window(height=1, content=BufferControl(buffer=input_buffer), style='bg:#373737 fg:#ffffff')
             bottom_pad = Window(height=1, char=' ', style='bg:#373737')
             
-            current_model = os.environ.get("MODELS", "deepseek/deepseek-v4-flash")
-            home_dir = os.path.expanduser("~")
-            short_cwd = os.getcwd().replace(home_dir, "~") if os.getcwd().startswith(home_dir) else os.getcwd()
-            
-            status_text = [
-                ('', '\n'),
-                ('class:status-model', f"  {current_model} "),
-                ('class:status-dot', "* "),
-                ('class:status-path', f"{short_cwd}")
-            ]
-            status_win = Window(height=2, content=FormattedTextControl(status_text))
-
             root_container = HSplit([
                 top_pad,
                 VSplit([prompt_win, buffer_win], height=1),
                 bottom_pad,
-                status_win,
                 CompletionsMenu(max_height=16, scroll_offset=1)
             ])
 
