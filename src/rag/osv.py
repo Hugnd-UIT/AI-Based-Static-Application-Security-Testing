@@ -76,14 +76,12 @@ def check_osv_vulns(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
 from cli.views import logger
 
 def report_osv(vuln_list: List[Dict[str, Any]]):
-    logger.section("OSV")
-
     from cli.views.logger import console
     if not vuln_list:
         console.print("  [green]- No known vulnerabilities found in dependencies[/green]")
         return
 
-    console.print(f"  [bold]{len(vuln_list)} vulnerabilities detected[/bold]")
+    console.print(f"\n  [bold]{len(vuln_list)} vulnerabilities detected[/bold]")
     console.print()
 
     vuln_groups = {}
@@ -95,7 +93,7 @@ def report_osv(vuln_list: List[Dict[str, Any]]):
         vuln_groups[pkg_name].append(vuln_item)
 
     for pkg_name, issue_list in vuln_groups.items():
-        console.print(f"  - [magenta]{pkg_name}[/magenta]")
+        console.print(f"  ● [magenta]{pkg_name}[/magenta]")
 
         for loop_idx, issue_item in enumerate(issue_list):
             cve_str = ", ".join(c for c in issue_item["cve"] if str(c).startswith("CVE"))
@@ -104,7 +102,7 @@ def report_osv(vuln_list: List[Dict[str, Any]]):
             summary_text = issue_item['summary'][:80] + "..." if len(issue_item['summary']) > 80 else issue_item['summary']
             
             is_last = (loop_idx == len(issue_list) - 1)
-            display_prefix = "  -" if is_last else "  |"
+            display_prefix = "  └─" if is_last else "  ├─"
             
             console.print(f"{display_prefix} [red]{vuln_id}{display_cve}[/red]: {summary_text}")
         

@@ -122,7 +122,6 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
         scan_result["findings"] = scan_findings
 
     if parsed_deps:
-        logger.section("SUPPLY CHAIN")
         try:
             cve_list = osv.check_osv_vulns(parsed_deps)
         except AttributeError:
@@ -170,19 +169,19 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
 
             cve_id_list = list(cve_ids)
 
-            with ThreadPoolExecutor(max_workers=5) as pool:
+            with ThreadPoolExecutor(max_workers=2) as pool:
                 future_map = {}
                 for list_idx, cid in enumerate(cve_id_list):
                     future_map[pool.submit(get_cve_info, cid)] = cid
                     if list_idx < len(cve_id_list) - 1:
-                        time.sleep(0.5)
+                        time.sleep(2.0)
 
                 for future in as_completed(future_map):
                     cve_id = future_map[future]
                     try:
                         nvd_result = future.result()
                         if nvd_result:
-                            cve_console.print(f"  [dim]✔ Fetched[/dim] [bold green]{cve_id}[/bold green]")
+                            cve_console.print("")
                             nvd.report_nvd(nvd_result)
                             scan_result["nvd_data"].append(nvd_result)
                     except Exception as fut_err:
@@ -193,15 +192,17 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
     
     if scan_result["nvd_data"] or scan_result["cves"]:
         from cli.views.logger import console
-        logger.section("MULTI-AGENT")
+        logger.section("SCA")
         import textwrap
 
         cves_to_process = scan_result["nvd_data"]
         if not cves_to_process and scan_result["cves"]:
              cves_to_process = scan_result["cves"]
 
+        # Loop 1: SCA (RAG Agents)
+        cve_rag_summaries = []
         for cve_idx, single_cve_data in enumerate(cves_to_process):
-            console.print(f"\n  [bold magenta]● RAG AGENT[/bold magenta] (CVE {cve_idx+1}/{len(cves_to_process)}){model_tag}")
+            console.print(f"\n  [bold magenta]● RAG AGENT[/bold magenta]{model_tag}")
             
             cve_data_str = json.dumps({
                 "cve_info": single_cve_data,
@@ -211,9 +212,10 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
             try:
                 rag_summary = rag_agents.start_rag(cve_data_str, model_name=MODELS[4]) # RAG Agent Role
                 scan_result["rag_summaries"].append(rag_summary)
+                cve_rag_summaries.append(rag_summary)
 
                 if "cve_id" in rag_summary and rag_summary["cve_id"] not in ["None", "Unknown"]:
-                    console.print(f"  ├─ [cyan]◆ Analyzing {rag_summary['cve_id']} {rag_summary.get('dependency', '')}[/cyan]")
+                    console.print(f"  ├─ [cyan]◆ Analyzing {rag_summary['cve_id']}[/cyan]")
                 if "attack_vector" in rag_summary and rag_summary["attack_vector"] not in ["None", "Unknown"]:
                     wrap_width = max(60, console.width - 15)
                     for w_line in textwrap.wrap(rag_summary['attack_vector'], width=wrap_width, initial_indent="Vector: ", subsequent_indent="        "):
@@ -222,45 +224,90 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                     wrap_width = max(60, console.width - 15)
                     for w_line in textwrap.wrap(rag_summary['mitigation'], width=wrap_width, initial_indent="Mitigation: ", subsequent_indent="            "):
                         console.print(f"  │  [dim]{w_line}[/dim]")
-                
+                console.print(f"  └─ [bold green]✔ Analysis completed[/bold green]")
+            
+            except Exception as rag_err:
+                console.print(f"  └─ [bold red]✖ RAG failed: {rag_err}[/bold red]")
+
+        # Loop 2: SAST (Verifier and Expander)
+        logger.section("SAST")
+        for rag_idx, rag_summary in enumerate(cve_rag_summaries):
+            try:
                 verifier_brief = {
                     "cve_id": rag_summary.get("cve_id"),
                     "dependency": rag_summary.get("dependency"),
                     "vulnerable_functions": rag_summary.get("functions", []),
                     "attack_vector": rag_summary.get("attack_vector"),
                 }
-                single_cve_context = json.dumps(verifier_brief, indent=2)
-                cve_context_parts.append(single_cve_context)
-                cve_context = "\n\n---\n\n".join(cve_context_parts)
+                cve_context = json.dumps(verifier_brief, indent=2)
                 
-                role_model = get_role_model(3)
-                console.print(f"  ├─ [bold magenta]● VERIFYING AGENT[/bold magenta] [[cyan]{role_model}[/cyan]]")
+                role_model = MODELS[3]
+                cve_id_str = rag_summary.get("cve_id", "Unknown CVE")
+                console.print(f"\n  [bold magenta]● VERIFYING AGENT[/bold magenta] [[cyan]{role_model}[/cyan]]")
+                console.print(f"  ├─ [cyan]◆ Target: {cve_id_str}[/cyan]")
                 from src.rag.agents import verifier
                 poc_result = verifier.start_verify(cve_context, model_name=role_model, target_dir=str(target_dir), ts_module=ts_module) # Verifier Agent Role
                 
                 is_exploitable = poc_result.get("exploitable", False)
+                wrap_width = max(60, console.width - 15)
+                
                 if "error" in poc_result or not is_exploitable:
-                    console.print(f"  │  └─ [bold yellow]⚠ CVE is NOT exploitable in this codebase[/bold yellow]")
+                    console.print(f"  ├─ [bold yellow]⚠ Not exploitable![/bold yellow]")
                     if "error" in poc_result:
-                        console.print(f"  │     [dim]Reason: {poc_result['error']}[/dim]")
+                        reason_str = str(poc_result['error']).strip()
+                        wrapped_lines = []
+                        for line in reason_str.split('\n'):
+                            wrapped_lines.extend(textwrap.wrap(line, width=wrap_width) or [""])
+                        if wrapped_lines:
+                            console.print(f"  │  [dim]Reason: {wrapped_lines[0]}[/dim]")
+                            for r_line in wrapped_lines[1:]:
+                                console.print(f"  │  [dim]{r_line}[/dim]")
                     cve_context += "\nNOTE: PoC Verifier determined this CVE is NOT exploitable in the current codebase."
                 else:
                     conf = poc_result.get('confidence', 100)
-                    console.print(f"  │  └─ [bold green]✔ CVE is exploitable! \\[Confidence: {conf}%][/bold green]")
+                    console.print(f"  ├─ [bold green]✔ Exploitable! \\[Confidence: {conf}%][/bold green]")
                     if poc_result.get("reasoning"):
-                        console.print(f"  │     [dim]Reason: {poc_result['reasoning']}[/dim]")
+                        reason_str = str(poc_result['reasoning']).strip()
+                        wrapped_lines = []
+                        for line in reason_str.split('\n'):
+                            wrapped_lines.extend(textwrap.wrap(line, width=wrap_width) or [""])
+                        if wrapped_lines:
+                            console.print(f"  │  [dim]Reason: {wrapped_lines[0]}[/dim]")
+                            for r_line in wrapped_lines[1:]:
+                                console.print(f"  │  [dim]{r_line}[/dim]")
                     
-                    console.print(f"  ├─ [bold magenta]● EXPANDING AGENT[/bold magenta] [[cyan]{role_model}[/cyan]]")
+                    console.print(f"\n  [bold magenta]● EXPANDING AGENT[/bold magenta] [[cyan]{role_model}[/cyan]]")
+                    console.print(f"  ├─ [cyan]◆ Target: {cve_id_str}[/cyan]")
                     from src.rag.agents import expander
                     expand_result = expander.start_expand(cve_context, model_name=role_model, target_dir=str(target_dir), ts_module=ts_module) # Expander Agent Role
                     
                     extra_sinks = expand_result.get("extra_sinks", [])
+                    if isinstance(extra_sinks, str):
+                        try:
+                            parsed_sinks = json.loads(extra_sinks)
+                            if isinstance(parsed_sinks, list):
+                                extra_sinks = parsed_sinks
+                            else:
+                                extra_sinks = [{"pattern": extra_sinks, "description": "Expanded sink"}]
+                        except Exception:
+                            extra_sinks = [{"pattern": extra_sinks, "description": "Expanded sink"}]
+                    elif not isinstance(extra_sinks, list):
+                        extra_sinks = []
+                        
                     if extra_sinks:
-                        console.print(f"  │  ├─ [cyan]◆ Extracted {len(extra_sinks)} new sink patterns[/cyan]")
+                        console.print(f"  ├─ [cyan]◆ Extracted {len(extra_sinks)} new sink patterns[/cyan]")
                         from src.tools.actions import search_pattern
                         for sink in extra_sinks:
-                            pat = sink.get("pattern", "")
-                            console.print(f"  │  │  [dim]Searching for: {pat}[/dim]")
+                            if isinstance(sink, str):
+                                pat = sink
+                                desc = pat
+                            elif isinstance(sink, dict):
+                                pat = sink.get("pattern", "")
+                                desc = sink.get("description", pat)
+                            else:
+                                continue
+                            
+                            console.print(f"  │  [dim]Searching for: {pat}[/dim]")
                             if pat:
                                 try:
                                     search_res = search_pattern({"pattern": pat}, str(target_dir))
@@ -276,7 +323,6 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                                                     except ValueError:
                                                         line_num = 1
                                                     
-                                                    desc = sink.get("description", pat)
                                                     new_finding = {
                                                         "id": f"dynamic-sink-{pat}",
                                                         "message": f"Dynamically expanded sink from CVE: {desc}",
@@ -288,13 +334,11 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                                                     scan_findings.append(new_finding)
                                 except Exception as e:
                                     pass
-                        console.print("  │  └─ [bold green]✔ Sinks injected![/bold green]")
+                        console.print("  └─ [bold green]✔ Injected![/bold green]")
                     else:
-                        console.print("  │  └─ [dim]No extra sinks extracted.[/dim]")
-
-                console.print("  └─ [bold green]✔ Supply Chain Analysis completed![/bold green]")
+                        console.print("  └─ [dim]No extra sinks![/dim]")
             except Exception as rag_err:
-                console.print(f"  └─ [bold red]✖ RAG/Supply Chain failed: {rag_err}[/bold red]")
+                console.print(f"  └─ [bold red]✖ RAG failed: {rag_err}[/bold red]")
     else:
         from cli.views.logger import console
         logger.section("MULTI-AGENT")

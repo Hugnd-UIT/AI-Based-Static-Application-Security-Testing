@@ -18,6 +18,7 @@ def fetch_nvd_cve(cve_id: str, max_retries: int = 2) -> Optional[Dict[str, Any]]
             api_key = os.environ.get("NIST_API_KEY", "")
             if api_key:
                 api_req.add_header("apiKey", api_key)
+            api_req.add_header("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36")
             with urllib.request.urlopen(api_req, timeout=30) as api_resp:
                 json_data = json.loads(api_resp.read().decode("utf-8"))
                 vuln_list = json_data.get("vulnerabilities", [])
@@ -75,13 +76,26 @@ def report_nvd(cve_data: Dict[str, Any]):
         return
 
     from cli.views.logger import console
-    console.print(f"  [magenta]NVD[/magenta] [cyan]{cve_data['cve_id']}[/cyan]")
-    console.print(f"  - Severity [yellow]{cve_data['severity']}[/yellow] ({cve_data['base_score']})")
+    console.print(f"  ● [cyan]{cve_data['cve_id']}[/cyan]")
+    console.print(f"  ├─ Severity: [yellow]{cve_data['severity']}[/yellow] [{cve_data['base_score']}]")
 
     ref_count = len(cve_data["references"]) if cve_data.get("references") else 0
-    console.print(f"  - References [blue]{ref_count}[/blue] links")
+    console.print(f"  ├─ References: [blue]{ref_count}[/blue] links")
 
     desc_text = cve_data["description"]
     short_desc = desc_text[:80] + "..." if len(desc_text) > 80 else desc_text
-    console.print(f"  - Details {short_desc}")
+    console.print(f"  ├─ Details: {short_desc}")
+    console.print(f"  │")
+    
+    ref_links = cve_data.get("references", [])[:2] if cve_data.get("references") else []
+    if ref_links:
+        console.print(f"  ├─ [bold magenta]FIRECRAWL[/bold magenta]")
+        for idx, ref_url in enumerate(ref_links):
+            short_url = ref_url if len(ref_url) <= 60 else ref_url[:60] + "..."
+            tree_char = "└─" if idx == len(ref_links) - 1 else "├─"
+            console.print(f"  │  {tree_char} [dim]{short_url}[/dim]")
+        console.print(f"  │")
+            
+    cve_id = cve_data.get('cve_id')
+    console.print(f"  └─ [bold magenta]GITHUB[/bold magenta] - {cve_id}")
     console.print()
