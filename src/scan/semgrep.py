@@ -38,7 +38,7 @@ def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, A
         raise ValueError(f"[!] The path is invalid: {target_path}")
 
     rule_list = rule_list if rule_list else RULES
-    scan_cmd = ["semgrep", "scan", "--json", "--quiet"]
+    scan_cmd = ["semgrep", "scan", "--json", "--quiet", "--no-git-ignore"]
 
     for rule_name in rule_list:
         scan_cmd.extend(["--config", rule_name])
@@ -146,9 +146,15 @@ def report_scan(scan_findings: List[Dict[str, Any]]):
         file_path = finding_item["path"]
         line_num = finding_item["start_line"]
 
-        color_str = "red" if severity_level == "ERROR" else "yellow"
+        sev_upper = severity_level.upper()
+        if sev_upper in ["ERROR", "CRITICAL", "HIGH"]:
+            color_str = "red"
+        elif sev_upper in ["WARNING", "MEDIUM"]:
+            color_str = "yellow"
+        else:
+            color_str = "cyan"
 
-        console.print(f"  ┌─ [{color_str}]{severity_level}[/{color_str}]")
+        console.print(f"  ┌─ [bold {color_str}]{severity_level}[/bold {color_str}]")
         console.print(f"  ├─ Rule   [cyan]{rule_id}[/cyan]")
         console.print(f"  ├─ File   [dim]{file_path}[/dim]")
         console.print(f"  └─ Line   [bold yellow]{line_num}[/bold yellow]")

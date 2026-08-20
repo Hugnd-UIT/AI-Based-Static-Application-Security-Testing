@@ -16,9 +16,9 @@ load_dotenv()
 from cli.views import logger
 
 MODELS = [
-    "deepseek/deepseek-v4-flash",
+    "deepseek/deepseek-v4-pro",
     "mistralai/codestral-2508",
-    "qwen/qwen3.8-max",
+    "minimax/minimax-m2.7",
     "xiaomi/mimo-v2.5-pro",
     "mistralai/mistral-large-2512"
 ]
@@ -31,7 +31,7 @@ def load_ts_module():
     return ts_module
 
 def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
-    actual_model = model_name or os.environ.get("MODELS", "deepseek/deepseek-v4-flash")
+    actual_model = model_name or MODELS[0]
     model_tag = fr" [[cyan]{actual_model}[/cyan]]"
     
     temp_dir = None
@@ -104,8 +104,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
     except Exception:
         cross_context = ""
 
-    if not scan_findings and not cross_context:
-        return {"status": "success", "message": "No vulnerabilities found.", "data": scan_result}
+
 
     if not scan_findings and cross_context:
         scan_findings = [{
@@ -195,9 +194,16 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
         logger.section("SCA")
         import textwrap
 
-        cves_to_process = scan_result["nvd_data"]
-        if not cves_to_process and scan_result["cves"]:
-             cves_to_process = scan_result["cves"]
+        cves_to_process = []
+        nvd_lookup = {n.get("cve_id"): n for n in scan_result.get("nvd_data", [])}
+        for base_cve in scan_result.get("cves", []):
+            merged_cve = dict(base_cve)
+            cve_aliases = merged_cve.get("cve", [])
+            for alias in cve_aliases:
+                if alias in nvd_lookup:
+                    merged_cve.update(nvd_lookup[alias])
+                    break
+            cves_to_process.append(merged_cve)
 
         # Loop 1: SCA (RAG Agents)
         cve_rag_summaries = []
@@ -210,7 +216,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
             }, indent=2)
             
             try:
-                rag_summary = rag_agents.start_rag(cve_data_str, model_name=MODELS[4]) # RAG Agent Role
+                rag_summary = rag_agents.start_rag(cve_data_str, model_name=MODELS[0]) # RAG Agent Role
                 scan_result["rag_summaries"].append(rag_summary)
                 cve_rag_summaries.append(rag_summary)
 
@@ -241,7 +247,7 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                 }
                 cve_context = json.dumps(verifier_brief, indent=2)
                 
-                role_model = MODELS[3]
+                role_model = MODELS[1] # Codestral for Verifier
                 cve_id_str = rag_summary.get("cve_id", "Unknown CVE")
                 console.print(f"\n  [bold magenta]● VERIFYING AGENT[/bold magenta] [[cyan]{role_model}[/cyan]]")
                 console.print(f"  ├─ [cyan]◆ Target: {cve_id_str}[/cyan]")
@@ -276,10 +282,11 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                             for r_line in wrapped_lines[1:]:
                                 console.print(f"  │  [dim]{r_line}[/dim]")
                     
-                    console.print(f"\n  [bold magenta]● EXPANDING AGENT[/bold magenta] [[cyan]{role_model}[/cyan]]")
+                    expand_model = MODELS[2] # MiniMax M2.5 for Expander
+                    console.print(f"\n  [bold magenta]● EXPANDING AGENT[/bold magenta] [[cyan]{expand_model}[/cyan]]")
                     console.print(f"  ├─ [cyan]◆ Target: {cve_id_str}[/cyan]")
                     from src.rag.agents import expander
-                    expand_result = expander.start_expand(cve_context, model_name=role_model, target_dir=str(target_dir), ts_module=ts_module) # Expander Agent Role
+                    expand_result = expander.start_expand(cve_context, model_name=expand_model, target_dir=str(target_dir), ts_module=ts_module) # Expander Agent Role
                     
                     extra_sinks = expand_result.get("extra_sinks", [])
                     if isinstance(extra_sinks, str):
@@ -381,12 +388,13 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                 retry_count = 0
                 trace_json = {}
                 
-                logger.console.print(f"  [bold magenta]● SCANNING AGENT[/bold magenta]{model_tag}")
+                scan_model = MODELS[4]
+                logger.console.print(f"  [bold magenta]● SCANNING AGENT[/bold magenta] [[cyan]{scan_model}[/cyan]]")
                 
                 while retry_count <= max_retries:
                     trace_json = scan_agents.start_scan(
                         finding_item, ast_context,
-                        model_name=MODELS[2], # Scanning Agent Role
+                        model_name=MODELS[4], # Scanning Agent Role
                         target_dir=str(target_dir),
                         ts_module=ts_module,
                     )
@@ -427,11 +435,12 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
             try:
                 import textwrap
                 logger.blank()
-                logger.console.print(f"  [bold magenta]● AUDITING AGENT[/bold magenta]{model_tag}")
+                audit_model = MODELS[3]
+                logger.console.print(f"  [bold magenta]● AUDITING AGENT[/bold magenta] [[cyan]{audit_model}[/cyan]]")
 
                 verdict_data = audit_agents.start_audit(
                     finding_item, ast_context, cve_context,
-                    model_name=MODELS[0], # Auditing Agent Role
+                    model_name=MODELS[3], # Auditing Agent Role
                     target_dir=str(target_dir),
                     ts_module=ts_module,
                 )
@@ -474,7 +483,8 @@ def start_sast(target_path, rule_list=None, model_name=None, auto_fix=False):
                 if auto_fix:
                     try:
                         logger.blank()
-                        logger.console.print(f"  [bold magenta]● FIXING AGENT[/bold magenta]{model_tag}")
+                        fix_model = MODELS[0]
+                        logger.console.print(f"  [bold magenta]● FIXING AGENT[/bold magenta] [[cyan]{fix_model}[/cyan]]")
                         from src.fix.agents import models as fix_agents
                         fix_json = fix_agents.start_fix(
                             finding_item, ast_context, cve_context,

@@ -66,6 +66,9 @@ def fetch_nvd_cve(cve_id: str, max_retries: int = 2) -> Optional[Dict[str, Any]]
                 print(f"[!] HTTP Error fetching {cve_id}: {http_err.code}")
             break
         except Exception as fetch_err:
+            if curr_attempt < max_retries:
+                time.sleep(6 * (curr_attempt + 1))
+                continue
             print(f"[!] Failed to fetch NVD data for {cve_id}: {fetch_err}")
             break
 
