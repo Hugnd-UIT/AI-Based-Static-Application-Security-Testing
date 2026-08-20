@@ -30,13 +30,13 @@ async def forward_github_req(request: Request, path: str):
     req_headers.pop("content-length", None)
     req_headers.pop("accept-encoding", None)
     
-    async with httpx.AsyncClient() as http_client:
+    async with httpx.AsyncClient(timeout=120.0) as http_client:
         try:
             http_req = http_client.build_request(method=request.method, url=target_url, headers=req_headers, params=request.query_params)
             api_resp = await http_client.send(http_req, stream=False)
             return Response(content=api_resp.content, status_code=api_resp.status_code, headers={head_k: head_v for head_k, head_v in api_resp.headers.items() if head_k.lower() not in ("content-length", "transfer-encoding", "content-encoding")})
         except httpx.RequestError as req_err:
-            raise HTTPException(status_code=502, detail=f"Error connecting to GitHub API: {str(req_err)}")
+            raise HTTPException(status_code=502, detail=f"Error connecting to GitHub API: {repr(req_err)}")
 
 @app.api_route("/firecrawl", methods=["POST"])
 async def forward_firecrawl_req(request: Request):
@@ -50,13 +50,13 @@ async def forward_firecrawl_req(request: Request):
     req_headers.pop("content-length", None)
     req_headers.pop("accept-encoding", None)
     
-    async with httpx.AsyncClient() as http_client:
+    async with httpx.AsyncClient(timeout=120.0) as http_client:
         try:
             http_req = http_client.build_request(method=request.method, url=FIRECRAWL_URL, headers=req_headers, content=req_body)
             api_resp = await http_client.send(http_req, stream=False)
             return Response(content=api_resp.content, status_code=api_resp.status_code, headers={head_k: head_v for head_k, head_v in api_resp.headers.items() if head_k.lower() not in ("content-length", "transfer-encoding", "content-encoding")})
         except httpx.RequestError as req_err:
-            raise HTTPException(status_code=502, detail=f"Error connecting to Firecrawl API: {str(req_err)}")
+            raise HTTPException(status_code=502, detail=f"Error connecting to Firecrawl API: {repr(req_err)}")
 
 @app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
 async def forward_ai_req(request: Request, path: str):
@@ -73,7 +73,7 @@ async def forward_ai_req(request: Request, path: str):
     req_headers.pop("content-length", None)
     req_headers.pop("accept-encoding", None)
 
-    async with httpx.AsyncClient() as http_client:
+    async with httpx.AsyncClient(timeout=120.0) as http_client:
         try:
             http_req = http_client.build_request(
                 method=request.method,
@@ -90,7 +90,7 @@ async def forward_ai_req(request: Request, path: str):
                 headers={head_k: head_v for head_k, head_v in api_resp.headers.items() if head_k.lower() not in ("content-length", "transfer-encoding", "content-encoding")}
             )
         except httpx.RequestError as req_err:
-            raise HTTPException(status_code=502, detail=f"Error connecting to AI API: {str(req_err)}")
+            raise HTTPException(status_code=502, detail=f"Error connecting to AI API: {repr(req_err)}")
 
 if __name__ == "__main__":
     import uvicorn
