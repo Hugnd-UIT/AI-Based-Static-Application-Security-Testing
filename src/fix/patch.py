@@ -1,50 +1,53 @@
-﻿def replace_code(file_content: str, old_code: str, new_code: str) -> str:
+# Hàm tìm kiếm và thay thế code
+def replace_code(content: str, old: str, new: str) -> str:
 
-    if old_code in file_content:
-
-        return file_content.replace(old_code, new_code, 1)
+    # Nếu code cũ trùng code mới thì thay thế ngay lập tức
+    if old in content:
+        return content.replace(old, new, 1)
         
-    old_lines = [line.strip() for line in old_code.strip().split('\n')]
-    file_lines = file_content.split('\n')
+    olds = [line.strip() for line in old.strip().split('\n')]
+    lines = content.split('\n')
     
-    if old_lines:
+    # Nếu code cũ không trùng code mới thì tìm kiếm và thay thế từng dòng
+    if olds:
 
-        for line_idx in range(len(file_lines) - len(old_lines) + 1):
-            is_match = True
+        for idx in range(len(lines) - len(olds) + 1):
+            match = True
 
-            for list_idx, old_line in enumerate(old_lines):
+            for j, line in enumerate(olds):
 
-                if file_lines[line_idx+list_idx].strip() != old_line:
-                    is_match = False
+                if lines[idx+j].strip() != line:
+                    match = False
                     break
 
-            if is_match:
-                before_code = '\n'.join(file_lines[:line_idx])
-                after_code = '\n'.join(file_lines[line_idx+len(old_lines):])
+            if match:
+                before = '\n'.join(lines[:idx])
+                after = '\n'.join(lines[idx+len(olds):])
                 
-                orig_indent = file_lines[line_idx][:len(file_lines[line_idx]) - len(file_lines[line_idx].lstrip())]
-                new_lines = new_code.strip('\n').split('\n')
+                indent = lines[idx][:len(lines[idx]) - len(lines[idx].lstrip())]
+                news = new.strip('\n').split('\n')
                 
-                if new_lines and len(new_lines[0]) - len(new_lines[0].lstrip()) == 0:
-                    new_lines = [orig_indent + line for line in new_lines]
-                    new_code = '\n'.join(new_lines)
+                if news and len(news[0]) - len(news[0].lstrip()) == 0:
+                    news = [indent + l for l in news]
+                    new = '\n'.join(news)
 
                 else:
-                    new_code = new_code.strip('\n')
+                    new = new.strip('\n')
                     
-                return before_code + ('\n' if before_code else '') + new_code + ('\n' if after_code else '') + after_code
+                return before + ('\n' if before else '') + new + ('\n' if after else '') + after
 
-    raise ValueError("Could not find exact match for 'old_code' in the file.")
+    raise ValueError("Could not find exact match for 'old' in the file")
 
-def apply_patch(file_path: str, old_code: str, new_code: str) -> bool:
+# Hàm áp dụng bản vá lỗi
+def apply_patch(path: str, old: str, new: str) -> bool:
     try:
-        with open(file_path, "r", encoding="utf-8") as file_obj:
-            file_content = file_obj.read()
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
 
-        new_content = replace_code(file_content, old_code, new_code)
+        updated = replace_code(content, old, new)
 
-        with open(file_path, "w", encoding="utf-8") as file_obj:
-            file_obj.write(new_content)
+        with open(path, "w", encoding="utf-8") as f:
+            f.write(updated)
 
         return True
 
@@ -52,8 +55,7 @@ def apply_patch(file_path: str, old_code: str, new_code: str) -> bool:
 
         return False
 
-    except Exception as patch_err:
-        print(f"[!] Patch error on {file_path}: {patch_err}")
+    except Exception as err:
+        print(f"[!] Patch error on {path}: {err}")
 
         return False
-

@@ -29,6 +29,7 @@ MODELS = [
     "mistralai/mistral-large-2512"
 ]
 
+# Khởi tạo công cụ phân tích cú pháp Tree-sitter
 def init_sitter():
     set_path = Path("src/audit/tree-sitter.py").resolve()
     load_spec = importlib.util.spec_from_file_location("ts_module", set_path)
@@ -37,42 +38,43 @@ def init_sitter():
 
     return use_module
 
-def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
-    set_model = use_model or MODELS[0]
-    show_tag = fr" [[cyan]{set_model}[/cyan]]"
+# Khởi chạy toàn bộ quy trình quét bảo mật
+def run_scan(path, rules=None, model=None, fix=False):
+    m = model or MODELS[0]
+    tag = fr" [[cyan]{m}[/cyan]]"
     
-    make_dir = None
-    get_result = {
+    temp = None
+    res = {
         "status": "processing",
         "languages": {},
         "language_versions": {},
         "dependencies": [],
         "findings": [],
         "cves": [],
-        "get_nvd": [],
+        "nvd": [],
         "rag_summaries": [],
     }
 
-    if scan_path.startswith("http://") or scan_path.startswith("https://") or scan_path.startswith("git@"):
-        print(f"\n[*] Cloning repository: {scan_path}")
-        make_dir = tempfile.mkdtemp(prefix="ai_scan_")
+    if path.startswith("http://") or path.startswith("https://") or path.startswith("git@"):
+        print(f"\n[*] Cloning repository: {path}")
+        temp = tempfile.mkdtemp(prefix="ai_scan_")
         
         try:
-            subprocess.run(["git", "clone", "--depth", "1", scan_path, make_dir], check=True, capture_output=True)
-            scan_dir = Path(make_dir).resolve()
+            subprocess.run(["git", "clone", "--depth", "1", path, temp], check=True, capture_output=True)
+            sdir = Path(temp).resolve()
             
-        except subprocess.CalledProcessError as catch_clone:
-            show_error = f"Git clone failed: {catch_clone.stderr.decode('utf-8') if catch_clone.stderr else str(catch_clone)}"
-            shutil.rmtree(make_dir, ignore_errors=True)
+        except subprocess.CalledProcessError as e:
+            msg = f"Git clone failed: {e.stderr.decode('utf-8') if e.stderr else str(e)}"
+            shutil.rmtree(temp, ignore_errors=True)
 
-            return {"status": "error", "message": show_error}
+            return {"status": "error", "message": msg}
             
     else:
-        scan_dir = Path(scan_path).resolve()
+        sdir = Path(path).resolve()
 
-        if not scan_dir.exists():
+        if not sdir.exists():
 
-            return {"status": "error", "message": f"Target directory does not exist: {scan_dir}"}
+            return {"status": "error", "message": f"Target directory does not exist: {sdir}"}
 
     try:
         from src.recognize import detector
@@ -90,296 +92,296 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
 
         use_module = init_sitter()
         
-    except Exception as catch_load:
+    except Exception as e:
 
-        return {"status": "error", "message": f"Failed to load modules: {catch_load}"}
+        return {"status": "error", "message": f"Failed to load modules: {e}"}
 
-    count_langs = detector.detect_langs(str(scan_dir))
-    get_versions = detector.get_versions(count_langs)
-    get_result["languages"] = count_langs
-    get_result["language_versions"] = get_versions
-    detector.report_langs(count_langs, get_versions)
+    langs = detector.detect_langs(str(sdir))
+    vers = detector.vers(langs)
+    res["languages"] = langs
+    res["language_versions"] = vers
+    detector.report_langs(langs, vers)
 
-    parse_deps = dep_parser.parse_deps(str(scan_dir))
-    get_result["dependencies"] = parse_deps
-    dep_parser.report_deps(parse_deps)
+    deps = dep_parser.deps(str(sdir))
+    res["dependencies"] = deps
+    dep_parser.report_deps(deps)
 
-    find_flaws = []
+    flaws = []
     
     try:
-        build_context = use_module.build_context(str(scan_dir))
+        ctx = use_module.ctx(str(sdir))
 
-        if build_context:
-            get_result["file_context"] = build_context
+        if ctx:
+            res["file_context"] = ctx
 
         else:
-            build_context = ""
+            ctx = ""
 
     except Exception:
-        build_context = ""
+        ctx = ""
 
 
 
-    if build_context:
-        taint_blocks = [b for b in build_context.split("[CROSS-FILE TAINT PATH DETECTED]") if b.strip()]
-        for taint_block in taint_blocks:
-            if "Propagates to" not in taint_block: continue
-            prop_match = re.search(r"Propagates to\s*:\s*(\S+)\s*\(line (\d+)\)", taint_block)
-            taint_file = prop_match.group(1) if prop_match else str(scan_dir)
-            taint_line = int(prop_match.group(2)) if prop_match else 1
+    if ctx:
+        blocks = [b for b in ctx.split("[CROSS-FILE TAINT PATH DETECTED]") if b.strip()]
+        for block in blocks:
+            if "Propagates to" not in block: continue
+            match = re.search(r"Propagates to\s*:\s*(\S+)\s*\(line (\d+)\)", block)
+            tfile = match.group(1) if match else str(sdir)
+            tline = int(match.group(2)) if match else 1
             
-            full_path = str(scan_dir)
-            if prop_match:
-                for root, _, files in os.walk(str(scan_dir)):
-                    if taint_file in files:
-                        full_path = os.path.join(root, taint_file)
+            fpath = str(sdir)
+            if match:
+                for root, _, files in os.walk(str(sdir)):
+                    if tfile in files:
+                        fpath = os.path.join(root, tfile)
                         break
                         
-            find_flaws.append({
+            flaws.append({
                 "id": "sinful-cross-file-taint",
-                "path": full_path,
-                "start_line": taint_line,
-                "end_line": taint_line + 5,
+                "path": fpath,
+                "start_line": tline,
+                "end_line": tline + 5,
                 "severity": "HIGH",
                 "message": "Cross-file taint path detected by inter-procedural analysis.",
                 "lines": "",
                 "cwe": [],
-                "dataflow_trace": "[CROSS-FILE TAINT PATH DETECTED]" + taint_block.rstrip(),
+                "dataflow_trace": "[CROSS-FILE TAINT PATH DETECTED]" + block.rstrip(),
             })
             
-        if find_flaws:
-            get_result["findings"] = find_flaws
+        if flaws:
+            res["findings"] = flaws
 
-    if parse_deps:
+    if deps:
 
         try:
-            list_cves = osv.check_osv(parse_deps)
+            cves = osv.check_osv(deps)
 
         except AttributeError:
-            list_cves = []
+            cves = []
 
         from src.rag import usage
-        list_cves = usage.check_usage(str(scan_dir), list_cves, use_module)
-        list_cves = [use_cve for use_cve in list_cves if use_cve.get("reachable", True)]
+        cves = usage.check_usage(str(sdir), cves, use_module)
+        cves = [cve for cve in cves if cve.get("reachable", True)]
 
-        get_result["cves"] = list_cves
-        osv.report_osv(list_cves)
+        res["cves"] = cves
+        osv.report_osv(cves)
 
-        get_cves = set()
+        scves = set()
 
-        for use_cve in list_cves:
+        for cve in cves:
 
-            for get_alias in use_cve.get("cve", []):
+            for alias in cve.get("cve", []):
 
-                if str(get_alias).startswith("CVE-"):
-                    get_cves.add(get_alias)
+                if str(alias).startswith("CVE-"):
+                    scves.add(alias)
 
-        if get_cves:
-            from cli.views.logger import console as cve_console
+        if scves:
+            from cli.views.logger import console as ccons
             
-            def fetch_cve(check_cve: str):
-                get_nvd = nvd.fetch_cve(check_cve)
+            def fetch_cve(ccve: str):
+                nvd = nvd.fetch_cve(ccve)
 
-                if not get_nvd:
+                if not nvd:
                     return None
 
-                get_links = get_nvd.get("references", [])
+                links = nvd.get("references", [])
 
-                if get_links:
-                    get_nvd["firecrawl_poc"] = ""
+                if links:
+                    nvd["firecrawl_poc"] = ""
 
-                    for use_url in get_links[:2]:
-                        get_md = firecrawl.scrape_url(use_url)
+                    for url in links[:2]:
+                        md = firecrawl.scrape_url(url)
 
-                        if get_md:
-                            get_nvd["firecrawl_poc"] += f"\n\nSource: {use_url}\n{get_md}"
+                        if md:
+                            nvd["firecrawl_poc"] += f"\n\nSource: {url}\n{md}"
 
-                get_github = github.search_github(check_cve)
+                gh = github.search_github(ccve)
 
-                if "error" not in get_github:
-                    get_nvd["github_issues"] = get_github.get("github_issues", [])
+                if "error" not in gh:
+                    nvd["github_issues"] = gh.get("github_issues", [])
 
-                return get_nvd
+                return nvd
 
-            list_ids = list(get_cves)
+            ids = list(scves)
 
-            for get_index, use_cid in enumerate(list_ids):
+            for idx, cid in enumerate(ids):
                 try:
-                    nvd_result = fetch_cve(use_cid)
+                    nres = fetch_cve(cid)
 
-                    if nvd_result:
-                        cve_console.print("")
-                        nvd.report_nvd(nvd_result)
-                        get_result["get_nvd"].append(nvd_result)
+                    if nres:
+                        ccons.print("")
+                        nvd.report_nvd(nres)
+                        res["nvd"].append(nres)
                         
-                except Exception as catch_future:
-                    cve_console.print(f"  [dim]Failed to fetch {use_cid}: {catch_future}[/dim]")
+                except Exception as e:
+                    ccons.print(f"  [dim]Failed to fetch {cid}: {e}[/dim]")
                 
-                if get_index < len(list_ids) - 1:
+                if idx < len(ids) - 1:
                     time.sleep(0.6)
 
-    get_parts = []
+    parts = []
     
-    if get_result["get_nvd"] or get_result["cves"]:
+    if res["nvd"] or res["cves"]:
         from cli.views.logger import console
         logger.section("SCA")
         import textwrap
 
-        process_cves = []
-        find_nvd = {n.get("cve_id"): n for n in get_result.get("get_nvd", []) if n.get("cve_id")}
+        pcves = []
+        fnvd = {n.get("cve_id"): n for n in res.get("nvd", []) if n.get("cve_id")}
 
-        for get_base in get_result.get("cves", []):
-            merge_cve = dict(get_base)
-            get_aliases = merge_cve.get("cve", [])
+        for base in res.get("cves", []):
+            mcve = dict(base)
+            aliases = mcve.get("cve", [])
 
-            for use_alias in get_aliases:
+            for alias in aliases:
 
-                if use_alias in find_nvd:
-                    merge_cve.update(find_nvd[use_alias])
+                if alias in fnvd:
+                    mcve.update(fnvd[alias])
                     break
 
-            process_cves.append(merge_cve)
+            pcves.append(mcve)
 
         # Loop 1: SCA (RAG Agents)
-        get_rags = []
+        rags = []
 
-        for get_idx, get_data in enumerate(process_cves):
-            console.print(f"\n  [bold magenta]● RAG AGENT[/bold magenta]{show_tag}")
+        for idx, data in enumerate(pcves):
+            console.print(f"\n  [bold magenta]● RAG AGENT[/bold magenta]{tag}")
             
-            get_str = json.dumps({
-                "cve_info": get_data,
-                "runtimes": get_result.get("language_versions")
+            jstr = json.dumps({
+                "cve_info": data,
+                "runtimes": res.get("language_versions")
             }, indent=2)
             
             try:
-                get_summary = rag_agents.start_rag(get_str, model_name=MODELS[0]) # RAG Agent Role
-                get_result["rag_summaries"].append(get_summary)
-                get_rags.append(get_summary)
+                sum = rag_agents.start_rag(jstr, model=MODELS[0]) # RAG Agent Role
+                res["rag_summaries"].append(sum)
+                rags.append(sum)
 
-                if "check_cve" in get_summary and get_summary["check_cve"] not in ["None", "Unknown"]:
-                    console.print(f"  ├─ [cyan]◆ Analyzing {get_summary['check_cve']}[/cyan]")
+                if "ccve" in sum and sum["ccve"] not in ["None", "Unknown"]:
+                    console.print(f"  ├─ [cyan]◆ Analyzing {sum['ccve']}[/cyan]")
 
-                if "attack_vector" in get_summary and str(get_summary["attack_vector"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
-                    set_width = max(60, console.width - 15)
+                if "attack_vector" in sum and str(sum["attack_vector"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
+                    width = max(60, console.width - 15)
 
-                    for get_line in textwrap.wrap(get_summary['attack_vector'], width=set_width, initial_indent="Vector: ", subsequent_indent="        "):
-                        console.print(f"  │  [dim]{get_line}[/dim]")
+                    for line in textwrap.wrap(sum['attack_vector'], width=width, initial_indent="Vector: ", subsequent_indent="        "):
+                        console.print(f"  │  [dim]{line}[/dim]")
 
-                if "mitigation" in get_summary and str(get_summary["mitigation"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
-                    set_width = max(60, console.width - 15)
+                if "mitigation" in sum and str(sum["mitigation"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
+                    width = max(60, console.width - 15)
 
-                    for get_line in textwrap.wrap(get_summary['mitigation'], width=set_width, initial_indent="Mitigation: ", subsequent_indent="            "):
-                        console.print(f"  │  [dim]{get_line}[/dim]")
+                    for line in textwrap.wrap(sum['mitigation'], width=width, initial_indent="Mitigation: ", subsequent_indent="            "):
+                        console.print(f"  │  [dim]{line}[/dim]")
                 console.print(f"  └─ [bold green]✔ Analysis completed[/bold green]")
             
-            except Exception as catch_rag:
-                console.print(f"  └─ [bold red]✖ RAG failed: {catch_rag}[/bold red]")
+            except Exception as e:
+                console.print(f"  └─ [bold red]✖ RAG failed: {e}[/bold red]")
 
         # Loop 2: SAST (Verifier and Expander)
         logger.section("SAST")
 
-        for use_idx, get_summary in enumerate(get_rags):
+        for idx, sum in enumerate(rags):
 
             try:
-                get_brief = {
-                    "check_cve": get_summary.get("check_cve"),
-                    "dependency": get_summary.get("dependency"),
-                    "vulnerable_functions": get_summary.get("functions", []),
-                    "attack_vector": get_summary.get("attack_vector"),
+                brief = {
+                    "ccve": sum.get("ccve"),
+                    "dependency": sum.get("dependency"),
+                    "vulnerable_functions": sum.get("functions", []),
+                    "attack_vector": sum.get("attack_vector"),
                 }
-                cve_json = json.dumps(get_brief, indent=2)
-                get_parts.append(cve_json)
-                get_context = cve_json
+                cjson = json.dumps(brief, indent=2)
+                parts.append(cjson)
+                ctx = cjson
                 
-                set_role = MODELS[1] # Codestral for Verifier
-                set_str = get_summary.get("check_cve", "Unknown CVE")
-                console.print(f"\n  [bold magenta]● VERIFYING AGENT[/bold magenta] [[cyan]{set_role}[/cyan]]")
-                console.print(f"  ├─ [cyan]◆ Target: {set_str}[/cyan]")
+                role = MODELS[1] # Codestral for Verifier
+                tstr = sum.get("ccve", "Unknown CVE")
+                console.print(f"\n  [bold magenta]● VERIFYING AGENT[/bold magenta] [[cyan]{role}[/cyan]]")
+                console.print(f"  ├─ [cyan]◆ Target: {tstr}[/cyan]")
                 from src.rag.agents import verifier
-                get_poc = verifier.start_verify(get_context, model_name=set_role, target_dir=str(scan_dir), ts_module=use_module) # Verifier Agent Role
+                poc = verifier.start_verify(ctx, model=role, target=str(sdir), module=use_module) # Verifier Agent Role
                 
-                check_exploit = get_poc.get("exploitable", False)
-                set_width = max(60, console.width - 15)
+                exploit = poc.get("exploitable", False)
+                width = max(60, console.width - 15)
                 
-                if "error" in get_poc or not check_exploit:
+                if "error" in poc or not exploit:
                     console.print(f"  ├─ [bold yellow]⚠ Not exploitable![/bold yellow]")
 
-                    if "error" in get_poc:
-                        get_reason = str(get_poc['error']).strip()
-                        wrap_lines = []
+                    if "error" in poc:
+                        reason = str(poc['error']).strip()
+                        lines = []
 
-                        for line in get_reason.split('\n'):
-                            wrap_lines.extend(textwrap.wrap(line, width=set_width) or [""])
+                        for line in reason.split('\n'):
+                            lines.extend(textwrap.wrap(line, width=width) or [""])
 
-                        if wrap_lines:
-                            console.print(f"  │  [dim]Reason: {wrap_lines[0]}[/dim]")
+                        if lines:
+                            console.print(f"  │  [dim]Reason: {lines[0]}[/dim]")
 
-                            for use_line in wrap_lines[1:]:
-                                console.print(f"  │  [dim]{use_line}[/dim]")
+                            for line in lines[1:]:
+                                console.print(f"  │  [dim]{line}[/dim]")
                                 
-                    elif get_poc.get("reasoning"):
-                        get_reason = str(get_poc['reasoning']).strip()
-                        wrap_lines = []
+                    elif poc.get("reasoning"):
+                        reason = str(poc['reasoning']).strip()
+                        lines = []
 
-                        for line in get_reason.split('\n'):
-                            wrap_lines.extend(textwrap.wrap(line, width=set_width) or [""])
+                        for line in reason.split('\n'):
+                            lines.extend(textwrap.wrap(line, width=width) or [""])
 
-                        if wrap_lines:
-                            console.print(f"  │  [dim]Reason: {wrap_lines[0]}[/dim]")
+                        if lines:
+                            console.print(f"  │  [dim]Reason: {lines[0]}[/dim]")
 
-                            for use_line in wrap_lines[1:]:
-                                console.print(f"  │  [dim]{use_line}[/dim]")
+                            for line in lines[1:]:
+                                console.print(f"  │  [dim]{line}[/dim]")
                                 
-                    get_context += "\nNOTE: PoC Verifier determined this CVE is NOT exploitable in the current codebase."
+                    ctx += "\nNOTE: PoC Verifier determined this CVE is NOT exploitable in the current codebase."
 
 
                 else:
-                    get_conf = get_poc.get('confidence', 100)
-                    console.print(f"  ├─ [bold green]✔ Exploitable! \\[Confidence: {get_conf}%][/bold green]")
+                    conf = poc.get('confidence', 100)
+                    console.print(f"  ├─ [bold green]✔ Exploitable! \\[Confidence: {conf}%][/bold green]")
 
-                    if get_poc.get("reasoning"):
-                        get_reason = str(get_poc['reasoning']).strip()
-                        wrap_lines = []
+                    if poc.get("reasoning"):
+                        reason = str(poc['reasoning']).strip()
+                        lines = []
 
-                        for line in get_reason.split('\n'):
-                            wrap_lines.extend(textwrap.wrap(line, width=set_width) or [""])
+                        for line in reason.split('\n'):
+                            lines.extend(textwrap.wrap(line, width=width) or [""])
 
-                        if wrap_lines:
-                            console.print(f"  │  [dim]Reason: {wrap_lines[0]}[/dim]")
+                        if lines:
+                            console.print(f"  │  [dim]Reason: {lines[0]}[/dim]")
 
-                            for use_line in wrap_lines[1:]:
-                                console.print(f"  │  [dim]{use_line}[/dim]")
+                            for line in lines[1:]:
+                                console.print(f"  │  [dim]{line}[/dim]")
                     
-                    set_expand = MODELS[2] # MiniMax M2.5 for Expander
-                    console.print(f"\n  [bold magenta]● EXPANDING AGENT[/bold magenta] [[cyan]{set_expand}[/cyan]]")
-                    console.print(f"  ├─ [cyan]◆ Target: {set_str}[/cyan]")
+                    expand = MODELS[2] # MiniMax M2.5 for Expander
+                    console.print(f"\n  [bold magenta]● EXPANDING AGENT[/bold magenta] [[cyan]{expand}[/cyan]]")
+                    console.print(f"  ├─ [cyan]◆ Target: {tstr}[/cyan]")
                     from src.rag.agents import expander
-                    get_expand = expander.start_expand(get_context, model_name=set_expand, target_dir=str(scan_dir), ts_module=use_module) # Expander Agent Role
+                    exp = expander.start_expand(ctx, model=expand, target=str(sdir), module=use_module) # Expander Agent Role
 
-                    get_sinks = get_expand.get("extra_sinks", [])
+                    sinks = exp.get("extra_sinks", [])
 
-                    if isinstance(get_sinks, str):
+                    if isinstance(sinks, str):
 
                         try:
-                            parse_sinks = json.loads(get_sinks)
+                            psinks = json.loads(sinks)
 
-                            if isinstance(parse_sinks, list):
-                                get_sinks = parse_sinks
+                            if isinstance(psinks, list):
+                                sinks = psinks
 
                             else:
-                                get_sinks = [{"pattern": get_sinks, "description": "Expanded sink"}]
+                                sinks = [{"pattern": sinks, "description": "Expanded sink"}]
 
                         except Exception:
-                            get_sinks = [{"pattern": get_sinks, "description": "Expanded sink"}]
+                            sinks = [{"pattern": sinks, "description": "Expanded sink"}]
 
-                    elif not isinstance(get_sinks, list):
-                        get_sinks = []
+                    elif not isinstance(sinks, list):
+                        sinks = []
                         
-                    if get_sinks:
-                        console.print(f"  ├─ [cyan]◆ Extracted {len(get_sinks)} new sink patterns[/cyan]")
+                    if sinks:
+                        console.print(f"  ├─ [cyan]◆ Extracted {len(sinks)} new sink patterns[/cyan]")
                         from src.tools.actions import search_pattern
 
-                        for sink in get_sinks:
+                        for sink in sinks:
 
                             if isinstance(sink, str):
                                 pat = sink
@@ -397,10 +399,10 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                             if pat:
 
                                 try:
-                                    search_sinks = search_pattern({"pattern": pat}, str(scan_dir))
+                                    search = search_pattern({"pattern": pat}, str(sdir))
 
-                                    if search_sinks.startswith("[PATTERN"):
-                                        lines = search_sinks.split("\n")[1:]
+                                    if search.startswith("[PATTERN"):
+                                        lines = search.split("\n")[1:]
 
                                         for line in lines:
 
@@ -408,23 +410,23 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                                                 parts = line.strip().split(":", 2)
 
                                                 if len(parts) >= 2:
-                                                    get_file = parts[0]
+                                                    gfile = parts[0]
 
                                                     try:
-                                                        get_num = int(parts[1])
+                                                        num = int(parts[1])
 
                                                     except ValueError:
-                                                        get_num = 1
+                                                        num = 1
                                                     
-                                                    add_flaw = {
+                                                    flaw = {
                                                         "id": f"dynamic-sink-{pat}",
                                                         "message": f"Dynamically expanded sink from CVE: {desc}",
-                                                        "path": get_file,
-                                                        "start_line": get_num,
-                                                        "end_line": get_num,
+                                                        "path": gfile,
+                                                        "start_line": num,
+                                                        "end_line": num,
                                                         "severity": sink.get("severity", "WARNING") if isinstance(sink, dict) else "WARNING"
                                                     }
-                                                    find_flaws.append(add_flaw)
+                                                    flaws.append(flaw)
 
                                 except Exception as e:
                                     pass
@@ -434,277 +436,280 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                     else:
                         console.print("  └─ [dim]No extra sinks![/dim]")
 
-            except Exception as catch_rag:
-                console.print(f"  └─ [bold red]✖ RAG failed: {catch_rag}[/bold red]")
+            except Exception as e:
+                console.print(f"  └─ [bold red]✖ RAG failed: {e}[/bold red]")
 
     else:
         from cli.views.logger import console
         logger.section("MULTI-AGENT")
-        console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{show_tag}")
+        console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{tag}")
         console.print("  └─ [dim]No vulnerabilities found! Skip![/dim]")
 
     # Build combined CVE context for Auditing Agent (from all CVEs processed)
-    get_context = "\n\n---\n\n".join(get_parts) if get_parts else "No relevant supply chain vulnerabilities found in project dependencies."
+    ctx = "\n\n---\n\n".join(parts) if parts else "No relevant supply chain vulnerabilities found in project dependencies."
 
     # Run Semgrep after Expander so we can combine findings
-    get_semgrep = semgrep.scan_code(str(scan_dir), scan_rules)
-    find_flaws.extend(get_semgrep)
+    semgrep = semgrep.scan_code(str(sdir), rules)
+    flaws.extend(semgrep)
     
     seen = set()
     deduped = []
-    for f in find_flaws:
+    for f in flaws:
         key = (f.get("path"), f.get("start_line"), f.get("id"))
         if key not in seen:
             seen.add(key)
             deduped.append(f)
-    find_flaws = deduped
+    flaws = deduped
     
-    get_result["findings"] = find_flaws
+    res["findings"] = flaws
     
-    semgrep.report_scan(find_flaws)
+    semgrep.report_scan(flaws)
 
-    if not find_flaws:
+    if not flaws:
         pass
 
     else:
         logger.console.print()
 
-        for loop_idx, check_item in enumerate(find_flaws):
-            logger.console.print(f"  Working [bold]{loop_idx+1}/{len(find_flaws)}[/bold]")
-            logger.console.print(f"  └─ [blue]{check_item['path']}[/blue]")
+        for idx, item in enumerate(flaws):
+            logger.console.print(f"  Working [bold]{idx+1}/{len(flaws)}[/bold]")
+            logger.console.print(f"  └─ [blue]{item['path']}[/blue]")
             
             try:
-                finding_path = str(scan_dir / check_item["path"]) if check_item["path"] != str(scan_dir) else str(scan_dir)
-                get_ast = use_module.extract_context(finding_path, check_item["start_line"], check_item["end_line"], scan_dir=str(scan_dir))
+                fpath = str(sdir / item["path"]) if item["path"] != str(sdir) else str(sdir)
+                ast = use_module.extract_context(fpath, item["start_line"], item["end_line"], sdir=str(sdir))
 
-                if build_context:
-                    get_ast += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{build_context[:1500]}"
+                if ctx:
+                    ast += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{ctx[:1500]}"
 
-            except Exception as ext_err:
-                get_ast = f"Error extracting AST context: {ext_err}"
+            except Exception as e:
+                ast = f"Error extracting AST context: {e}"
 
-                if build_context:
-                    get_ast += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{build_context[:1500]}"
+                if ctx:
+                    ast += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{ctx[:1500]}"
             
-            check_item["get_ast"] = get_ast
+            item["ast"] = ast
 
             try:
                 import textwrap
                 logger.blank()
                 
-                set_retries = 2
-                count_retry = 0
-                get_trace = {}
+                retries = 2
+                rcount = 0
+                trace = {}
                 
-                set_scan = MODELS[4]
-                logger.console.print(f"  [bold magenta]● SCANNING AGENT[/bold magenta] [[cyan]{set_scan}[/cyan]]")
+                scan = MODELS[4]
+                logger.console.print(f"  [bold magenta]● SCANNING AGENT[/bold magenta] [[cyan]{scan}[/cyan]]")
                 
-                while count_retry <= set_retries:
-                    get_trace = scan_agents.start_scan(
-                        check_item, get_ast,
+                while rcount <= retries:
+                    trace = scan_agents.start_scan(
+                        item, ast,
                         model=MODELS[4], # Scanning Agent Role
-                        target=str(scan_dir),
+                        target=str(sdir),
                         module=use_module,
                     )
                     
-                    if get_trace and get_trace.get("data_flow"):
-                        check_item["dataflow_trace"] = json.dumps(get_trace["data_flow"], indent=2)
-                        count_hops = len(get_trace["data_flow"])
+                    if trace and trace.get("data_flow"):
+                        item["dataflow_trace"] = json.dumps(trace["data_flow"], indent=2)
+                        hops = len(trace["data_flow"])
 
-                        if get_trace.get("source_identified"):
-                            logger.console.print(f"  ├─ [cyan]◆ Source:[/cyan] [dim]{get_trace.get('source_variable', 'Unknown')}[/dim]")
-                            logger.console.print(f"  ├─ [cyan]◆ Sink:[/cyan] [dim]{get_trace.get('sink_function', 'Unknown')}[/dim]")
+                        if trace.get("source_identified"):
+                            logger.console.print(f"  ├─ [cyan]◆ Source:[/cyan] [dim]{trace.get('source_variable', 'Unknown')}[/dim]")
+                            logger.console.print(f"  ├─ [cyan]◆ Sink:[/cyan] [dim]{trace.get('sink_function', 'Unknown')}[/dim]")
 
-                            for check_hop in get_trace["data_flow"]:
-                                logger.console.print(f"  │  [dim]Hop {check_hop.get('step')}: {check_hop.get('variable')} -> {check_hop.get('operation')}[/dim]")
+                            for hop in trace["data_flow"]:
+                                logger.console.print(f"  │  [dim]Hop {hop.get('step')}: {hop.get('variable')} -> {hop.get('operation')}[/dim]")
 
-                        logger.console.print(f"  └─ [bold green]✔ {count_hops} Hops[/bold green]")
+                        logger.console.print(f"  └─ [bold green]✔ {hops} Hops[/bold green]")
                         break
                     
-                    elif get_trace and get_trace.get("use_surrogate"):
-                        use_surrogate = get_trace.get("surrogate_function", "Unknown")
-                        check_item["sink_context"] = f"Original sink was unreachable. We are now treating '{use_surrogate}' as the sink. Use find_callers('{use_surrogate}') if needed."
-                        count_retry += 1
-                        logger.console.print(f"  ├─ [yellow]⚠ Flow broken → Surrogate: {use_surrogate} (retry {count_retry}/{set_retries})[/yellow]")
+                    elif trace and trace.get("surr"):
+                        surr = trace.get("surrogate_function", "Unknown")
+                        item["sink_context"] = f"Original sink was unreachable. We are now treating '{surr}' as the sink. Use find_callers('{surr}') if needed."
+                        rcount += 1
+                        logger.console.print(f"  ├─ [yellow]⚠ Flow broken → Surrogate: {surr} (retry {rcount}/{retries})[/yellow]")
                         
                     else:
-                        check_item["dataflow_trace"] = "No trace available"
+                        item["dataflow_trace"] = "No trace available"
                         logger.console.print(f"  └─ [bold yellow]⚠ Data flow untraceable[/bold yellow]")
                         break
                 
-                if count_retry > set_retries:
-                    check_item["dataflow_trace"] = "No trace available (max retries reached)"
-                    logger.console.print(f"  └─ [bold yellow]⚠ Data flow untraceable after {set_retries} retries[/bold yellow]")
+                if rcount > retries:
+                    item["dataflow_trace"] = "No trace available (max retries reached)"
+                    logger.console.print(f"  └─ [bold yellow]⚠ Data flow untraceable after {retries} retries[/bold yellow]")
 
-            except Exception as catch_scan:
-                logger.console.print(f"  └─ [bold red]✖ Data Flow Tracing failed: {catch_scan}[/bold red]")
-                check_item["dataflow_trace"] = f"Trace Error: {catch_scan}"
+            except Exception as e:
+                logger.console.print(f"  └─ [bold red]✖ Data Flow Tracing failed: {e}[/bold red]")
+                item["dataflow_trace"] = f"Trace Error: {e}"
 
-            check_vuln = False
+            vuln = False
 
             try:
                 import textwrap
                 logger.blank()
-                set_audit = MODELS[3]
-                logger.console.print(f"  [bold magenta]● AUDITING AGENT[/bold magenta] [[cyan]{set_audit}[/cyan]]")
+                audit = MODELS[3]
+                logger.console.print(f"  [bold magenta]● AUDITING AGENT[/bold magenta] [[cyan]{audit}[/cyan]]")
 
-                get_verdict = audit_agents.start_audit(
-                    check_item, get_ast, get_context,
-                    model_name=MODELS[3], # Auditing Agent Role
-                    target_dir=str(scan_dir),
-                    ts_module=use_module,
+                verdict = audit_agents.start_audit(
+                    item, ast, ctx,
+                    model=MODELS[3], # Auditing Agent Role
+                    target=str(sdir),
+                    module=use_module,
                 )
 
-                is_vuln = get_verdict.get("verdict", "").upper() == "VULNERABLE"
-                audit_reasoning = get_verdict.get("reasoning", "")
+                vuln = verdict.get("verdict", "").upper() == "VULNERABLE"
+                reason = verdict.get("reasoning", "")
 
-                if audit_reasoning:
-                    set_width = max(60, logger.console.width - 10)
+                if reason:
+                    width = max(60, logger.console.width - 10)
 
-                    for get_line in textwrap.wrap(audit_reasoning, width=set_width):
-                        logger.console.print(f"  │  [dim]{get_line}[/dim]")
+                    for line in textwrap.wrap(reason, width=width):
+                        logger.console.print(f"  │  [dim]{line}[/dim]")
 
-                if is_vuln:
+                if vuln:
                     logger.console.print(
                         f"  ├─ [bold red]✖ VULNERABLE[/bold red]"
                     )
                     logger.console.print(
-                        f"  ├─ [dim][CVSS: {get_verdict.get('cvss_estimate', 'N/A')}] [{get_verdict.get('severity', 'UNKNOWN')}][/dim]"
+                        f"  ├─ [dim][CVSS: {verdict.get('cvss_estimate', 'N/A')}] [{verdict.get('severity', 'UNKNOWN')}][/dim]"
                     )
                     logger.console.print(
-                        f"  ├─ [dim][Confidence: {get_verdict.get('confidence', 'N/A')}%][/dim]"
+                        f"  ├─ [dim][Confidence: {verdict.get('confidence', 'N/A')}%][/dim]"
                     )
                     logger.console.print(
-                        f"  └─ [dim][Class: {get_verdict.get('vuln_class', 'N/A')}][/dim]"
+                        f"  └─ [dim][Class: {verdict.get('vuln_class', 'N/A')}][/dim]"
                     )
-                    get_result["is_vulnerable"] = True
-                    check_vuln = True
-                    check_item.update(get_verdict)
+                    res["vuln"] = True
+                    vuln = True
+                    item.update(verdict)
 
                 else:
                     logger.console.print(
                         f"  └─ [bold green]✓ SAFE[/bold green] "
-                        f"[dim][Confidence: {get_verdict.get('confidence', 'N/A')}%][/dim]"
+                        f"[dim][Confidence: {verdict.get('confidence', 'N/A')}%][/dim]"
                     )
 
-            except Exception as catch_audit:
-                logger.console.print(f"  ├─ [bold red]✖ Auditor Agent failed: {catch_audit}[/bold red]")
+            except Exception as e:
+                logger.console.print(f"  ├─ [bold red]✖ Auditor Agent failed: {e}[/bold red]")
 
 
 
-                if do_fix:
+                if fix:
 
                     try:
                         logger.blank()
-                        set_fix = MODELS[0]
-                        logger.console.print(f"  [bold magenta]● FIXING AGENT[/bold magenta] [[cyan]{set_fix}[/cyan]]")
-                        from src.fix.agents import models as use_fix
-                        get_fix = use_fix.start_fix(
-                            check_item, get_ast, get_context,
-                            model_name=set_fix,
-                            target_dir=str(scan_dir),
-                            ts_module=use_module,
+                        sfix = MODELS[0]
+                        logger.console.print(f"  [bold magenta]● FIXING AGENT[/bold magenta] [[cyan]{sfix}[/cyan]]")
+                        from src.fix.agents import models as ufix
+                        fixres = ufix.start_fix(
+                            item, ast, ctx,
+                            model=sfix,
+                            target=str(sdir),
+                            module=use_module,
                         )
-                        check_item["fix"] = get_fix
+                        item["fix"] = fixres
 
-                        if get_fix and "patches" in get_fix:
+                        if fixres and "patches" in fixres:
 
-                            if "explanation" in get_fix:
-                                set_width = max(60, logger.console.width - 10)
+                            if "explanation" in fixres:
+                                width = max(60, logger.console.width - 10)
 
-                                for get_line in textwrap.wrap(get_fix['explanation'], width=set_width):
-                                    logger.console.print(f"  │  [dim]{get_line}[/dim]")
+                                for line in textwrap.wrap(fixres['explanation'], width=width):
+                                    logger.console.print(f"  │  [dim]{line}[/dim]")
 
-                            for p_idx, patch_item in enumerate(get_fix["patches"]):
-                                logger.console.print(f"  │  [dim]Patch {p_idx+1}: {patch_item.get('file_path')}[/dim]")
+                            for pidx, patch in enumerate(fixres["patches"]):
+                                logger.console.print(f"  │  [dim]Patch {pidx+1}: {patch.get('file_path')}[/dim]")
 
-                            logger.console.print(f"  └─ [bold green]✔ Generated {len(get_fix['patches'])} patch(es)[/bold green]")
+                            logger.console.print(f"  └─ [bold green]✔ Generated {len(fixres['patches'])} patch(es)[/bold green]")
 
                         else:
                             logger.console.print(f"  └─ [bold yellow]⚠ Failed to generate fix[/bold yellow]")
 
-                    except Exception as catch_fix:
-                        logger.console.print(f"  └─ [bold red]✖ Fixer Agent failed: {catch_fix}[/bold red]")
+                    except Exception as e:
+                        logger.console.print(f"  └─ [bold red]✖ Fixer Agent failed: {e}[/bold red]")
 
             logger.blank()
 
-    if make_dir:
+    if temp:
 
-        def remove_readonly(func_obj, get_file, exc_info):
-            os.chmod(get_file, stat.S_IWRITE)
-            func_obj(get_file)
-        shutil.rmtree(make_dir, onerror=remove_readonly)
+        def remove_readonly(func, gfile, exc):
+            os.chmod(gfile, stat.S_IWRITE)
+            func(gfile)
+        shutil.rmtree(temp, onerror=remove_readonly)
 
     from rich.table import Table
     from rich.panel import Panel
 
     logger.blank()
-    summary_table = Table(show_header=False, box=None, padding=(0, 2))
+    table = Table(show_header=False, box=None, padding=(0, 2))
     
-    count_langs = len(get_result.get("languages", {}))
-    count_files = sum(get_result.get("languages", {}).values())
-    count_deps = len(get_result.get("dependencies", []))
-    elapsed_time = logger.get_time()
-    count_findings = len(find_flaws)
-    count_errors = len([f for f in find_flaws if f.get("severity") == "ERROR"])
-    count_warns = len([f for f in find_flaws if f.get("severity") == "WARNING"])
-    count_info = len([f for f in find_flaws if f.get("severity") == "INFO"])
+    langs = len(res.get("languages", {}))
+    files = sum(res.get("languages", {}).values())
+    cdeps = len(res.get("dependencies", []))
+    time = logger.get_time()
+    cfinds = len(flaws)
+    cerrs = len([f for f in flaws if f.get("severity") == "ERROR"])
+    cwarns = len([f for f in flaws if f.get("severity") == "WARNING"])
+    cinfo = len([f for f in flaws if f.get("severity") == "INFO"])
     
-    is_vulnerable = get_result.get("is_vulnerable", False) or count_errors > 0
-    status_msg = "[bold red]✖ VULNERABLE[/bold red]" if is_vulnerable else "[bold green]✓ SAFE[/bold green]"
+    vuln = res.get("vuln", False) or cerrs > 0
+    msg = "[bold red]✖ VULNERABLE[/bold red]" if vuln else "[bold green]✓ SAFE[/bold green]"
 
-    summary_table.add_row("Target", f"[bold]{scan_dir.name}[/bold]")
-    summary_table.add_row("Languages", f"[cyan]{count_langs}[/cyan]", "Files", f"[cyan]{count_files}[/cyan]")
-    summary_table.add_row("Dependencies", f"[cyan]{count_deps}[/cyan]", "Duration", f"{elapsed_time}s")
-    summary_table.add_row("", "")
-    summary_table.add_row("Findings", f"[bold]{count_findings}[/bold]")
+    table.add_row("Target", f"[bold]{sdir.name}[/bold]")
+    table.add_row("Languages", f"[cyan]{langs}[/cyan]", "Files", f"[cyan]{files}[/cyan]")
+    table.add_row("Dependencies", f"[cyan]{cdeps}[/cyan]", "Duration", f"{time}s")
+    table.add_row("", "")
+    table.add_row("Findings", f"[bold]{cfinds}[/bold]")
 
-    if count_errors > 0:
-        summary_table.add_row("[red]✖ ERROR[/red]", str(count_errors))
+    if cerrs > 0:
+        table.add_row("[red]✖ ERROR[/red]", str(cerrs))
 
-    if count_warns > 0:
-        summary_table.add_row("[yellow]⚠ WARNING[/yellow]", str(count_warns))
+    if cwarns > 0:
+        table.add_row("[yellow]⚠ WARNING[/yellow]", str(cwarns))
 
-    if count_info > 0:
-        summary_table.add_row("[green]✓ INFO[/green]", str(count_info))
-    summary_table.add_row("", "")
-    summary_table.add_row("Status", status_msg)
+    if cinfo > 0:
+        table.add_row("[green]✓ INFO[/green]", str(cinfo))
+    table.add_row("", "")
+    table.add_row("Status", msg)
 
-    show_panel = Panel(summary_table, title="[bold]SCAN SUMMARY[/bold]", expand=False, border_style="dim")
-    logger.console.print(show_panel)
+    panel = Panel(table, title="[bold]SCAN SUMMARY[/bold]", expand=False, border_style="dim")
+    logger.console.print(panel)
     logger.blank()
 
-    def check_cvss(get_val):
+    def ccvss(val):
         try:
 
-            return float(get_val.get("cvss_estimate", 0))
+            return float(val.get("cvss_estimate", 0))
 
         except (TypeError, ValueError):
 
             return 0.0
 
-    find_flaws.sort(key=check_cvss, reverse=True)
-    get_result["findings"] = find_flaws
+    flaws.sort(key=ccvss, reverse=True)
+    res["findings"] = flaws
 
-    return {"status": "success", "data": get_result}
+    return {"status": "success", "data": res}
 
 
+# Khởi động ứng dụng CLI hoặc quét thư mục
 def start_app():
-    arg_parser = argparse.ArgumentParser(description="Sinful AI-Based SAST")
-    arg_parser.add_argument("target", nargs="?", help="Target directory OR Git URL to scan")
-    cli_args = arg_parser.parse_args()
+    parser = argparse.ArgumentParser(description="Sinful AI-Based SAST")
+    parser.add_argument("target", nargs="?", help="Target directory OR Git URL to scan")
+    args = parser.parse_args()
 
-    if not cli_args.target:
+    # Nếu không có target, mở giao diện dòng lệnh
+    if not args.target:
         from cli.main import start_cli
         start_cli()
         return
 
-    get_result = run_scan(cli_args.target, None, None)
+    # Nếu có target, chạy quét trực tiếp
+    res = run_scan(args.target, None, None)
 
-    if get_result["status"] == "error":
-        print(get_result["message"])
+    if res["status"] == "error":
+        print(res["message"])
         sys.exit(1)
 
-
+# Điểm vào chính của chương trình
 if __name__ == "__main__":
     start_app()

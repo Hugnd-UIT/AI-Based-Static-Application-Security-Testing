@@ -1,109 +1,92 @@
 import os
 import httpx
 from fastapi import FastAPI, HTTPException, Request, Response
-from fastapi.responses import JSONResponse
 import itertools
 
 app = FastAPI(title="Sinful SAST Backend Proxy")
 
 URL = "https://api.xkiro.com"
-get_env = os.environ.get("AI_API_KEY", "")
-API_KEYS = [get_key.strip() for get_key in get_env.split(",") if get_key.strip()]
+env = os.environ.get("AI_API_KEY", "")
+KEYS = [k.strip() for k in env.split(",") if k.strip()]
+iter = itertools.cycle(KEYS) if KEYS else None
 
-key_iter = itertools.cycle(API_KEYS) if API_KEYS else None
+HUB = "https://api.github.com"
+HUB_KEY = os.environ.get("GITHUB_API_KEY")
 
-GITHUB_URL = "https://api.github.com"
-GITHUB_KEY = os.environ.get("GITHUB_KEY")
+FIRE = "https://api.firecrawl.dev/v1/scrape"
+FIRE_KEY = os.environ.get("FIRECRAWL_API_KEY")
 
-FIRECRAWL_URL = "https://api.firecrawl.dev/v1/scrape"
-FIRECRAWL_KEY = os.environ.get("FIRECRAWL_KEY")
-AI_KEY = os.environ.get("AI_KEY")
-
+# API gọi github
 @app.api_route("/github/{path:path}", methods=["GET", "POST"])
-async def forward_github(request: Request, path: str):
-
-    if not GITHUB_KEY:
+async def fwd_hub(req: Request, path: str):
+    if not HUB_KEY:
         raise HTTPException(status_code=500, detail="Server is missing GITHUB_API_KEY")
     
-    target_url = f"{GITHUB_URL}/{path}"
-    req_headers = dict(request.headers)
-    req_headers["host"] = "api.github.com"
-    req_headers["authorization"] = f"token {GITHUB_KEY}"
-    req_headers.pop("content-length", None)
-    req_headers.pop("accept-encoding", None)
+    url = f"{HUB}/{path}"
+    hdrs = dict(req.headers)
+    hdrs["host"] = "api.github.com"
+    hdrs["authorization"] = f"token {HUB_KEY}"
+    hdrs.pop("content-length", None)
+    hdrs.pop("accept-encoding", None)
     
-    async with httpx.AsyncClient(timeout=120.0) as http_client:
-
+    async with httpx.AsyncClient(timeout=120.0) as client:
         try:
-            http_req = http_client.build_request(method=request.method, url=target_url, headers=req_headers, params=request.query_params)
-            api_resp = await http_client.send(http_req, stream=False)
+            fwd = client.build_request(method=req.method, url=url, headers=hdrs, params=req.query_params)
+            res = await client.send(fwd, stream=False)
+            
+            return Response(content=res.content, status_code=res.status_code, headers={k: v for k, v in res.headers.items() if k.lower() not in ("content-length", "transfer-encoding", "content-encoding")})
+        
+        except httpx.RequestError as err:
+            raise HTTPException(status_code=502, detail=f"Error connecting to GitHub: {repr(err)}")
 
-            return Response(content=api_resp.content, status_code=api_resp.status_code, headers={head_k: head_v for head_k, head_v in api_resp.headers.items() if head_k.lower() not in ("content-length", "transfer-encoding", "content-encoding")})
-
-        except httpx.RequestError as req_err:
-            raise HTTPException(status_code=502, detail=f"Error connecting to GitHub API: {repr(req_err)}")
-
+# API gọi firecrawl
 @app.api_route("/firecrawl", methods=["POST"])
-async def forward_firecrawl(request: Request):
-
-    if not FIRECRAWL_KEY:
+async def fwd_fire(req: Request):
+    if not FIRE_KEY:
         raise HTTPException(status_code=500, detail="Server is missing FIRECRAWL_API_KEY")
     
-    req_body = await request.body()
-    req_headers = dict(request.headers)
-    req_headers["host"] = "api.firecrawl.dev"
-    req_headers["authorization"] = f"Bearer {FIRECRAWL_KEY}"
-    req_headers.pop("content-length", None)
-    req_headers.pop("accept-encoding", None)
+    body = await req.body()
+    hdrs = dict(req.headers)
+    hdrs["host"] = "api.firecrawl.dev"
+    hdrs["authorization"] = f"Bearer {FIRE_KEY}"
+    hdrs.pop("content-length", None)
+    hdrs.pop("accept-encoding", None)
     
-    async with httpx.AsyncClient(timeout=120.0) as http_client:
-
+    async with httpx.AsyncClient(timeout=120.0) as client:
         try:
-            http_req = http_client.build_request(method=request.method, url=FIRECRAWL_URL, headers=req_headers, content=req_body)
-            api_resp = await http_client.send(http_req, stream=False)
-
-            return Response(content=api_resp.content, status_code=api_resp.status_code, headers={head_k: head_v for head_k, head_v in api_resp.headers.items() if head_k.lower() not in ("content-length", "transfer-encoding", "content-encoding")})
-
-        except httpx.RequestError as req_err:
-            raise HTTPException(status_code=502, detail=f"Error connecting to Firecrawl API: {repr(req_err)}")
-
-@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
-async def forward_ai(request: Request, path: str):
-
-    if not API_KEYS:
-        raise HTTPException(status_code=500, detail="Server is missing AI_API_KEY")
-
-    current_key = next(key_iter)
-    target_url = f"{URL}/{path}"
-    req_body = await request.body()
-    
-    req_headers = dict(request.headers)
-    req_headers["host"] = "api.xkiro.com"
-    req_headers["authorization"] = f"Bearer {current_key}"
-    req_headers.pop("content-length", None)
-    req_headers.pop("accept-encoding", None)
-
-    async with httpx.AsyncClient(timeout=120.0) as http_client:
-
-        try:
-            http_req = http_client.build_request(
-                method=request.method,
-                url=target_url,
-                headers=req_headers,
-                content=req_body,
-                params=request.query_params
-            )
-            api_resp = await http_client.send(http_req, stream=False)
+            fwd = client.build_request(method=req.method, url=FIRE, headers=hdrs, content=body)
+            res = await client.send(fwd, stream=False)
             
-            return Response(
+            return Response(content=res.content, status_code=res.status_code, headers={k: v for k, v in res.headers.items() if k.lower() not in ("content-length", "transfer-encoding", "content-encoding")})
+        
+        except httpx.RequestError as err:
+            raise HTTPException(status_code=502, detail=f"Error connecting to Firecrawl: {repr(err)}")
 
-                content=api_resp.content,
-                status_code=api_resp.status_code,
-                headers={head_k: head_v for head_k, head_v in api_resp.headers.items() if head_k.lower() not in ("content-length", "transfer-encoding", "content-encoding")}
-            )
-
-        except httpx.RequestError as req_err:
-            raise HTTPException(status_code=502, detail=f"Error connecting to AI API: {repr(req_err)}")
+# API gọi xkiro
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH"])
+async def fwd_ai(req: Request, path: str):
+    if not KEYS:
+        raise HTTPException(status_code=500, detail="Server is missing AI_API_KEY")
+    
+    key = next(iter)
+    url = f"{URL}/{path}"
+    body = await req.body()
+    
+    hdrs = dict(req.headers)
+    hdrs["host"] = "api.xkiro.com"
+    hdrs["authorization"] = f"Bearer {key}"
+    hdrs.pop("content-length", None)
+    hdrs.pop("accept-encoding", None)
+    
+    async with httpx.AsyncClient(timeout=120.0) as client:
+        try:
+            fwd = client.build_request(method=req.method, url=url, headers=hdrs, content=body, params=req.query_params)
+            res = await client.send(fwd, stream=False)
+            
+            return Response(content=res.content, status_code=res.status_code, headers={k: v for k, v in res.headers.items() if k.lower() not in ("content-length", "transfer-encoding", "content-encoding")})
+        
+        except httpx.RequestError as err:
+            raise HTTPException(status_code=502, detail=f"Error connecting to AI: {repr(err)}")
 
 if __name__ == "__main__":
     import uvicorn

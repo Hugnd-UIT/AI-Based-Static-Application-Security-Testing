@@ -1,9 +1,7 @@
 import re
 
-# ==========================================
-# 1. ENTRYPOINTS (SOURCES) CHO 10 NGÔN NGỮ
-# ==========================================
-ENTRYPOINTS = {
+# ENTRYPOINTS
+ENTRIES = {
     ".py": [
         r"@app\.route", r"@blueprint\.route", r"path\(", r"re_path\(", 
         r"@api_view", r"@app\.get", r"@router\.post", r"@app\.post",
@@ -44,10 +42,8 @@ ENTRYPOINTS = {
     ]
 }
 
-# ==========================================
-# 2. EVENT BUS / PUB-SUB CHO CÁC NGÔN NGỮ
-# ==========================================
-PUB_SUB = {
+# EVENT BUS / PUB-SUB 
+EVENTS = {
     "java": {
         "publish": r"\.publishEvent\(\s*new\s+([a-zA-Z0-9_]+)",
         "subscribe": r"@EventListener\s*\n\s*(?:public|protected|private)\s+void\s+[a-zA-Z0-9_]+\s*\(\s*([a-zA-Z0-9_]+)\s+[a-zA-Z0-9_]+\s*\)"
@@ -66,40 +62,42 @@ PUB_SUB = {
     }
 }
 
-def check_entrypoint(code_text: str, file_ext: str) -> bool:
-    patterns = ENTRYPOINTS.get(file_ext, [])
+# Hàm kiểm tra entrypoint
+def check_entrypoint(code: str, ext: str) -> bool:
+    patterns = ENTRIES.get(ext, [])
 
     for pattern in patterns:
 
-        if re.search(pattern, code_text):
+        if re.search(pattern, code):
 
             return True
 
     return False
 
-def extract_events(code_text: str, file_ext: str):
-    group_key = None
+# Hàm trích xuất events
+def extract_events(code: str, ext: str):
+    group = None
 
-    if file_ext in (".js", ".ts"):
-        group_key = "js_ts"
+    if ext in (".js", ".ts"):
+        group = "js_ts"
 
-    elif file_ext == ".java":
-        group_key = "java"
+    elif ext == ".java":
+        group = "java"
 
-    elif file_ext == ".cs":
-        group_key = "csharp"
+    elif ext == ".cs":
+        group = "csharp"
 
-    elif file_ext == ".py":
-        group_key = "python"
+    elif ext == ".py":
+        group = "python"
         
-    if not group_key:
+    if not group:
 
         return [], []
         
-    pub_pattern = PUB_SUB[group_key]["publish"]
-    sub_pattern = PUB_SUB[group_key]["subscribe"]
+    pub = EVENTS[group]["publish"]
+    sub = EVENTS[group]["subscribe"]
     
-    published = re.findall(pub_pattern, code_text)
-    subscribed = re.findall(sub_pattern, code_text)
+    pubs = re.findall(pub, code)
+    subs = re.findall(sub, code)
     
-    return published, subscribed
+    return pubs, subs

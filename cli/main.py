@@ -2,10 +2,12 @@ import typer
 import os
 import sys
 
+# Cấu hình encoding stdout/stderr
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 if hasattr(sys.stderr, 'reconfigure'):
     sys.stderr.reconfigure(encoding='utf-8')
+
 from dotenv import load_dotenv
 load_dotenv()
 
@@ -13,41 +15,41 @@ from rich.panel import Panel
 from rich.text import Text
 from cli.views.console import console
 
-cli_app = typer.Typer(
+app = typer.Typer(
     name="sinful",
     help="Sinful CLI - Next Gen Zero-Knowledge SAST",
     add_completion=False,
 )
 
+# Hiển thị phần giới thiệu
 def display_header():
-    working_dir = os.getcwd()
-    header_text = Text()
+    wdir = os.getcwd()
+    text = Text()
 
-    header_text.append(">_ Sinful AI", style="bold cyan")
-    header_text.append(" v1.0.0\n\n", style="dim")
+    text.append(">_ Sinful AI", style="bold cyan")
+    text.append(" v1.0.0\n\n", style="dim")
 
-    header_text.append("Welcome back!\n", style="bold cyan")
+    text.append("Welcome back!\n", style="bold cyan")
     
-    header_text.append("directory: ", style="dim")
-    header_text.append(working_dir, style="white")
+    text.append("directory: ", style="dim")
+    text.append(wdir, style="white")
 
-    header_panel = Panel(header_text, border_style="dim", padding=(0, 2), expand=False)
+    panel = Panel(text, border_style="dim", padding=(0, 2), expand=False)
 
-    console.print(header_panel)
+    console.print(panel)
     console.print(
         "\n[dim]Tip: For a limited time, Sinful is included in your plan for free - let's secure together![/dim]\n"
     )
 
-@cli_app.callback(invoke_without_command=True)
+@app.callback(invoke_without_command=True)
 def start_cli():
     display_header()
 
     while True:
-
         try:
-            term_width = console.width
-            grey_color = "\x1b[48;2;55;55;55m"
-            reset_color = "\x1b[0m"
+            width = console.width
+            grey = "\x1b[48;2;55;55;55m"
+            reset = "\x1b[0m"
 
             from prompt_toolkit.application import Application
             from prompt_toolkit.buffer import Buffer
@@ -60,9 +62,10 @@ def start_cli():
             from prompt_toolkit.completion import Completer, Completion
             from prompt_toolkit.output.color_depth import ColorDepth
 
+            # Lớp xử lý auto complete
             class CommandCompleter(Completer):
                 def __init__(self):
-                    self.cli_commands = {
+                    self.cmds = {
                         '/scan': 'Run a security scan without fixing',
                         '/auto-fix': 'Run a security scan and automatically fix using AI',
                         '/clear': 'Clear terminal',
@@ -70,46 +73,44 @@ def start_cli():
                         '/exit': 'Exit terminal',
                     }
                 
-                def get_completions(self, doc_context, complete_evt):
-                    text_input = doc_context.text_before_cursor
+                def get_completions(self, doc, evt):
+                    txt = doc.text_before_cursor
 
-                    if text_input.startswith('/'):
-
-                        for cmd_key, cmd_desc in self.cli_commands.items():
-
-                            if cmd_key.startswith(text_input.lower()):
+                    if txt.startswith('/'):
+                        for key, desc in self.cmds.items():
+                            if key.startswith(txt.lower()):
                                 yield Completion(
-                                    cmd_key, 
-                                    start_position=-len(text_input), 
-                                    display=cmd_key, 
-                                    display_meta=cmd_desc
+                                    key, 
+                                    start_position=-len(txt), 
+                                    display=key, 
+                                    display_meta=desc
                                 )
 
-            input_buffer = Buffer(completer=CommandCompleter(), complete_while_typing=True)
+            buf = Buffer(completer=CommandCompleter(), complete_while_typing=True)
 
-            top_pad = Window(height=1, char=' ', style='bg:#373737')
-            prompt_win = Window(width=4, height=1, content=FormattedTextControl('  > '), style='bg:#373737 fg:ansicyan bold')
-            buffer_win = Window(height=1, content=BufferControl(buffer=input_buffer), style='bg:#373737 fg:#ffffff')
-            bottom_pad = Window(height=1, char=' ', style='bg:#373737')
+            top = Window(height=1, char=' ', style='bg:#373737')
+            pwin = Window(width=4, height=1, content=FormattedTextControl('  > '), style='bg:#373737 fg:ansicyan bold')
+            bwin = Window(height=1, content=BufferControl(buffer=buf), style='bg:#373737 fg:#ffffff')
+            bot = Window(height=1, char=' ', style='bg:#373737')
             
-            root_container = HSplit([
-                top_pad,
-                VSplit([prompt_win, buffer_win], height=1),
-                bottom_pad,
+            root = HSplit([
+                top,
+                VSplit([pwin, bwin], height=1),
+                bot,
                 CompletionsMenu(max_height=16, scroll_offset=1)
             ])
 
-            app_layout = Layout(container=root_container)
+            layout = Layout(container=root)
 
-            key_bindings = KeyBindings()
-            @key_bindings.add('enter')
-            def on_enter(event_data):
-                event_data.app.exit(result=input_buffer.text)
-            @key_bindings.add('c-c')
-            def on_cancel(event_data):
-                event_data.app.exit(result=None)
+            keys = KeyBindings()
+            @keys.add('enter')
+            def on_enter(event):
+                event.app.exit(result=buf.text)
+            @keys.add('c-c')
+            def on_cancel(event):
+                event.app.exit(result=None)
 
-            prompt_style = Style.from_dict({
+            style = Style.from_dict({
                 'completion-menu': 'bg:default fg:#e5e7eb',
                 'completion-menu.completion': 'bg:default fg:#e5e7eb',
                 'completion-menu.completion.current': 'bg:#373737 fg:#ffffff',
@@ -123,37 +124,37 @@ def start_cli():
                 'status-path': 'fg:ansibrightgreen bold',        
             })
 
-            toolkit_app = Application(
-                layout=app_layout,
-                key_bindings=key_bindings,
-                style=prompt_style,
+            tapp = Application(
+                layout=layout,
+                key_bindings=keys,
+                style=style,
                 color_depth=ColorDepth.TRUE_COLOR,
                 full_screen=False,
             )
 
             try:
                 print()
-                target_cmd = toolkit_app.run()
+                cmd = tapp.run()
 
-                if target_cmd is None:
+                if cmd is None:
                     break
 
             except Exception:
-                target_cmd = input(f"\x1b[1A{grey_color}{' '*term_width}\n  \x1b[36m\x1b[1m>\x1b[22m\x1b[0m{grey_color} Enter path or command: \x1b[K\n{' '*term_width}{reset_color}\x1b[1A\x1b[25D")
+                cmd = input(f"\x1b[1A{grey}{' '*width}\n  \x1b[36m\x1b[1m>\x1b[22m\x1b[0m{grey} Enter path or command: \x1b[K\n{' '*width}{reset}\x1b[1A\x1b[25D")
 
-                if not target_cmd:
+                if not cmd:
                     break
 
             from cli.commands.fix import process_command
 
-            should_run = process_command(target_cmd)
+            # Thực thi lệnh
+            run = process_command(cmd)
 
-            if not should_run:
+            if not run:
                 break
 
         except KeyboardInterrupt:
             break
-
         except EOFError:
             break
 

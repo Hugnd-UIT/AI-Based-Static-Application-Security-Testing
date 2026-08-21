@@ -12,6 +12,9 @@ ECO = {
     "go": "Go",
     "rubygems": "RubyGems",
     "nuget": "NuGet",
+    "crates.io": "crates.io",
+    "pub": "Pub",
+    "hex": "Hex",
 }
 
 # Hàm kiểm tra lỗ hổng OSV

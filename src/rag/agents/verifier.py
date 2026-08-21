@@ -1,29 +1,30 @@
 import json
-from src.rag.agents.prompts import VERIFY_PROMPT, VERIFY_TEMPLATE
+from src.rag.agents.prompts import VERIFY, VTMP
 from src.tools.handlers import run_agent
 from src.tools.schemas import VERIFY_TOOLS
 
+# Hàm kiểm tra PoC
 def start_verify(
-    cve_summary: str,
-    model_name: str = None,
-    target_dir: str = "",
-    ts_module=None,
+    summary: str,
+    model: str = None,
+    target: str = "",
+    module=None,
 ) -> dict:
     from main import MODELS
-    use_model = model_name or MODELS[0]
+    use = model or MODELS[0]
 
-    use_msg = VERIFY_TEMPLATE.format(
-        cve_summary=cve_summary
+    msg = VTMP.format(
+        summary=summary
     )
 
     return run_agent(
 
-        system_prompt   = VERIFY_PROMPT,
-        initial_message = use_msg,
-        tool_schemas    = VERIFY_TOOLS,
-        target_dir      = target_dir,
-        ts_module       = ts_module,
-        model_name      = use_model,
-        max_steps       = 20,
-        agent_name      = "POC_VERIFIER",
+        prompt   = VERIFY,
+        message = msg,
+        schemas    = VERIFY_TOOLS,
+        directory      = target,
+        module       = module,
+        model      = use,
+        steps       = 20,
+        agent      = "POC_VERIFIER",
     )

@@ -6,36 +6,42 @@ import src.fix.patch as patcher
 import src.fix.agents.models as ai_agents
 from cli.views import logger
 
-def execute_scan(target_path: str, auto_fix: bool = False):
-    logger.log_info(f"Starting Sinful on {target_path}...")
+# Bắt đầu quét thư mục
+def execute_scan(path: str, fix: bool = False):
+    logger.log_info(f"Starting Sinful on {path}...")
     logger.blank_line()
 
+    # Hàm thực thi quét
     def do_scan():
-        model_name = os.environ.get("MODELS")
-
-        return run_scan(target_path, use_model=model_name, do_fix=auto_fix)
+        model = os.environ.get("MODELS")
+        return run_scan(path, use_model=model, do_fix=fix)
 
     from cli.views.spinner import show_spinner
-    scan_result = show_spinner("Analyzing source code", do_scan)
+    res = show_spinner("Analyzing source code", do_scan)
     logger.blank_line()
 
-    if scan_result.get("status") == "error":
-        logger.log_critical(f"Error: {scan_result.get('message')}")
+    # Nếu có lỗi
+    if res.get("status") == "error":
+        logger.log_critical(f"Error: {res.get('message')}")
         return
 
-    scan_data = scan_result.get("data", {})
-    scan_findings = scan_data.get("findings", [])
+    # Trích xuất dữ liệu
+    data = res.get("data", {})
+    finds = data.get("findings", [])
 
-    if not scan_findings:
+    # Nếu không tìm thấy lỗi
+    if not finds:
         logger.log_success("No vulnerabilities found! You're clean.")
         return
 
-    if auto_fix:
+    # Nếu chọn tự động sửa lỗi
+    if fix:
         logger.blank_line()
         logger.log_info("Auto-fix vulnerabilities...")
-        always_allow = False
+        allow = False
 
-        def get_confirm(file_name: str) -> str:
+        # Hiển thị menu cho người dùng chọn
+        def get_confirm(name: str) -> str:
             from prompt_toolkit import Application
             from prompt_toolkit.key_binding import KeyBindings
             from prompt_toolkit.layout.containers import Window, HSplit
@@ -43,138 +49,119 @@ def execute_scan(target_path: str, auto_fix: bool = False):
             from prompt_toolkit.layout.layout import Layout
             from prompt_toolkit.styles import Style
 
-            prompt_options = [
+            opts = [
                 ("y", "Yes (Apply this patch)"),
                 ("a", "Yes, Always Allow (Apply all remaining patches automatically)"),
                 ("n", "No (Skip this patch)")
             ]
-            selected_idx = 0
+            idx = 0
+            keys = KeyBindings()
 
-            key_bindings = KeyBindings()
+            @keys.add('up')
+            def move_up(event):
+                nonlocal idx
+                idx = (idx - 1) % len(opts)
 
-            @key_bindings.add('up')
-            def move_up(event_data):
-                nonlocal selected_idx
-                selected_idx = (selected_idx - 1) % len(prompt_options)
+            @keys.add('down')
+            def move_down(event):
+                nonlocal idx
+                idx = (idx + 1) % len(opts)
 
-            @key_bindings.add('down')
-            def move_down(event_data):
-                nonlocal selected_idx
-                selected_idx = (selected_idx + 1) % len(prompt_options)
+            @keys.add('enter')
+            def confirm_selection(event):
+                event.app.exit(result=opts[idx][0])
 
-            @key_bindings.add('enter')
-            def confirm_selection(event_data):
-                event_data.app.exit(result=prompt_options[selected_idx][0])
+            @keys.add('escape')
+            @keys.add('c-c')
+            def cancel_selection(event):
+                event.app.exit(result="n")
 
-            @key_bindings.add('escape')
-            @key_bindings.add('c-c')
-            def cancel_selection(event_data):
-                event_data.app.exit(result="n")
-
+            # Định dạng UI cho menu chọn
             def format_prompt():
-                text_lines = [
-                    ("class:title", f"Apply this patch to {file_name}?\n")
-                ]
+                lines = [("class:title", f"Apply this patch to {name}?\n")]
+                for oidx, (val, desc) in enumerate(opts):
+                    sel = (oidx == idx)
+                    ptr = "> " if sel else "  "
+                    style = "class:selected" if sel else "class:unselected"
+                    lines.append(("class:pointer" if sel else "", ptr))
+                    lines.append((style, desc + "\n"))
+                return lines
 
-                for opt_idx, (opt_val, opt_desc) in enumerate(prompt_options):
-                    is_selected = opt_idx == selected_idx
-                    pointer_text = "> " if is_selected else "  "
-                    line_style = "class:selected" if is_selected else "class:unselected"
-                    text_lines.append(("class:pointer" if is_selected else "", pointer_text))
-                    text_lines.append((line_style, opt_desc + "\n"))
-
-                return text_lines
-
-            prompt_style = Style.from_dict({
+            pstyle = Style.from_dict({
                 'title': 'bold #00ffff',
                 'pointer': 'bold #5eead4', 
                 'selected': 'bold #5eead4',
                 'unselected': '#cccccc',
             })
+            layout = Layout(HSplit([Window(content=FormattedTextControl(format_prompt), always_hide_cursor=True)]))
+            app = Application(layout=layout, key_bindings=keys, style=pstyle, full_screen=False, erase_when_done=True)
+            return app.run()
 
-            prompt_layout = Layout(HSplit([Window(content=FormattedTextControl(format_prompt), always_hide_cursor=True)]))
-            prompt_app = Application(
-                layout=prompt_layout, key_bindings=key_bindings, style=prompt_style,
-                full_screen=False, erase_when_done=True
-            )
-
-            return prompt_app.run()
-
-        for finding_item in scan_findings:
-            finding_path = finding_item.get("path")
-
-            if not finding_path:
+        # Duyệt qua từng lỗ hổng tìm được
+        for find in finds:
+            fpath = find.get("path")
+            if not fpath:
                 continue
-                
-            fix_data = finding_item.get("fix", {})
-            patch_list = fix_data.get("patches", [])
-            
-            if not patch_list:
+            fdata = find.get("fix", {})
+            patches = fdata.get("patches", [])
+            if not patches:
                 continue
 
-            if "explanation" in fix_data:
-                logger.console.print(f"[bold cyan]-+ Fix Strategy:[/bold cyan] {fix_data['explanation']}")
+            if "explanation" in fdata:
+                logger.console.print(f"[bold cyan]-+ Fix Strategy:[/bold cyan] {fdata['explanation']}")
                 logger.blank_line()
 
             try:
-
-                for patch_item in patch_list:
-                    patch_path = patch_item.get("file_path", finding_path)
-                    old_code = patch_item.get("old_code", "")
-                    new_code = patch_item.get("new_code", "")
-
-                    if not old_code or not new_code:
+                # Duyệt qua các bản vá
+                for patch in patches:
+                    ppath = patch.get("file_path", fpath)
+                    old = patch.get("old_code", "")
+                    new = patch.get("new_code", "")
+                    if not old or not new:
                         continue
+                    if not os.path.exists(ppath):
+                        alt = os.path.join(path, os.path.basename(ppath))
+                        if os.path.exists(alt):
+                            ppath = alt
 
-                    if not os.path.exists(patch_path):
-                        alt_path = os.path.join(target_path, os.path.basename(patch_path))
-
-                        if os.path.exists(alt_path):
-                            patch_path = alt_path
-
-                    display_diff(patch_path, old_code, new_code)
+                    display_diff(ppath, old, new)
                     logger.blank_line()
-                    
-                    if always_allow:
-                        user_confirm = "y"
 
+                    # Kiểm tra xem có áp dụng tự động toàn bộ không
+                    if allow:
+                        ans = "y"
                     else:
-                        user_confirm = get_confirm(os.path.basename(patch_path))
+                        ans = get_confirm(os.path.basename(ppath))
+                        if ans == "a":
+                            allow = True
+                            ans = "y"
 
-                        if user_confirm == "a":
-                            always_allow = True
-                            user_confirm = "y"
-
-                    if user_confirm == "y":
-
-                        if patcher.apply_patch(patch_path, old_code, new_code):
+                    # Áp dụng bản vá
+                    if ans == "y":
+                        if patcher.apply_patch(ppath, old, new):
                             logger.log_success("Patch applied successfully.")
-
                         else:
-                            logger.log_warning(f"Patch skipped. The original code could not be found.")
-
+                            logger.log_warning("Patch skipped. The original code could not be found.")
                     else:
                         logger.log_warning("Patch rejected by user.")
+            except Exception as err:
+                logger.log_critical(f"Failed to apply fix for {find.get('id', 'Unknown')}: {err}")
 
-            except Exception as fix_err:
-                logger.log_critical(f"Failed to apply fix for {finding_item.get('id', 'Unknown')}: {fix_err}")
-
+    # Xuất báo cáo
     from src.report.json import report_json
     from src.report.sarif import report_sarif
     from src.report.html import report_html
     
-    report_dir = os.path.join(os.getcwd(), "reports")
-    
+    rdir = os.path.join(os.getcwd(), "reports")
     try:
-        json_path = report_json(scan_result, report_dir)
-        sarif_path = report_sarif(scan_findings, target_path, report_dir)
-        html_path = report_html(scan_findings, target_path, report_dir)
+        json = report_json(res, rdir)
+        sarif = report_sarif(finds, path, rdir)
+        html = report_html(finds, path, rdir)
         
         logger.blank_line()
-        logger.log_success(f"Reports saved to:")
-        logger.log_success(f"  - JSON:  [bold cyan]{json_path}[/bold cyan]")
-        logger.log_success(f"  - SARIF: [bold cyan]{sarif_path}[/bold cyan]")
-        logger.log_success(f"  - HTML:  [bold cyan]{html_path}[/bold cyan]")
-    except Exception as write_err:
-        logger.log_warning(f"Failed to save reports: {write_err}")
-
+        logger.log_success("Reports saved to:")
+        logger.log_success(f"  - JSON:  [bold cyan]{json}[/bold cyan]")
+        logger.log_success(f"  - SARIF: [bold cyan]{sarif}[/bold cyan]")
+        logger.log_success(f"  - HTML:  [bold cyan]{html}[/bold cyan]")
+    except Exception as werr:
+        logger.log_warning(f"Failed to save reports: {werr}")

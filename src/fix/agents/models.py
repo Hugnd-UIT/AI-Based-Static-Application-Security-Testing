@@ -1,35 +1,36 @@
-from src.fix.agents.prompts import SYSTEM_PROMPT, USER_TEMPLATE
+from src.fix.agents.prompts import SYSTEM, USER
 from src.tools.handlers import run_agent
 from src.tools.schemas import FIX_TOOLS
 
+# Hàm xử lý fix lỗi
 def start_fix(
-    finding_item: dict,
-    source_code: str,
-    cve_context: str = "None",
-    model_name: str = None,
-    target_dir: str = "",
-    ts_module=None,
+    item: dict,
+    code: str,
+    context: str = "None",
+    model: str = None,
+    target: str = "",
+    module=None,
 ) -> dict:
     from main import MODELS
-    resolved_model = model_name or MODELS[0]
+    use = model or MODELS[0]
 
-    user_message = USER_TEMPLATE.format(
-        rule  = finding_item.get("id", "Unknown Vulnerability"),
-        msg   = finding_item.get("message", "No description provided."),
-        path  = finding_item.get("path", "Unknown file"),
-        dflow = finding_item.get("dataflow_trace", "No trace available."),
-        code  = source_code,
-        cve   = cve_context,
+    msg = USER.format(
+        rule  = item.get("id", "Unknown Vulnerability"),
+        msg   = item.get("message", "No description provided."),
+        path  = item.get("path", "Unknown file"),
+        dflow = item.get("dataflow_trace", "No trace available."),
+        code  = code,
+        cve   = context,
     )
 
     return run_agent(
 
-        system_prompt   = SYSTEM_PROMPT,
-        initial_message = user_message,
-        tool_schemas    = FIX_TOOLS,
-        target_dir      = target_dir,
-        ts_module       = ts_module,
-        model_name      = resolved_model,
-        max_steps       = 5,
-        agent_name      = "FIX",
+        prompt   = SYSTEM,
+        message = msg,
+        schemas    = FIX_TOOLS,
+        directory      = target,
+        module       = module,
+        model      = use,
+        steps       = 5,
+        agent      = "FIX",
     )

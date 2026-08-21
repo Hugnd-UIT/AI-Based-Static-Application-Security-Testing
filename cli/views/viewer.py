@@ -3,26 +3,29 @@ from rich.syntax import Syntax
 from cli.views.console import console
 import difflib
 
-def display_diff(target_path: str, old_code: str, new_code: str):
-    diff_lines = list(
+# Hiển thị sự khác biệt giữa code cũ và mới
+def display_diff(path: str, old: str, new: str):
+    lines = list(
         difflib.unified_diff(
-            old_code.splitlines(keepends=True),
-            new_code.splitlines(keepends=True),
-            fromfile=f"a/{target_path}",
-            tofile=f"b/{target_path}",
+            old.splitlines(keepends=True),
+            new.splitlines(keepends=True),
+            fromfile=f"a/{path}",
+            tofile=f"b/{path}",
             n=3,
         )
     )
 
-    diff_text = "".join(diff_lines)
+    text = "".join(lines)
 
-    if not diff_text:
+    # Nếu không có thay đổi
+    if not text:
         console.print("[warning]No changes detected.[/warning]")
         return
 
-    rich_syntax = Syntax(diff_text, "diff", theme="monokai", line_numbers=False)
-    diff_panel = Panel(rich_syntax, title=f"Patch for [bold]{target_path}[/bold]", border_style="cyan")
+    # In phần diff ra console
+    syn = Syntax(text, "diff", theme="monokai", line_numbers=False)
+    panel = Panel(syn, title=f"Patch for [bold]{path}[/bold]", border_style="cyan")
 
     console.print()
-    console.print(diff_panel)
+    console.print(panel)
     console.print()

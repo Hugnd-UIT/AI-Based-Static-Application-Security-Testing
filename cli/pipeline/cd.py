@@ -1,11 +1,12 @@
-﻿import sys
+import sys
 import os
 import subprocess
 import argparse
 from pathlib import Path
 
-ROOT_DIR = Path(__file__).resolve().parent.parent.parent
-sys.path.append(str(ROOT_DIR))
+# Thư mục gốc của project
+root = Path(__file__).resolve().parent.parent.parent
+sys.path.append(str(root))
 
 try:
     from rich.console import Console
@@ -16,6 +17,7 @@ except ImportError:
     print("Error: Required 'rich' library is not installed.")
     sys.exit(1)
 
+# In header màn hình
 def show_header():
     console.print()
     console.print(Panel(
@@ -25,66 +27,69 @@ def show_header():
     ))
     console.print()
 
-def show_failure(deploy_cmd, exit_code, reason_msg):
-    console.print("[cyan]━━━ CD WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+# In lỗi khi triển khai thất bại
+def show_failure(cmd, code, msg):
+    console.print("[cyan]━ ━ ━  CD WORKFLOW ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")
     console.print("Environment     [green]✔ VERIFIED[/green]")
 
-    if deploy_cmd:
-        console.print(f"Command         [dim]{deploy_cmd}[/dim]")
+    if cmd:
+        console.print(f"Command         [dim]{cmd}[/dim]")
     console.print("Preparation     [green]✔ COMPLETED[/green]")
     console.print("Deployment      [red]✖ FAILED[/red]")
     console.print("Deployment Gate [red]✖ FAILED[/red]\n")
-    console.print("[cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+    console.print("[cyan]━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")
     console.print("[bold red]✖ CD WORKFLOW FAILED[/bold red]\n")
-    console.print(f"{reason_msg}")
+    console.print(f"{msg}")
     console.print("Deployment stopped.\n")
-    console.print(f"[dim]Exit code: {exit_code}[/dim]")
-    sys.exit(exit_code)
+    console.print(f"[dim]Exit code: {code}[/dim]")
+    sys.exit(code)
 
-def run_cd(deploy_cmd):
+# Chạy lệnh triển khai
+def run_cd(cmd):
     show_header()
 
-    if not deploy_cmd:
-        console.print("[cyan]━━━ CD WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+    if not cmd:
+        console.print("[cyan]━ ━ ━  CD WORKFLOW ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")
         console.print("[red]✖ Deployment command not provided.[/red]\n")
         console.print("Usage:\n[dim]python cli/pipeline/cd.py --cmd \"<deployment-command>\"[/dim]")
         sys.exit(0)
         
-    console.print("[cyan]━━━ CD WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+    console.print("[cyan]━ ━ ━  CD WORKFLOW ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")
     console.print("Environment     [green]✔ VERIFIED[/green]")
-    console.print(f"Command         [dim]{deploy_cmd}[/dim]")
+    console.print(f"Command         [dim]{cmd}[/dim]")
     console.print("Preparation     [green]✔ COMPLETED[/green]")
-    console.print("Deployment      [cyan]â— RUNNING[/cyan]\n")
+    console.print("Deployment      [cyan]● RUNNING[/cyan]\n")
 
     try:
-        run_process = subprocess.Popen(
-            deploy_cmd, 
+        # Chạy process
+        proc = subprocess.Popen(
+            cmd, 
             shell=True, 
             stdout=sys.stdout, 
             stderr=sys.stderr
         )
-        run_process.communicate()
+        proc.communicate()
         
-        if run_process.returncode != 0:
+        # Kiểm tra kết quả
+        if proc.returncode != 0:
             console.print()
-            show_failure(deploy_cmd, run_process.returncode, f"Deployment command exited with code {run_process.returncode}.")
+            show_failure(cmd, proc.returncode, f"Deployment command exited with code {proc.returncode}.")
 
         else:
-            console.print("\n[cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+            console.print("\n[cyan]━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")
             console.print("Deployment Gate [green]✔ PASSED[/green]\n")
-            console.print("[cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+            console.print("[cyan]━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")
             console.print("[bold green]✔ CD WORKFLOW PASSED[/bold green]\n")
             console.print("Deployment completed successfully.\n")
             console.print("[dim]Exit code: 0[/dim]")
             
-    except Exception as run_err:
+    except Exception as err:
         console.print()
-        show_failure(deploy_cmd, 1, f"Deployment encountered an error: {run_err}")
+        show_failure(cmd, 1, f"Deployment encountered an error: {err}")
 
 if __name__ == "__main__":
-    arg_parser = argparse.ArgumentParser(description="Sinful SAST CD Wrapper")
-    arg_parser.add_argument("--cmd", type=str, help="Actual deployment command to run (e.g., 'npx vercel --prod')", default="")
-    cli_args = arg_parser.parse_args()
+    parser = argparse.ArgumentParser(description="Sinful SAST CD Wrapper")
+    parser.add_argument("--cmd", type=str, help="Actual deployment command to run (e.g., 'npx vercel --prod')", default="")
+    args = parser.parse_args()
     
-    run_cd(cli_args.cmd)
-
+    run_cd(args.cmd)

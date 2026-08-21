@@ -4,16 +4,16 @@ from rich.console import Console
 from rich.theme import Theme
 from rich.text import Text
 
+# Cấu hình encoding cho Windows
 if sys.platform == "win32":
-
     try:
         sys.stdout.reconfigure(encoding="utf-8")
         sys.stderr.reconfigure(encoding="utf-8")
-
     except Exception:
         pass
 
-logger_theme = Theme({
+# Giao diện màu sắc cho logger
+theme = Theme({
     "dim": "dim #9ca3af",
     "cyan": "bright_cyan",
     "blue": "bright_blue",
@@ -30,53 +30,63 @@ logger_theme = Theme({
     "default": "white",
 })
 
-console = Console(theme=logger_theme)
-_start_time = time.time()
+console = Console(theme=theme)
+timer = time.time()
 
+# Lấy nhãn thời gian hiện tại
 def _get_timestamp() -> str:
-    time_elapsed = int(time.time() - _start_time)
-    elapsed_mins = time_elapsed // 60
-    elapsed_secs = time_elapsed % 60
+    diff = int(time.time() - timer)
+    mins = diff // 60
+    secs = diff % 60
+    return f"[{mins:02d}:{secs:02d}]"
 
-    return f"[{elapsed_mins:02d}:{elapsed_secs:02d}]"
-
+# Đặt lại thời gian
 def reset_timer():
-    global _start_time
-    _start_time = time.time()
+    global timer
+    timer = time.time()
 
+# Lấy số giây đã trôi qua
 def get_time() -> float:
-    return round(time.time() - _start_time, 1)
+    return round(time.time() - timer, 1)
 
-def section(section_title: str):
-    timestamp_text = Text(_get_timestamp(), style="dim")
-    timestamp_text.append(f" ── {section_title} ", style="cyan bold")
-    term_width = 70
-    dashes_needed = term_width - len(timestamp_text.plain)
+# In một phân đoạn mới
+def section(title: str):
+    text = Text(_get_timestamp(), style="dim")
+    text.append(f" ── {title} ", style="cyan bold")
+    width = 70
+    dashes = width - len(text.plain)
 
-    if dashes_needed > 0:
-        timestamp_text.append("─" * dashes_needed, style="cyan")
+    if dashes > 0:
+        text.append("─" * dashes, style="cyan")
     console.print()
-    console.print(timestamp_text)
+    console.print(text)
     console.print()
 
-def log_critical(log_message: str):
-    console.print(f"{_get_timestamp()} {log_message}", style="critical")
+# In lỗi nghiêm trọng
+def log_critical(msg: str):
+    console.print(f"{_get_timestamp()} {msg}", style="critical")
 
-def log_high(log_message: str):
-    console.print(f"{_get_timestamp()} {log_message}", style="high")
+# In lỗi cao
+def log_high(msg: str):
+    console.print(f"{_get_timestamp()} {msg}", style="high")
 
-def log_warning(log_message: str):
-    console.print(f"{_get_timestamp()} {log_message}", style="warning")
+# In cảnh báo
+def log_warning(msg: str):
+    console.print(f"{_get_timestamp()} {msg}", style="warning")
 
-def log_success(log_message: str):
-    console.print(f"{_get_timestamp()} {log_message}", style="success")
+# In thành công
+def log_success(msg: str):
+    console.print(f"{_get_timestamp()} {msg}", style="success")
 
-def log_info(log_message: str):
-    console.print(f"{_get_timestamp()} {log_message}", style="info")
+# In thông tin
+def log_info(msg: str):
+    console.print(f"{_get_timestamp()} {msg}", style="info")
 
-def log_default(log_message: str):
-    console.print(f"{_get_timestamp()} {log_message}", style="default")
+# In bình thường
+def log_default(msg: str):
+    console.print(f"{_get_timestamp()} {msg}", style="default")
 
+# In dòng trống
 def blank_line():
     console.print()
 
@@ -87,4 +97,3 @@ success = log_success
 info = log_info
 default = log_default
 blank = blank_line
-

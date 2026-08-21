@@ -13,6 +13,9 @@ def is_imported(target: str, pkg: str) -> bool:
         re.compile(rf"""import\s+\w+\s+from\s+['\"]{re.escape(pkg)}['\"]"""),
         re.compile(rf"""import\s+{re.escape(pkg)}"""),
         re.compile(rf"""use\s+.*{re.escape(pkg)}"""),
+        re.compile(rf"""extern\s+crate\s+{re.escape(pkg)}"""),
+        re.compile(rf"""import\s+['\"]package:{re.escape(pkg)}.*['\"]"""),
+        re.compile(rf"""alias\s+.*{re.escape(pkg)}"""),
     ]
     skips = {".git", "node_modules", "vendor", ".venv", "__pycache__"}
     for root, dirs, files in os.walk(target):

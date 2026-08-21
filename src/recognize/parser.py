@@ -19,6 +19,12 @@ DEPS = {
     "go.mod": "go",
     "Gemfile": "rubygems",
     "packages.config": "nuget",
+    "Cargo.toml": "crates.io",
+    "Cargo.lock": "crates.io",
+    "pubspec.yaml": "pub",
+    "pubspec.lock": "pub",
+    "mix.exs": "hex",
+    "mix.lock": "hex",
 }
 
 # Hàm phân tích thư viện php
@@ -293,6 +299,56 @@ def parse_nuget(path: str) -> List[Dict[str, str]]:
 
     return deps
 
+# Hàm phân tích thư viện cargo
+def parse_cargo(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+            matches = re.findall(r'^([a-zA-Z0-9_\-]+)\s*=\s*(?:\{.*?version\s*=\s*)?[\'"]([^\'"]+)[\'"]', content, re.MULTILINE)
+            
+            for pkg, ver in matches:
+                deps.append({"ecosystem": "crates.io", "package": pkg, "version": ver.strip('^~<>="')})
+    
+    except Exception:
+        pass
+    
+    return deps
+
+# Hàm phân tích thư viện pubspec
+def parse_pubspec(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+            matches = re.findall(r'^\s*([a-zA-Z0-9_]+):\s*[\'"]?([><=^~]*\s*\d+\.\d+\.\d+.*?)[\'"]?$', content, re.MULTILINE)
+    
+            for pkg, ver in matches:
+                deps.append({"ecosystem": "pub", "package": pkg, "version": ver.strip('^~<>=" ')})
+    except Exception:
+        pass
+    
+    return deps
+
+# Hàm phân tích thư viện mix
+def parse_mix(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+            matches = re.findall(r'\{:\s*([a-zA-Z0-9_]+)\s*,\s*[\'"]([^"\'\n]+)[\'"]', content)
+    
+            for pkg, ver in matches:
+                deps.append({"ecosystem": "hex", "package": pkg, "version": ver.strip('^~<>=" ')})
+    
+    except Exception:
+        pass
+    
+    return deps
+
 # Hàm phân tích thư viện
 def parse_deps(target: str) -> List[Dict[str, str]]:
     path = Path(target)
@@ -343,6 +399,15 @@ def parse_deps(target: str) -> List[Dict[str, str]]:
 
                 elif name == "packages.config":
                     manifests.extend(parse_nuget(full))
+
+                elif name in ["Cargo.toml", "Cargo.lock"]:
+                    manifests.extend(parse_cargo(full))
+
+                elif name in ["pubspec.yaml", "pubspec.lock"]:
+                    manifests.extend(parse_pubspec(full))
+
+                elif name in ["mix.exs", "mix.lock"]:
+                    manifests.extend(parse_mix(full))
 
             elif name.endswith(".csproj"):
                 manifests.extend(parse_csproj(full))
