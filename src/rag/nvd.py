@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 
 URL = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId="
 
-# Hàm lấy thông tin NVD
+# Hàm lấy thông tin từ NVD
 def fetch_cve(cve: str, retries: int = 2) -> Optional[Dict[str, Any]]:
     if not cve.startswith("CVE-"):
         return None
@@ -16,7 +16,7 @@ def fetch_cve(cve: str, retries: int = 2) -> Optional[Dict[str, Any]]:
     for attempt in range(retries + 1):
         try:
             req = urllib.request.Request(url)
-            key = os.environ.get("NIST_KEY", "")
+            key = os.environ.get("NIST_API_KEY", "")
 
             if key:
                 req.add_header("apiKey", key)
@@ -64,7 +64,7 @@ def fetch_cve(cve: str, retries: int = 2) -> Optional[Dict[str, Any]]:
                 if attempt < retries:
                     time.sleep(6 * (attempt + 1))
                     continue
-                print(f"[!] NVD API Rate Limit Exceeded for {cve} after {retries + 1} attempts")
+                print(f"[!] NVD Rate limit exceeded for {cve} after {retries + 1} attempts")
             else:
                 print(f"[!] HTTP Error fetching {cve}: {err.code}")
             break
@@ -78,7 +78,7 @@ def fetch_cve(cve: str, retries: int = 2) -> Optional[Dict[str, Any]]:
 
     return None
 
-# Hàm báo cáo kết quả từ NVD
+# Hàm báo cáo kết quả
 def report_nvd(data: Dict[str, Any]):
     if not data:
         return

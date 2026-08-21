@@ -74,7 +74,7 @@ def check_osv(deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
             return vulns
 
     except Exception as err:
-        print(f"[!] Failed to connect to OSV API: {err}")
+        print(f"[!] Failed to connect to OSV: {err}")
         return []
 
 from cli.views import logger

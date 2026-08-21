@@ -13,6 +13,7 @@ def scrape_url(target: str) -> Optional[str]:
 
     payload = json.dumps({"url": target, "formats": ["markdown"]}).encode("utf-8")
     
+    # Thử 3 lần nếu thất bại
     retries = 3
 
     for attempt in range(retries):

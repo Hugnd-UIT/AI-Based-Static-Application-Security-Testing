@@ -35,7 +35,7 @@ def search_github(word: str) -> dict:
                 Issue Title: {title}
                 Issue Body: {body[:2000]}
                 
-                Respond in JSON format: {{"score": 85}}
+                Respond in JSON format: {{"score": 100}}
                 """
                 res = fetch_llm(prompt, is_json=True)
                 score = res.get("score", 0)
@@ -61,7 +61,7 @@ def search_github(word: str) -> dict:
     except Exception as err:
         return {"error": str(err)}
 
-# Hàm báo cáo kết quả từ github
+# Hàm báo cáo kết quả
 def report_github(data: dict):
     from cli.views import logger
 

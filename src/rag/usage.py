@@ -3,8 +3,8 @@ import re
 from pathlib import Path
 from typing import List, Dict, Any
 
-# Hàm kiểm tra package có được import hay không
-def is_package_imported(target: str, pkg: str) -> bool:
+# Hàm kiểm tra package được sử dụng hay không
+def is_imported(target: str, pkg: str) -> bool:
     if not pkg: return True
     patterns = [
         re.compile(rf"""require\s*\(\s*['\"]{re.escape(pkg)}['\"\s]*\)"""),
@@ -29,7 +29,7 @@ def is_package_imported(target: str, pkg: str) -> bool:
                 pass
     return False
 
-# Hàm kiểm tra khả năng tới được của lỗ hổng
+# Hàm kiểm tra khả năng dính lỗ hổng
 def check_usage(target: str, cves: List[Dict[str, Any]], ts) -> List[Dict[str, Any]]:
     if not cves or not os.path.exists(target):
         return cves
@@ -37,7 +37,7 @@ def check_usage(target: str, cves: List[Dict[str, Any]], ts) -> List[Dict[str, A
     for cve in cves:
         pkg_obj = cve.get("package", {})
         pkg = pkg_obj.get("name") if isinstance(pkg_obj, dict) else pkg_obj
-        if pkg and not is_package_imported(target, pkg):
+        if pkg and not is_imported(target, pkg):
             cve["reachable"] = False
             continue
             
