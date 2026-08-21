@@ -28,7 +28,6 @@ RULES = [
     "p/trailofbits",
     "p/jwt",
     "p/c",
-    "p/cpp",
 ]
 
 def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
@@ -38,7 +37,23 @@ def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, A
         raise ValueError(f"[!] The path is invalid: {target_path}")
 
     rule_list = rule_list if rule_list else RULES
-    scan_cmd = ["semgrep", "scan", "--json", "--quiet", "--no-git-ignore"]
+    
+    import sys
+    import os
+    
+    python_dir = Path(sys.executable).parent
+    # On Windows, semgrep is usually semgrep.exe in Scripts, on Linux/WSL it's in bin
+    semgrep_bin = "semgrep.exe" if os.name == "nt" else "semgrep"
+    semgrep_path = python_dir / semgrep_bin
+
+    # If the binary doesn't exist next to python, fallback using shutil.which to search the system PATH
+    if not semgrep_path.exists():
+        import shutil
+        semgrep_path = shutil.which(semgrep_bin) or semgrep_bin
+    else:
+        semgrep_path = str(semgrep_path)
+
+    scan_cmd = [semgrep_path, "scan", "--json", "--quiet", "--no-git-ignore"]
 
     for rule_name in rule_list:
         scan_cmd.extend(["--config", rule_name])
@@ -49,20 +64,26 @@ def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, A
         scan_cmd.extend(["--config", str(custom_rules)])
 
     scan_cmd.append(str(dir_path))
-
+    
     try:
-
-        try:
-            cmd_result = subprocess.run(scan_cmd, capture_output=True, text=True, timeout=600)
-
-        except (FileNotFoundError, PermissionError):
-            fallback_cmd = ["python", "-m", "semgrep"] + scan_cmd[1:]
-            cmd_result = subprocess.run(fallback_cmd, capture_output=True, text=True, timeout=600)
+        # Disable metrics to prevent hanging on the interactive prompt
+        env = os.environ.copy()
+        env["SEMGREP_SEND_METRICS"] = "off"
+        
+        cmd_result = subprocess.run(scan_cmd, capture_output=True, text=True, timeout=600, env=env)
 
         output_text = cmd_result.stdout.strip()
 
-        if not output_text:
+        with open("semgrep_debug.txt", "w") as dbg:
+            dbg.write("STDOUT:\n")
+            dbg.write(output_text[:1000] + "\n...")
+            dbg.write("\n\nSTDERR:\n")
+            dbg.write(cmd_result.stderr)
+            dbg.write(f"\n\nRETURN CODE: {cmd_result.returncode}")
 
+        if not output_text:
+            if hasattr(cmd_result, "stderr") and cmd_result.stderr.strip():
+                print(f"[!] Semgrep failed or returned no output. Error log: {cmd_result.stderr.strip()}")
             return []
             
         json_start = output_text.find('{')

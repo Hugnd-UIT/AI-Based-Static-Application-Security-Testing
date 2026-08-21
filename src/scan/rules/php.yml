@@ -35,7 +35,7 @@ rules:
 
       - pattern: $_ENV
 
-      - pattern: php://input
+      - pattern: '"php://input"'
 
       - pattern: file_get_contents("php://input")
       # Laravel 

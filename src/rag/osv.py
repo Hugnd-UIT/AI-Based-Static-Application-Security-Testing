@@ -1,4 +1,4 @@
-﻿import json
+import json
 import urllib.request
 from typing import Dict, List, Any
 
@@ -22,7 +22,7 @@ def check_osv(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
     query_list = []
 
     for dep_item in parsed_deps:
-        # Skip packages without a pinned version â€” OSV returns ALL vulns for any version
+        # Skip packages without a pinned version — OSV returns ALL vulns for any version
 
         if not dep_item.get("version"):
             continue
@@ -104,7 +104,7 @@ def report_osv(vuln_list: List[Dict[str, Any]]):
         vuln_groups[pkg_name].append(vuln_item)
 
     for pkg_name, issue_list in vuln_groups.items():
-        console.print(f"  â— [magenta]{pkg_name}[/magenta]")
+        console.print(f"  ● [magenta]{pkg_name}[/magenta]")
 
         for loop_idx, issue_item in enumerate(issue_list):
             cve_str = ", ".join(c for c in issue_item["cve"] if str(c).startswith("CVE"))
@@ -113,7 +113,7 @@ def report_osv(vuln_list: List[Dict[str, Any]]):
             summary_text = issue_item['summary'][:80] + "..." if len(issue_item['summary']) > 80 else issue_item['summary']
             
             is_last = (loop_idx == len(issue_list) - 1)
-            display_prefix = "  â””â”€" if is_last else "  â”œâ”€"
+            display_prefix = "  └─" if is_last else "  ├─"
             
             console.print(f"{display_prefix} [red]{vuln_id}{display_cve}[/red]: {summary_text}")
         

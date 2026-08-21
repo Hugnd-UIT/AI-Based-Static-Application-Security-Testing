@@ -1,5 +1,10 @@
 import argparse
 import sys
+
+if hasattr(sys.stdout, 'reconfigure'):
+    sys.stdout.reconfigure(encoding='utf-8')
+if hasattr(sys.stderr, 'reconfigure'):
+    sys.stderr.reconfigure(encoding='utf-8')
 import shutil
 import tempfile
 import subprocess
@@ -148,7 +153,7 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
     if parse_deps:
 
         try:
-            list_cves = osv.check_vulns(parse_deps)
+            list_cves = osv.check_osv(parse_deps)
 
         except AttributeError:
             list_cves = []
@@ -189,7 +194,7 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                         if get_md:
                             get_nvd["firecrawl_poc"] += f"\n\nSource: {use_url}\n{get_md}"
 
-                get_github = github.search_issues(check_cve)
+                get_github = github.search_github(check_cve)
 
                 if "error" not in get_github:
                     get_nvd["github_issues"] = get_github.get("github_issues", [])
@@ -221,7 +226,7 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
         import textwrap
 
         process_cves = []
-        find_nvd = {n.get("check_cve"): n for n in get_result.get("get_nvd", [])}
+        find_nvd = {n.get("cve_id"): n for n in get_result.get("get_nvd", []) if n.get("cve_id")}
 
         for get_base in get_result.get("cves", []):
             merge_cve = dict(get_base)
@@ -247,20 +252,20 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
             }, indent=2)
             
             try:
-                get_summary = rag_agents.start_rag(get_str, use_model=MODELS[0]) # RAG Agent Role
+                get_summary = rag_agents.start_rag(get_str, model_name=MODELS[0]) # RAG Agent Role
                 get_result["rag_summaries"].append(get_summary)
                 get_rags.append(get_summary)
 
                 if "check_cve" in get_summary and get_summary["check_cve"] not in ["None", "Unknown"]:
                     console.print(f"  ├─ [cyan]◆ Analyzing {get_summary['check_cve']}[/cyan]")
 
-                if "attack_vector" in get_summary and get_summary["attack_vector"] not in ["None", "Unknown"]:
+                if "attack_vector" in get_summary and str(get_summary["attack_vector"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
                     set_width = max(60, console.width - 15)
 
                     for get_line in textwrap.wrap(get_summary['attack_vector'], width=set_width, initial_indent="Vector: ", subsequent_indent="        "):
                         console.print(f"  │  [dim]{get_line}[/dim]")
 
-                if "mitigation" in get_summary and get_summary["mitigation"] not in ["None", "Unknown"]:
+                if "mitigation" in get_summary and str(get_summary["mitigation"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
                     set_width = max(60, console.width - 15)
 
                     for get_line in textwrap.wrap(get_summary['mitigation'], width=set_width, initial_indent="Mitigation: ", subsequent_indent="            "):
@@ -291,7 +296,7 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                 console.print(f"\n  [bold magenta]● VERIFYING AGENT[/bold magenta] [[cyan]{set_role}[/cyan]]")
                 console.print(f"  ├─ [cyan]◆ Target: {set_str}[/cyan]")
                 from src.rag.agents import verifier
-                get_poc = verifier.start_verify(get_context, use_model=set_role, scan_dir=str(scan_dir), use_module=use_module) # Verifier Agent Role
+                get_poc = verifier.start_verify(get_context, model_name=set_role, target_dir=str(scan_dir), ts_module=use_module) # Verifier Agent Role
                 
                 check_exploit = get_poc.get("exploitable", False)
                 set_width = max(60, console.width - 15)
@@ -311,7 +316,22 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
 
                             for use_line in wrap_lines[1:]:
                                 console.print(f"  │  [dim]{use_line}[/dim]")
+                                
+                    elif get_poc.get("reasoning"):
+                        get_reason = str(get_poc['reasoning']).strip()
+                        wrap_lines = []
+
+                        for line in get_reason.split('\n'):
+                            wrap_lines.extend(textwrap.wrap(line, width=set_width) or [""])
+
+                        if wrap_lines:
+                            console.print(f"  │  [dim]Reason: {wrap_lines[0]}[/dim]")
+
+                            for use_line in wrap_lines[1:]:
+                                console.print(f"  │  [dim]{use_line}[/dim]")
+                                
                     get_context += "\nNOTE: PoC Verifier determined this CVE is NOT exploitable in the current codebase."
+
 
                 else:
                     get_conf = get_poc.get('confidence', 100)
@@ -334,9 +354,9 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                     console.print(f"\n  [bold magenta]● EXPANDING AGENT[/bold magenta] [[cyan]{set_expand}[/cyan]]")
                     console.print(f"  ├─ [cyan]◆ Target: {set_str}[/cyan]")
                     from src.rag.agents import expander
-                    get_expand = expander.start_expand(get_context, use_model=set_expand, scan_dir=str(scan_dir), use_module=use_module) # Expander Agent Role
+                    get_expand = expander.start_expand(get_context, model_name=set_expand, target_dir=str(scan_dir), ts_module=use_module) # Expander Agent Role
 
-                    get_sinks = get_expand.get("get_sinks", [])
+                    get_sinks = get_expand.get("extra_sinks", [])
 
                     if isinstance(get_sinks, str):
 
@@ -421,7 +441,7 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
         from cli.views.logger import console
         logger.section("MULTI-AGENT")
         console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{show_tag}")
-        console.print("  └─ [dim]No dependencies found! Skip![/dim]")
+        console.print("  └─ [dim]No vulnerabilities found! Skip![/dim]")
 
     # Build combined CVE context for Auditing Agent (from all CVEs processed)
     get_context = "\n\n---\n\n".join(get_parts) if get_parts else "No relevant supply chain vulnerabilities found in project dependencies."
@@ -482,9 +502,9 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                 while count_retry <= set_retries:
                     get_trace = scan_agents.start_scan(
                         check_item, get_ast,
-                        use_model=MODELS[4], # Scanning Agent Role
-                        scan_dir=str(scan_dir),
-                        use_module=use_module,
+                        model_name=MODELS[4], # Scanning Agent Role
+                        target_dir=str(scan_dir),
+                        ts_module=use_module,
                     )
                     
                     if get_trace and get_trace.get("data_flow"):
@@ -530,9 +550,9 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
 
                 get_verdict = audit_agents.start_audit(
                     check_item, get_ast, get_context,
-                    use_model=MODELS[3], # Auditing Agent Role
-                    scan_dir=str(scan_dir),
-                    use_module=use_module,
+                    model_name=MODELS[3], # Auditing Agent Role
+                    target_dir=str(scan_dir),
+                    ts_module=use_module,
                 )
 
                 is_vuln = get_verdict.get("verdict", "").upper() == "VULNERABLE"
@@ -581,9 +601,9 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                         from src.fix.agents import models as use_fix
                         get_fix = use_fix.start_fix(
                             check_item, get_ast, get_context,
-                            use_model=set_model,
-                            scan_dir=str(scan_dir),
-                            use_module=use_module,
+                            model_name=set_fix,
+                            target_dir=str(scan_dir),
+                            ts_module=use_module,
                         )
                         check_item["fix"] = get_fix
 
@@ -596,7 +616,7 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                                     logger.console.print(f"  │  [dim]{get_line}[/dim]")
 
                             for p_idx, patch_item in enumerate(get_fix["patches"]):
-                                logger.console.print(f"  │  [dim]Patch {p_idx+1}: {patch_item.get('get_file')}[/dim]")
+                                logger.console.print(f"  │  [dim]Patch {p_idx+1}: {patch_item.get('file_path')}[/dim]")
 
                             logger.console.print(f"  └─ [bold green]✔ Generated {len(get_fix['patches'])} patch(es)[/bold green]")
 
@@ -624,7 +644,7 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
     count_langs = len(get_result.get("languages", {}))
     count_files = sum(get_result.get("languages", {}).values())
     count_deps = len(get_result.get("dependencies", []))
-    elapsed_time = logger.get_time_elapsed_secs()
+    elapsed_time = logger.get_time()
     count_findings = len(find_flaws)
     count_errors = len([f for f in find_flaws if f.get("severity") == "ERROR"])
     count_warns = len([f for f in find_flaws if f.get("severity") == "WARNING"])

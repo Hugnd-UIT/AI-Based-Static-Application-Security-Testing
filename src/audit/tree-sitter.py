@@ -278,15 +278,48 @@ def has_source(file_content: bytes, curr_node, file_ext: str = "") -> bool:
 
         return False
 
+import re
+SINKS_PATTERNS = [re.compile(r'\b' + re.escape(s) + r'\b') for s in SINKS]
+
 def has_sink(file_content: bytes, curr_node) -> bool:
     try:
         node_text = file_content[curr_node.start_byte:curr_node.end_byte].decode("utf-8", errors="ignore")
-
-        return any(sink_str in node_text for sink_str in SINKS)
-
+        return any(p.search(node_text) for p in SINKS_PATTERNS)
     except Exception:
-
         return False
+
+def get_all_calls(curr_node):
+    calls = []
+    def traverse(n):
+        if "call" in n.type.lower() or "invocation" in n.type.lower():
+            calls.append(n)
+        for c in n.children:
+            traverse(c)
+    traverse(curr_node)
+    return calls
+
+def get_call_name(call_node, file_content):
+    for child in call_node.children:
+        if child.type == "identifier":
+            return file_content[child.start_byte:child.end_byte].decode("utf-8", errors="ignore")
+        elif child.type in ("attribute", "member_expression"):
+            for gchild in child.children:
+                if gchild.type in ("property_identifier", "identifier"):
+                    return file_content[gchild.start_byte:gchild.end_byte].decode("utf-8", errors="ignore")
+    return None
+
+def scan_callees(func_node, file_content, target_dir, depth=0, max_depth=2):
+    if depth > max_depth: return False
+    if has_sink(file_content, func_node): return True
+    
+    for call_node in get_all_calls(func_node):
+        callee_name = get_call_name(call_node, file_content)
+        if callee_name:
+            callee_code = get_code(target_dir, callee_name)
+            if callee_code and not callee_code.startswith("//"):
+                if any(p.search(callee_code) for p in SINKS_PATTERNS):
+                    return True
+    return False
 
 def get_tainted(target_dir: str) -> dict:
     tainted_funcs = {}
@@ -386,7 +419,7 @@ def find_sinks(target_dir: str, tainted_funcs: dict) -> str:
                         if call_ident:
                             func_called = file_content[call_ident.start_byte:call_ident.end_byte].decode("utf-8", errors="ignore")
 
-                            if func_called in called_tainted and has_sink(file_content, parent_node):
+                            if func_called in called_tainted and scan_callees(parent_node, file_content, target_dir):
                                 origin_info = tainted_funcs.get(func_called, {})
                                 parent_text = file_content[parent_node.start_byte:parent_node.end_byte].decode("utf-8", errors="ignore")
                                 path_entry = (
@@ -539,7 +572,12 @@ def extract_chunk(file_path: Path, start_line: int, end_line: int, padding_lines
 
     return "".join(file_lines[start_idx:end_idx])
 
+_code_cache = {}
+
 def get_code(target_dir: str, target_func: str) -> str:
+    key = (target_dir, target_func)
+    if key in _code_cache: return _code_cache[key]
+    
     for root_dir, sub_dirs, file_list in os.walk(target_dir):
         sub_dirs[:] = [d for d in sub_dirs if d not in {".git", "node_modules", "vendor", ".venv", "__pycache__"}]
 
@@ -578,12 +616,14 @@ def get_code(target_dir: str, target_func: str) -> str:
 
                 if match_code:
 
-                    return f"[IMPLEMENTATION OF {target_func} IN {file_name}]\n{match_code}"
+                    _code_cache[key] = f"[IMPLEMENTATION OF {target_func} IN {file_name}]\n{match_code}"
+                    return _code_cache[key]
 
             except Exception:
                 pass
 
-    return f"// Function {target_func} not found in the repository."
+    _code_cache[key] = f"// Function {target_func} not found in the repository."
+    return _code_cache[key]
 
 def resolve_aliases(file_path: str, var_name: str) -> str:
     import re
@@ -652,7 +692,7 @@ def resolve_aliases(file_path: str, var_name: str) -> str:
         return f"[resolve_aliases error] {parse_err}"
 
 
-def resolve_aliases_chain(file_path: str, var_name: str, max_hops: int = 3) -> str:
+def resolve_aliases_chain(file_path: str, var_name: str, max_hops: int = 5) -> str:
     import re
     visited = set()
     results = []

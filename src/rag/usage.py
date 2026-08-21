@@ -75,11 +75,28 @@ def check_usage(target_dir: str, cve_list: List[Dict[str, Any]], ts_module) -> L
                     except Exception:
                         continue
 
-                caller_ctx = ts_module.find_callers(target_dir, text_token, file_ext, ts_parser)
-
-                if caller_ctx:
-                    is_reachable = True
-                    break
+                # Walk directory and parse files for this extension
+                for root, dirs, files in os.walk(target_dir):
+                    if "node_modules" in dirs: dirs.remove("node_modules")
+                    if ".git" in dirs: dirs.remove(".git")
+                    if "vendor" in dirs: dirs.remove("vendor")
+                    
+                    for f in files:
+                        if f.endswith(file_ext):
+                            f_path = os.path.join(root, f)
+                            try:
+                                with open(f_path, 'r', encoding='utf-8') as fp:
+                                    code_str = fp.read()
+                                code_bytes = code_str.encode("utf-8")
+                                tree = ts_parser.parse(code_bytes)
+                                caller_ctx = ts_module.find_callers(tree.root_node, text_token, code_bytes)
+                                if caller_ctx:
+                                    is_reachable = True
+                                    break
+                            except Exception:
+                                pass
+                    if is_reachable:
+                        break
 
             if is_reachable:
                 break

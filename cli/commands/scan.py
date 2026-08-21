@@ -1,7 +1,7 @@
-﻿from cli.views.console import console
+from cli.views.console import console
 from cli.views.viewer import display_diff
 import os
-from main import start_sast
+from main import run_scan
 import src.fix.patch as patcher
 import src.fix.agents.models as ai_agents
 from cli.views import logger
@@ -13,7 +13,7 @@ def execute_scan(target_path: str, auto_fix: bool = False):
     def do_scan():
         model_name = os.environ.get("MODELS")
 
-        return start_sast(target_path, model_name=model_name, auto_fix=auto_fix)
+        return run_scan(target_path, use_model=model_name, do_fix=auto_fix)
 
     from cli.views.spinner import show_spinner
     scan_result = show_spinner("Analyzing source code", do_scan)
@@ -159,21 +159,22 @@ def execute_scan(target_path: str, auto_fix: bool = False):
             except Exception as fix_err:
                 logger.log_critical(f"Failed to apply fix for {finding_item.get('id', 'Unknown')}: {fix_err}")
 
-    import json
-    from datetime import datetime
+    from src.report.json import to_json
+    from src.report.sarif import to_sarif
+    from src.report.html import to_html
     
     report_dir = os.path.join(os.getcwd(), "reports")
-    os.makedirs(report_dir, exist_ok=True)
-    
-    time_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_path = os.path.join(report_dir, f"sinful_report_{time_stamp}.json")
     
     try:
-        with open(report_path, "w", encoding="utf-8") as file_obj:
-            json.dump(scan_result, file_obj, indent=2, ensure_ascii=False)
+        json_path = to_json(scan_result, report_dir)
+        sarif_path = to_sarif(scan_findings, target_path, report_dir)
+        html_path = to_html(scan_findings, target_path, report_dir)
+        
         logger.blank_line()
-        logger.log_success(f"Detailed JSON report saved to: [bold cyan]{report_path}[/bold cyan]")
-
+        logger.log_success(f"Reports saved to:")
+        logger.log_success(f"  - JSON:  [bold cyan]{json_path}[/bold cyan]")
+        logger.log_success(f"  - SARIF: [bold cyan]{sarif_path}[/bold cyan]")
+        logger.log_success(f"  - HTML:  [bold cyan]{html_path}[/bold cyan]")
     except Exception as write_err:
-        logger.log_warning(f"Failed to save JSON report: {write_err}")
+        logger.log_warning(f"Failed to save reports: {write_err}")
 

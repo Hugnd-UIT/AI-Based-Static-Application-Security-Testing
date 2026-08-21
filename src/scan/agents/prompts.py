@@ -43,7 +43,7 @@ STEP 6 SUBMIT
 RULES
 Trace variables even if they look benign aliases are how injections hide.
 Cross-file calls MUST be followed with find_function().
-max 8 tool calls be efficient, trace the critical path first.
+max 15 tool calls. Be systematic but efficient, trace the critical path first.
 """
 
 USER_TEMPLATE = """\

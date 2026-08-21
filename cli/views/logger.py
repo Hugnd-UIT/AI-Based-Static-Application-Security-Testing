@@ -1,4 +1,4 @@
-﻿import time
+import time
 import sys
 from rich.console import Console
 from rich.theme import Theme
@@ -49,12 +49,12 @@ def get_time() -> float:
 
 def section(section_title: str):
     timestamp_text = Text(_get_timestamp(), style="dim")
-    timestamp_text.append(f" â”€â”€ {section_title} ", style="cyan bold")
+    timestamp_text.append(f" ── {section_title} ", style="cyan bold")
     term_width = 70
     dashes_needed = term_width - len(timestamp_text.plain)
 
     if dashes_needed > 0:
-        timestamp_text.append("â”€" * dashes_needed, style="cyan")
+        timestamp_text.append("─" * dashes_needed, style="cyan")
     console.print()
     console.print(timestamp_text)
     console.print()

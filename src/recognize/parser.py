@@ -291,7 +291,8 @@ def parse_deps(target_path: str) -> List[Dict[str, str]]:
     if not dir_path.exists() or not dir_path.is_dir():
         raise ValueError(f"[!] The path is invalid: {target_path}")
 
-    parsed_deps = []
+    manifest_deps = []
+    lockfile_deps = []
 
     for root_dir, sub_dirs, file_list in os.walk(dir_path):
         sub_dirs[:] = [sub for sub in sub_dirs if sub not in EXCLUDES]
@@ -302,42 +303,57 @@ def parse_deps(target_path: str) -> List[Dict[str, str]]:
             if file_name in DEPS:
 
                 if file_name == "composer.json":
-                    parsed_deps.extend(parse_php(full_path))
+                    manifest_deps.extend(parse_php(full_path))
 
                 elif file_name == "package.json":
-                    parsed_deps.extend(parse_npm(full_path))
+                    manifest_deps.extend(parse_npm(full_path))
                     
                 elif file_name == "package-lock.json":
-                    parsed_deps.extend(parse_package_lock(full_path))
+                    lockfile_deps.extend(parse_package_lock(full_path))
                     
                 elif file_name == "yarn.lock":
-                    parsed_deps.extend(parse_yarn_lock(full_path))
+                    lockfile_deps.extend(parse_yarn_lock(full_path))
 
                 elif file_name == "requirements.txt":
-                    parsed_deps.extend(parse_pypi(full_path))
+                    manifest_deps.extend(parse_pypi(full_path))
                     
                 elif file_name == "pyproject.toml":
-                    parsed_deps.extend(parse_pyproject(full_path))
+                    manifest_deps.extend(parse_pyproject(full_path))
                     
                 elif file_name == "poetry.lock":
-                    parsed_deps.extend(parse_poetry_lock(full_path))
+                    lockfile_deps.extend(parse_poetry_lock(full_path))
 
                 elif file_name == "pom.xml":
-                    parsed_deps.extend(parse_maven(full_path))
+                    manifest_deps.extend(parse_maven(full_path))
 
                 elif file_name == "go.mod":
-                    parsed_deps.extend(parse_go(full_path))
+                    manifest_deps.extend(parse_go(full_path))
 
                 elif file_name == "Gemfile":
-                    parsed_deps.extend(parse_ruby(full_path))
+                    manifest_deps.extend(parse_ruby(full_path))
 
                 elif file_name == "packages.config":
-                    parsed_deps.extend(parse_nuget(full_path))
+                    manifest_deps.extend(parse_nuget(full_path))
 
             elif file_name.endswith(".csproj"):
-                parsed_deps.extend(parse_csproj(full_path))
+                manifest_deps.extend(parse_csproj(full_path))
 
-    return parsed_deps
+    lock_map = {(d["ecosystem"], d["package"]): d["version"] for d in lockfile_deps}
+    
+    final_deps = []
+    seen = set()
+    
+    for d in manifest_deps + lockfile_deps:
+        key = (d["ecosystem"], d["package"])
+        if key in seen:
+            continue
+        seen.add(key)
+        
+        if key in lock_map:
+            d["version"] = lock_map[key]
+        final_deps.append(d)
+
+    return final_deps
 
 from cli.views import logger
 

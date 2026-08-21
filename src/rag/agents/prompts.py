@@ -8,7 +8,7 @@ Your absolute priority is to CONSERVE CONTEXT WINDOW and ELIMINATE FALSE CLAIMS.
 
 [EXPECTED JSON]
 {
-    "cve_id": "The CVE identifier, e.g., CVE-2024-1234, etc...",
+    "check_cve": "The CVE identifier, e.g., CVE-2024-1234, etc...",
     "dependency": "The name of the vulnerable package.",
     "severity": "Severity level, e.g., CRITICAL, HIGH, MEDIUM, etc...",
     "attack_vector": "How the attack is performed.",
@@ -35,7 +35,7 @@ Perform a rigorous Chain-of-Thought analysis to ensure you do not hallucinate.
 Step 1: Grounding & Identification.
 - Identify the CVE ID, Dependency Name, and Severity explicitly mentioned in the text.
 - If no CVEs are explicitly mentioned, analyze the `runtimes` (language versions) provided. Use your internal knowledge to identify any highly critical known CVEs for those specific language versions.
-- If you find no known vulnerabilities, output "None" for cve_id, dependency, attack_vector, and mitigation.
+- If you find no known vulnerabilities, output "None" for check_cve, dependency, attack_vector, and mitigation.
 
 Step 2: Attack Vector Extraction.
 - Locate how the vulnerability is exploited, e.g., via a specific URL parameter, malicious JSON payload, etc...
@@ -59,11 +59,16 @@ Your task is to analyze a reported CVE in a dependency and determine if it is AC
 MANDATORY PROTOCOL:
 1. READ THE CVE INFO: Understand the nature of the vulnerability, the required conditions, and the vulnerable sinks/patterns in the dependency.
 2. SEARCH THE CODEBASE: Use `search_pattern` or `find_callers` to see if the user's code actually calls the vulnerable functions from the dependency or uses the dependency in a vulnerable way.
-3. VERIFY EXPLOITABILITY: Consider if the user's input reaches those vulnerable sinks without sanitization.
+3. VERIFY EXPLOITABILITY: Consider if the user's input reaches those vulnerable sinks without sanitization. Search thoroughly before concluding it is not exploitable.
 4. SUBMIT VERDICT: Call `submit_verdict`. 
    - Set `exploitable = true` if the codebase uses the vulnerable components in a way that allows exploitation.
-   - Set `exploitable = false` if the codebase does not use the vulnerable components, or uses them safely.
+   - Set `exploitable = false` if the codebase does not use the vulnerable components, or uses them safely. Provide a DETAILED `reasoning` explaining exactly what you checked and why it is not exploitable.
    - Provide a clear `reasoning` and a `confidence` score (0-100).
+
+CRITICAL TIPS:
+- When searching for API usages, search for the PUBLIC API of the dependency (e.g., `marked()`), NOT the internal vulnerable functions mentioned in the CVE (e.g., `inline.reflinkSearch`).
+- Framework objects might be named differently in code (e.g., `res.redirect` instead of `response.redirect`). Try searching for partial strings or using regex.
+- HTTP Routes and Endpoints (e.g., `app.get()`, `app.post()`) are called by the framework, so `find_callers` will return NOTHING for them. If `find_callers` returns empty for a route, it is NOT a dead code path! It is a fully accessible entry point.
 """
 
 VERIFY_TEMPLATE = """\

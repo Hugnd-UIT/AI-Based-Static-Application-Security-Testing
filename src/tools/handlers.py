@@ -1,45 +1,51 @@
-﻿import json
+import json
 import logging
 from src.llm import fetch_tools
 from src.tools import actions
 
 logger = logging.getLogger(__name__)
 
+# Hàm điều phối agent
 def run_agent(
-    system_prompt: str,
-    initial_message: str,
-    tool_schemas: list,
-    target_dir: str,
-    ts_module=None,
-    model_name: str = None,
-    max_steps: int = 10,
-    agent_name: str = "AGENT",
+    prompt: str,
+    message: str,
+    schemas: list,
+    directory: str,
+    module=None,
+    model: str = None,
+    steps: int = 10,
+    agent: str = "AGENT",
 ) -> dict:
-    msg_history = [
-        {"role": "system", "content": system_prompt},
-        {"role": "user",   "content": initial_message},
+    history = [
+        {"role": "system", "content": prompt},
+        {"role": "user",   "content": message},
     ]
 
-    for curr_step in range(1, max_steps + 1):
-        logger.debug("[%s] Step %d/%d", agent_name, curr_step, max_steps)
-
+    for current in range(1, steps + 1):
         try:
-            api_msg, used_model = fetch_tools(
-                msg_history=msg_history,
-                tool_schemas=tool_schemas,
-                model_name=model_name,
-                tool_choice="auto",
+            # Gửi công cụ đến AI
+            msg, used_model = fetch_tools(
+                msg=history,
+                schemas=schemas,
+                model=model,
+                tool="auto",
             )
-
+        
+        # Nếu gửi request lỗi thì trả về kết quả cuối cùng
         except RuntimeError as api_err:
-            logger.warning("[%s] API error on step %d: %s", agent_name, curr_step, api_err)
+            return fallback_verdict(error=str(api_err))
+            
+        # Nếu nhận response lỗi thì gửi lại request
+        if not msg or (not getattr(msg, 'tool_calls', None) and not (getattr(msg, 'content', None) or "").strip()):
+            import time
+            time.sleep(1)
+            continue
 
-            return fallback_verdict(error_msg=str(api_err))
+        assistant: dict = {"role": "assistant", "content": getattr(msg, 'content', "") or ""}
 
-        assistant_msg: dict = {"role": "assistant", "content": api_msg.content or ""}
-
-        if api_msg.tool_calls:
-            assistant_msg["tool_calls"] = [
+        if msg.tool_calls:
+            # Lấy thông tin về công cụ
+            assistant["tool_calls"] = [
                 {
                     "id": tc.id,
                     "type": "function",
@@ -49,118 +55,122 @@ def run_agent(
                     },
                 }
 
-                for tc in api_msg.tool_calls
+                for tc in msg.tool_calls
             ]
-        msg_history.append(assistant_msg)
+        
+        # Lưu thông tin về công cụ vào lịch sử
+        history.append(assistant)
 
-        if api_msg.tool_calls:
+        # Nếu AI trả về JSON hợp lệ
+        if msg.tool_calls:
             verdict_result = None
 
-            for tool_call in api_msg.tool_calls:
+            for tool_call in msg.tool_calls:
                 tool_name = tool_call.function.name
 
+                # Kiểm tra tham số của công cụ
                 try:
                     tool_args = json.loads(tool_call.function.arguments)
 
                 except json.JSONDecodeError:
                     tool_args = {}
 
-                logger.debug("[%s] Tool: %s(%s)", agent_name, tool_name, list(tool_args))
-
                 try:
                     from cli.views.logger import console
-
+                    
+                    # Nếu AI không gọi công cụ nộp kết quả thì hiển thị hành động
                     if tool_name != "submit_verdict":
-                        display_name = tool_name.replace("_", " ").title()
-                        console.print(f"  â”œâ”€ [yellow]Action:[/yellow] [cyan]{display_name}[/cyan]")
+                        from src.tools.actions import TOOLS
+                        
+                        if tool_name in TOOLS:
+                            display_name = tool_name.replace("_", " ").title()
+                        else:
+                            display_name = (tool_name[:60] + "...") if len(tool_name) > 60 else tool_name
+                        console.print(f"  ├─ [yellow]Action:[/yellow] [cyan]{display_name}[/cyan]")
 
                 except ImportError:
                     pass
 
+                # Nếu AI gọi công cụ nộp kết quả thì ngắt vòng lặp
                 if tool_name == "submit_verdict":
-                    msg_history.append({
+                    history.append({
                         "role": "tool",
                         "tool_call_id": tool_call.id,
                         "content": json.dumps({"status": "verdict_accepted"}),
                     })
-                    logger.debug("[%s] submit_verdict received stopping.", agent_name)
                     verdict_result = normalise_verdict(tool_args)
                     continue
 
-                exec_result = actions.execute_tool(tool_name, tool_args, target_dir, ts_module)
+                # Nếu AI gọi công cụ thường thì thực thi công cụ
+                result = actions.execute_tool(tool_name, tool_args, directory, module)
 
-                msg_history.append({
+                # Lưu kết quả vào lịch sử
+                history.append({
                     "role": "tool",
-                    "tool_call_id": tool_call.id,
-                    "content": str(exec_result) if not isinstance(exec_result, str) else exec_result,
+                    "call_id": tool_call.id,
+                    "content": str(result) if not isinstance(result, str) else result,
                 })
 
             if verdict_result is not None:
 
                 return verdict_result
 
+        # Nếu AI không trả về JSON hợp lệ
         else:
-            plain_text = (api_msg.content or "").strip()
-            logger.debug("[%s] Plain text response on step %d", agent_name, curr_step)
+            text = (msg.content or "").strip()
+            logger.debug("[%s] Plain text response on step %d", agent, current)
 
-            extracted_json = extract_verdict(plain_text)
+            json = extract_verdict(text)
 
-            if extracted_json:
+            if json:
+                return normalise_verdict(json)
 
-                return normalise_verdict(extracted_json)
+            if current == steps:
+                return fallback_verdict(text=text)
 
-            if curr_step == max_steps:
+    return fallback_verdict(reason="steps exceeded")
 
-                return fallback_verdict(raw_text=plain_text)
+# Hàm chuẩn hóa kết quả
+def normalise_verdict(dict: dict) -> dict:
+    final = dict(dict)
+    final.setdefault("verdict", "UNKNOWN")
+    final.setdefault("confidence", 0)
+    final.setdefault("severity", "INFO")
+    final.setdefault("reason", "")
+    return final
 
-    return fallback_verdict(reason_msg="max_steps exceeded")
-
-
-def normalise_verdict(raw_dict: dict) -> dict:
-    final_verdict = dict(raw_dict)
-    final_verdict.setdefault("verdict", "UNKNOWN")
-    final_verdict.setdefault("confidence", 0)
-    final_verdict.setdefault("severity", "INFO")
-    final_verdict.setdefault("reasoning", "")
-
-    return final_verdict
-
-
-def fallback_verdict(error_msg: str = "", reason_msg: str = "", raw_text: str = "") -> dict:
+# Hàm xử lý kết quả
+def fallback_verdict(error: str = "", reason: str = "", text: str = "") -> dict:
     return {
-
         "verdict": "UNKNOWN",
         "confidence": 0,
         "severity": "INFO",
-        "vuln_class": "N/A",
-        "reasoning": f"Agent loop did not complete. {reason_msg} {error_msg}".strip(),
-        "raw_response": raw_text[:500] if raw_text else "",
+        "vulns": "N/A",
+        "reason": f"Agent loop did not complete. {reason} {error}".strip(),
+        "response": text[:500] if text else "",
     }
 
-
-def extract_verdict(raw_text: str) -> dict | None:
+# Hàm trích xuất kết quả
+def extract_verdict(text: str) -> dict | None:
     import re
-    match_fenced = re.search(r"```json\s*(\{.*?\})\s*```", raw_text, re.DOTALL)
+    fenced = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)
 
-    if match_fenced:
+    if fenced:
 
         try:
-
-            return json.loads(match_fenced.group(1))
+            return json.loads(fenced.group(1))
 
         except json.JSONDecodeError:
             pass
     
-    match_bare = re.search(r"\{[^{}]{20,}\}", raw_text, re.DOTALL)
+    bare = re.search(r"\{[^{}]{20,}\}", text, re.DOTALL)
 
-    if match_bare:
+    if bare:
 
         try:
-
-            return json.loads(match_bare.group(0))
+            return json.loads(bare.group(0))
 
         except json.JSONDecodeError:
             pass
 
     return None
-

@@ -3,186 +3,212 @@ import json
 from openai import OpenAI
 from main import MODELS
 
-def get_keys() -> list:
-    keys_str = os.environ.get("AI_KEY", "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy")
-
-    return [k.strip() for k in keys_str.split(",") if k.strip()]
-
-def create_client(api_key: str = None) -> OpenAI:
-    if not api_key:
-        keys = get_keys()
-        api_key = keys[0] if keys else "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
-    base_url = "https://ai-based-static-application-security.onrender.com/v1"
-    headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-
-    return OpenAI(api_key=api_key, base_url=base_url, default_headers=headers)
-
-def get_key(model_name: str) -> str:
-    keys = get_keys()
+# Hàm lấy API key
+def get_key(model_name: str = None) -> str:
+    # Đọc và tách mảng key từ env
+    env = os.environ.get("AI_API_KEY", "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy")
+    keys = [k.strip() for k in env.split(",") if k.strip()]
 
     if not keys:
-
         return "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
 
-    try:
-        idx = MODELS.index(model_name)
+    if model_name:
+        try:
+            # Chọn key theo model
+            idx = MODELS.index(model_name)
+            return keys[idx % len(keys)]
+        except ValueError:
+            return keys[0]
 
-        return keys[idx % len(keys)]
+    return keys[0]
 
-    except ValueError:
+# Hàm tạo kết nối đến server
+def create_client(api_key: str = None) -> OpenAI:
+    if not api_key:
+        api_key = get_key()
 
-        return keys[0]
+    # Cấu hình url và headers
+    base_url = "https://ai-based-static-application-security.onrender.com/v1"
+    default_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
 
-def fetch_llm(prompt_text: str, model_name: str = None, is_json: bool = True):
-    target_model = model_name or MODELS[0]
-    api_key = get_key(target_model)
-    api_client = create_client(api_key)
+    return OpenAI(api_key=api_key, base_url=base_url, default_headers=default_headers)
+
+# Hàm gọi đến AI
+def fetch_llm(prompt: str, model: str = None, json: bool = True):
+    target = model or MODELS[0]
+    key = get_key(target)
+    client = create_client(key)
 
     import time
+
+    retries = 3
+    errors = ""
     
-    max_retries = 3
-    last_error = ""
-    
-    for attempt in range(max_retries):
+    for attempt in range(retries):
 
         try:
-            req_kwargs = {
-                "model": target_model,
-                "messages": [{"role": "system", "content": prompt_text}],
+            req = {
+                "model": target,
+                "messages": [{"role": "system", "content": prompt}],
             }
 
-            if is_json:
-                req_kwargs["response_format"] = {"type": "json_object"}
+            # Kiểm tra yêu cầu định dạng
+            if json:
+                req["response_format"] = {"type": "json_object"}
 
-            api_resp = api_client.chat.completions.create(**req_kwargs)
-            raw_text = api_resp.choices[0].message.content.strip()
+            # Gửi request đến AI
+            resp = client.chat.completions.create(**req)
+            raw = resp.choices[0].message.content.strip()
             
-            if is_json:
+            # Xử lý json từ AI
+            if json:
 
-                if raw_text.startswith("```json"):
-                    raw_text = raw_text[7:]
+                if raw.startswith("```json"):
+                    raw = raw[7:]
 
-                elif raw_text.startswith("```"):
-                    raw_text = raw_text[3:]
+                elif raw.startswith("```"):
+                    raw = raw[3:]
 
-                if raw_text.endswith("```"):
-                    raw_text = raw_text[:-3]
+                if raw.endswith("```"):
+                    raw = raw[:-3]
                 
-                return json.loads(raw_text.strip())
+                return json.loads(raw.strip())
 
             else:
 
-                return raw_text, target_model
+                return raw, target
 
         except Exception as api_err:
-            last_error = str(api_err)
+            errors = str(api_err)
 
-            if any(code in last_error for code in ("500", "502", "503", "504", "429")) or "connection" in last_error.lower() or "timeout" in last_error.lower():
-
-                if attempt < max_retries - 1:
+            # Kiểm tra mã lỗi từ server
+            if any(code in errors for code in ("500", "502", "503", "504", "429")) or "connection" in errors.lower() or "timeout" in errors.lower():
+            
+                # Nếu lỗi thử lại sau 1s, 2s, 4s
+                if attempt < retries - 1:
                     time.sleep(2 ** attempt)
                     continue
             
-            code_str = ""
+            code = ""
 
-            if "Error code: " in last_error:
-                parts = last_error.split("Error code: ")
+            # Kiểm tra mã lỗi từ AI
+            if "Error code: " in errors:
+                parts = errors.split("Error code: ")
 
                 if len(parts) > 1:
-                    code_str = parts[1].split()[0].strip("- ")
+                    code = parts[1].split()[0].strip("- ")
             
-            if code_str:
+            # Nếu có mã lỗi
+            if code:
+                
+                # Nếu là 403 in ra 403 Forbidden
+                if code == "403":
+                    errors = "403 Forbidden"
 
-                if code_str == "403":
-                    last_error = "403 Forbidden"
+                # Nếu là 401 in ra 401 Unauthorized
+                elif code == "401":
+                    errors = "401 Unauthorized"
 
-                elif code_str == "401":
-                    last_error = "Unauthorized - Check your API Key (401)"
-
+                # Nếu mã lỗi khác in ra HTTP Error + mã lỗi
                 else:
-                    last_error = f"API returned HTTP Error {code_str}"
+                    errors = f"HTTP Error {code}"
 
-            elif "<html" in last_error.lower() or "<!doctype" in last_error.lower():
-                last_error = "403 Forbidden"
+            # Nếu có trang html
+            elif "<html" in errors.lower() or "<!doctype" in errors.lower():
+                errors = "403 Forbidden"
 
-            elif len(last_error) > 200:
-                last_error = last_error[:200] + "... [Error Truncated]"
-            
-            # If not a retryable error or max retries reached
+            # Nếu lỗi quá dài
+            elif len(errors) > 200:
+                errors = errors[:200] + "..."
 
-            if not is_json:
+            if not json:
 
-                return f"[!] Error: Model failed. Last error: {last_error}", "None"
+                return f"[!] Error: Call AI failed. Last error: {errors}", "None"
 
-            raise RuntimeError(f"[!] Error: Model failed. Last error: {last_error}")
-            
-    if not is_json:
+            raise RuntimeError(f"[!] Error: Call AI failed. Last error: {errors}")
 
-        return f"[!] Error: Model failed. Last error: {last_error}", "None"
+    if not json:
 
-    raise RuntimeError(f"[!] Error: Model failed. Last error: {last_error}")
+        return f"[!] Error: Call AI failed. Last error: {errors}", "None"
 
+    raise RuntimeError(f"[!] Error: Call AI failed. Last error: {errors}")
+
+# Hàm gửi công cụ đến AI
 def fetch_tools(
-    msg_history: list,
-    tool_schemas: list,
-    model_name: str = None,
-    tool_choice: str = "auto",
+    msg: list,
+    schemas: list,
+    model: str = None,
+    tool: str = "auto",
 ):
-    target_model = model_name or MODELS[0]
-    api_key = get_key(target_model)
-    api_client = create_client(api_key)
+    target = model or MODELS[0]
+    key = get_key(target)
+    client = create_client(key)
 
     import time
     
-    max_retries = 3
-    last_error = ""
+    retries = 3
+    errors = ""
     
-    for attempt in range(max_retries):
+    for attempt in range(retries):
 
         try:
-            api_resp = api_client.chat.completions.create(
-                model=target_model,
-                messages=msg_history,
-                tools=tool_schemas,
-                tool_choice=tool_choice,
+            # Gửi request đến AI
+            resp = client.chat.completions.create(
+                model=target,
+                messages=msg,
+                tools=schemas,
+                tool_choice=tool,
             )
 
-            return api_resp.choices[0].message, target_model
+            # Kiểm tra lựa chọn của AI
+            if not getattr(resp, 'choices', None):
+                raise RuntimeError(f"Invalid response: {resp}")
+
+            return resp.choices[0].message, target
 
         except Exception as api_err:
-            last_error = str(api_err)
+            errors = str(api_err)
 
-            if any(code in last_error for code in ("500", "502", "503", "504", "429")) or "connection" in last_error.lower() or "timeout" in last_error.lower():
-
-                if attempt < max_retries - 1:
+            # Kiểm tra mã lỗi từ server
+            if any(code in errors for code in ("500", "502", "503", "504", "429")) or "connection" in errors.lower() or "timeout" in errors.lower():
+            
+                # Nếu lỗi thử lại sau 1s, 2s, 4s
+                if attempt < retries - 1:
                     time.sleep(2 ** attempt)
                     continue
             
-            code_str = ""
+            code = ""
 
-            if "Error code: " in last_error:
-                parts = last_error.split("Error code: ")
+            # Kiểm tra mã lỗi từ AI
+            if "Error code: " in errors:
+                parts = errors.split("Error code: ")
 
                 if len(parts) > 1:
-                    code_str = parts[1].split()[0].strip("- ")
+                    code = parts[1].split()[0].strip("- ")
             
-            if code_str:
+            # Nếu có mã lỗi
+            if code:
 
-                if code_str == "403":
-                    last_error = "403 Forbidden"
+                # Nếu là 403 in ra 403 Forbidden
+                if code == "403":
+                    errors = "403 Forbidden"
 
-                elif code_str == "401":
-                    last_error = "Unauthorized - Check your API Key (401)"
+                # Nếu là 401 in ra 401 Unauthorized
+                elif code == "401":
+                    errors = "Unauthorized - Check your API Key (401)"
 
+                # Nếu mã lỗi khác in ra HTTP Error + mã lỗi
                 else:
-                    last_error = f"API returned HTTP Error {code_str}"
+                    errors = f"API returned HTTP Error {code}"
 
-            elif "<html" in last_error.lower() or "<!doctype" in last_error.lower():
-                last_error = "403 Forbidden"
+            # Nếu có trang html
+            elif "<html" in errors.lower() or "<!doctype" in errors.lower():
+                errors = "403 Forbidden"
 
-            elif len(last_error) > 200:
-                last_error = last_error[:200] + "... [Error Truncated]"
+            # Nếu lỗi quá dài
+            elif len(errors) > 200:
+                errors = errors[:200] + "... [Error Truncated]"
             
-            raise RuntimeError(f"[!] fetch_tools: Model {target_model} failed. Error: {last_error}")
+            raise RuntimeError(f"[!] Model {target} failed. Error: {errors}")
             
-    raise RuntimeError(f"[!] fetch_tools: Model {target_model} failed. Error: {last_error}")
+    raise RuntimeError(f"[!] Model {target} failed. Error: {errors}")

@@ -21,18 +21,18 @@ def gen_sarif(scan_findings, output_path):
     sarif_results = []
     
     for finding_item in scan_findings:
-        rule_id = finding_item.get("check_id") or finding_item.get("rule_id", "VULN-001")
+        rule_id = finding_item.get("id") or finding_item.get("check_id") or finding_item.get("rule_id", "VULN-001")
 
         if rule_id not in sarif_rules:
             sarif_rules[rule_id] = {
                 "id": rule_id,
-                "shortDescription": {"text": finding_item.get("title") or rule_id},
-                "fullDescription": {"text": finding_item.get("description", "Security vulnerability detected.")},
+                "shortDescription": {"text": finding_item.get("title") or finding_item.get("message") or rule_id},
+                "fullDescription": {"text": finding_item.get("description") or finding_item.get("message", "Security vulnerability detected.")},
                 "defaultConfiguration": {"level": "error" if finding_item.get("severity") == "ERROR" else "warning"}
             }
         
         file_path = finding_item.get("path") or finding_item.get("file", "unknown")
-        line_num = finding_item.get("start") or finding_item.get("line") or getattr(finding_item.get("start"), "line", 1)
+        line_num = finding_item.get("start_line") or finding_item.get("start") or finding_item.get("line") or getattr(finding_item.get("start"), "line", 1)
 
         if isinstance(line_num, dict):
             line_num = line_num.get("line", 1)
@@ -98,15 +98,15 @@ def run_ci():
     except Exception as scan_err:
 
         if cli_args.format != "sarif":
-            logger.console.print("[cyan]â”â”â” CI WORKFLOW â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”[/cyan]\n")
-            logger.console.print(f"[red]âœ– Exception occurred during scanning: {scan_err}[/red]\n")
+            logger.console.print("[cyan]━━━ CI WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+            logger.console.print(f"[red]✖ Exception occurred during scanning: {scan_err}[/red]\n")
         sys.exit(1)
 
     if scan_result.get("status") == "error":
 
         if cli_args.format != "sarif":
-            logger.console.print("[cyan]â”â”â” CI WORKFLOW â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”[/cyan]\n")
-            logger.console.print(f"[red]âœ– Scan failed: {scan_result.get('message')}[/red]\n")
+            logger.console.print("[cyan]━━━ CI WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+            logger.console.print(f"[red]✖ Scan failed: {scan_result.get('message')}[/red]\n")
         sys.exit(1)
 
     scan_data = scan_result.get("data", {})
@@ -121,15 +121,15 @@ def run_ci():
     is_vulnerable = count_blocked > 0
 
     if cli_args.format != "sarif":
-        logger.console.print("[cyan]â”â”â” CI WORKFLOW â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”[/cyan]\n")
-        logger.console.print("Environment     [green]âœ“ VERIFIED[/green]")
-        logger.console.print("Security Scan   [green]âœ“ COMPLETED[/green]")
+        logger.console.print("[cyan]━━━ CI WORKFLOW ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+        logger.console.print("Environment     [green]✔ VERIFIED[/green]")
+        logger.console.print("Security Scan   [green]✔ COMPLETED[/green]")
         
         if is_vulnerable:
-            logger.console.print(f"Findings        [red]âœ– {count_blocked}[/red]")
-            logger.console.print("Security Gate   [red]âœ– FAILED[/red]\n")
-            logger.console.print("[cyan]â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”[/cyan]\n")
-            logger.console.print("[bold red]âœ– CI WORKFLOW FAILED[/bold red]\n")
+            logger.console.print(f"Findings        [red]✖ {count_blocked}[/red]")
+            logger.console.print("Security Gate   [red]✖ FAILED[/red]\n")
+            logger.console.print("[cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+            logger.console.print("[bold red]✖ CI WORKFLOW FAILED[/bold red]\n")
             
             logger.console.print(f"{count_blocked} issue(s) matched the configured severity threshold.")
             logger.console.print("Pipeline blocked.\n")
@@ -137,10 +137,10 @@ def run_ci():
             sys.exit(cli_args.exit_code)
 
         else:
-            logger.console.print("Findings        [green]âœ“ 0[/green]")
-            logger.console.print("Security Gate   [green]âœ“ PASSED[/green]\n")
-            logger.console.print("[cyan]â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”â”[/cyan]\n")
-            logger.console.print("[bold green]âœ“ CI WORKFLOW PASSED[/bold green]\n")
+            logger.console.print("Findings        [green]✔ 0[/green]")
+            logger.console.print("Security Gate   [green]✔ PASSED[/green]\n")
+            logger.console.print("[cyan]━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━[/cyan]\n")
+            logger.console.print("[bold green]✔ CI WORKFLOW PASSED[/bold green]\n")
             logger.console.print("No issues matched the configured severity threshold.\n")
             logger.console.print("[dim]Exit code: 0[/dim]")
             sys.exit(0)
