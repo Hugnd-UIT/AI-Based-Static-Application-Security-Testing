@@ -46,6 +46,34 @@ RULES
   ONLY if the data passes through it — verify with tools.
 • Business Logic flaws (IDOR, missing auth) are valid vulnerabilities.
 • Race conditions and time-of-check/time-of-use (TOCTOU) are valid vulnerabilities.
+
+JAVASCRIPT SPECIFIC:
+- DOM XSS: track data flow from location.search / location.hash / postMessage -> innerHTML / document.write / eval()
+- Prototype Pollution: track __proto__ / constructor.prototype assignments
+- Node.js Path Traversal: track req.params -> fs.readFile/fs.writeFile
+- Node.js Command Injection: track req.* -> child_process.exec/spawn
+
+PHP SPECIFIC:
+- RCE: track $_GET/$_POST -> system/exec/passthru/shell_exec/eval
+- File Inclusion: track user input -> include/require dynamic paths
+- SQLi: track $_GET/$_POST -> mysql_query/mysqli_query without prepared statements
+
+JAVA SPECIFIC:
+- SQLi: track getParameter/getHeader -> Statement.execute (not PreparedStatement)
+- RCE: track user input -> Runtime.exec/ProcessBuilder
+- Log4Shell: track user input -> Logger.* calls with JNDI in format string
+
+GO SPECIFIC:
+- SQLi: track r.URL.Query()/r.FormValue -> db.Exec/db.Query with string concatenation
+- Command Injection: track r.* -> exec.Command with user-controlled args
+
+RUBY SPECIFIC:
+- RCE: track params[:x] -> system/exec/`backtick`/eval/send
+- SQLi: track params[:x] -> .where with string interpolation (not ? placeholder)
+
+C# SPECIFIC:
+- SQLi: track Request.QueryString -> SqlCommand with string concat
+- SSRF: track Request.Url -> WebClient/HttpClient fetch
 """
 
 # Template for the USER turn — filled in by models.py

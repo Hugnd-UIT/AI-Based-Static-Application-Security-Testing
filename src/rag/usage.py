@@ -3,12 +3,43 @@ import re
 from pathlib import Path
 from typing import List, Dict, Any
 
+def is_package_imported(target_dir: str, pkg_name: str) -> bool:
+    if not pkg_name: return True
+    import_patterns = [
+        re.compile(rf"""require\s*\(\s*['\"]{re.escape(pkg_name)}['\"\s]*\)"""),
+        re.compile(rf"""from\s+['\"]{re.escape(pkg_name)}['\"]"""),
+        re.compile(rf"""import\s+['\"]{re.escape(pkg_name)}['\"]"""),
+        re.compile(rf"""import\s+\w+\s+from\s+['\"]{re.escape(pkg_name)}['\"]"""),
+        re.compile(rf"""import\s+{re.escape(pkg_name)}"""),
+        re.compile(rf"""use\s+.*{re.escape(pkg_name)}"""),
+    ]
+    skip_dirs = {".git", "node_modules", "vendor", ".venv", "__pycache__"}
+    for root, dirs, files in os.walk(target_dir):
+        dirs[:] = [d for d in dirs if d not in skip_dirs]
+        for f in files:
+            path = os.path.join(root, f)
+            try:
+                with open(path, 'r', encoding='utf-8') as fp:
+                    content = fp.read()
+                    for p in import_patterns:
+                        if p.search(content):
+                            return True
+            except Exception:
+                pass
+    return False
+
 def check_usage(target_dir: str, cve_list: List[Dict[str, Any]], ts_module) -> List[Dict[str, Any]]:
     if not cve_list or not os.path.exists(target_dir):
 
         return cve_list
 
     for cve_item in cve_list:
+        pkg = cve_item.get("package", {})
+        pkg_name = pkg.get("name") if isinstance(pkg, dict) else pkg
+        if pkg_name and not is_package_imported(target_dir, pkg_name):
+            cve_item["reachable"] = False
+            continue
+            
         cve_text = cve_item.get("summary", "") + "\n" + cve_item.get("details", "")
         cve_tokens = set()
         

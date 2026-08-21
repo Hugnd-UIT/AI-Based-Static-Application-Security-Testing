@@ -6,6 +6,7 @@ import subprocess
 import os
 import stat
 import json
+import re
 from pathlib import Path
 import importlib.util
 import time
@@ -114,19 +115,35 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
 
 
 
-    if not find_flaws and build_context:
-        find_flaws = [{
-            "id": "sinful-cross-file-taint",
-            "path": str(scan_dir),
-            "start_line": 1,
-            "end_line": 1,
-            "severity": "WARNING",
-            "message": "Cross-file taint path detected by inter-procedural analysis.",
-            "lines": "",
-            "cwe": [],
-            "dataflow_trace": build_context,
-        }]
-        get_result["findings"] = find_flaws
+    if build_context:
+        taint_blocks = [b for b in build_context.split("[CROSS-FILE TAINT PATH DETECTED]") if b.strip()]
+        for taint_block in taint_blocks:
+            if "Propagates to" not in taint_block: continue
+            prop_match = re.search(r"Propagates to\s*:\s*(\S+)\s*\(line (\d+)\)", taint_block)
+            taint_file = prop_match.group(1) if prop_match else str(scan_dir)
+            taint_line = int(prop_match.group(2)) if prop_match else 1
+            
+            full_path = str(scan_dir)
+            if prop_match:
+                for root, _, files in os.walk(str(scan_dir)):
+                    if taint_file in files:
+                        full_path = os.path.join(root, taint_file)
+                        break
+                        
+            find_flaws.append({
+                "id": "sinful-cross-file-taint",
+                "path": full_path,
+                "start_line": taint_line,
+                "end_line": taint_line + 5,
+                "severity": "HIGH",
+                "message": "Cross-file taint path detected by inter-procedural analysis.",
+                "lines": "",
+                "cwe": [],
+                "dataflow_trace": "[CROSS-FILE TAINT PATH DETECTED]" + taint_block.rstrip(),
+            })
+            
+        if find_flaws:
+            get_result["findings"] = find_flaws
 
     if parse_deps:
 
@@ -153,18 +170,12 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                     get_cves.add(get_alias)
 
         if get_cves:
-            from concurrent.futures import ThreadPoolExecutor, as_completed
             from cli.views.logger import console as cve_console
-            import threading
-
-            lock_nvd = threading.Semaphore(5)
-
+            
             def fetch_cve(check_cve: str):
-                with lock_nvd:
-                    get_nvd = nvd.fetch_cve(check_cve)
+                get_nvd = nvd.fetch_cve(check_cve)
 
                 if not get_nvd:
-
                     return None
 
                 get_links = get_nvd.get("references", [])
@@ -187,30 +198,21 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
 
             list_ids = list(get_cves)
 
-            with ThreadPoolExecutor(max_workers=2) as pool:
-                map_futures = {}
+            for get_index, use_cid in enumerate(list_ids):
+                try:
+                    nvd_result = fetch_cve(use_cid)
 
-                for get_index, use_cid in enumerate(list_ids):
-                    map_futures[pool.submit(fetch_cve, use_cid)] = use_cid
+                    if nvd_result:
+                        cve_console.print("")
+                        nvd.report_nvd(nvd_result)
+                        get_result["get_nvd"].append(nvd_result)
+                        
+                except Exception as catch_future:
+                    cve_console.print(f"  [dim]Failed to fetch {use_cid}: {catch_future}[/dim]")
+                
+                if get_index < len(list_ids) - 1:
+                    time.sleep(0.6)
 
-                    if get_index < len(list_ids) - 1:
-                        time.sleep(2.0)
-
-                for future in as_completed(map_futures):
-                    check_cve = map_futures[future]
-
-                    try:
-                        nvd_result = future.result()
-
-                        if nvd_result:
-                            cve_console.print("")
-                            nvd.report_nvd(nvd_result)
-                            get_result["get_nvd"].append(nvd_result)
-
-                    except Exception as catch_future:
-                        cve_console.print(f"  [dim]Failed to fetch {check_cve}: {catch_future}[/dim]")
-
-    get_context = "No relevant supply chain vulnerabilities found in project dependencies."
     get_parts = []
     
     if get_result["get_nvd"] or get_result["cves"]:
@@ -280,7 +282,9 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                     "vulnerable_functions": get_summary.get("functions", []),
                     "attack_vector": get_summary.get("attack_vector"),
                 }
-                get_context = json.dumps(get_brief, indent=2)
+                cve_json = json.dumps(get_brief, indent=2)
+                get_parts.append(cve_json)
+                get_context = cve_json
                 
                 set_role = MODELS[1] # Codestral for Verifier
                 set_str = get_summary.get("check_cve", "Unknown CVE")
@@ -331,7 +335,7 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                     console.print(f"  ├─ [cyan]◆ Target: {set_str}[/cyan]")
                     from src.rag.agents import expander
                     get_expand = expander.start_expand(get_context, use_model=set_expand, scan_dir=str(scan_dir), use_module=use_module) # Expander Agent Role
-                    
+
                     get_sinks = get_expand.get("get_sinks", [])
 
                     if isinstance(get_sinks, str):
@@ -398,7 +402,7 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                                                         "path": get_file,
                                                         "start_line": get_num,
                                                         "end_line": get_num,
-                                                        "severity": sink.get("severity", "WARNING")
+                                                        "severity": sink.get("severity", "WARNING") if isinstance(sink, dict) else "WARNING"
                                                     }
                                                     find_flaws.append(add_flaw)
 
@@ -419,9 +423,22 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
         console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{show_tag}")
         console.print("  └─ [dim]No dependencies found! Skip![/dim]")
 
+    # Build combined CVE context for Auditing Agent (from all CVEs processed)
+    get_context = "\n\n---\n\n".join(get_parts) if get_parts else "No relevant supply chain vulnerabilities found in project dependencies."
+
     # Run Semgrep after Expander so we can combine findings
     get_semgrep = semgrep.scan_code(str(scan_dir), scan_rules)
     find_flaws.extend(get_semgrep)
+    
+    seen = set()
+    deduped = []
+    for f in find_flaws:
+        key = (f.get("path"), f.get("start_line"), f.get("id"))
+        if key not in seen:
+            seen.add(key)
+            deduped.append(f)
+    find_flaws = deduped
+    
     get_result["findings"] = find_flaws
     
     semgrep.report_scan(find_flaws)

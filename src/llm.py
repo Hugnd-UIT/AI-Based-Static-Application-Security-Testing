@@ -77,7 +77,7 @@ def fetch_llm(prompt_text: str, model_name: str = None, is_json: bool = True):
         except Exception as api_err:
             last_error = str(api_err)
 
-            if "502" in last_error or "429" in last_error or "connection" in last_error.lower():
+            if any(code in last_error for code in ("500", "502", "503", "504", "429")) or "connection" in last_error.lower() or "timeout" in last_error.lower():
 
                 if attempt < max_retries - 1:
                     time.sleep(2 ** attempt)
@@ -152,7 +152,7 @@ def fetch_tools(
         except Exception as api_err:
             last_error = str(api_err)
 
-            if "502" in last_error or "429" in last_error or "connection" in last_error.lower():
+            if any(code in last_error for code in ("500", "502", "503", "504", "429")) or "connection" in last_error.lower() or "timeout" in last_error.lower():
 
                 if attempt < max_retries - 1:
                     time.sleep(2 ** attempt)

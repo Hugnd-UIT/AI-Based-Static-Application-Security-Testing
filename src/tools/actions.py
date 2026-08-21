@@ -63,7 +63,7 @@ def trace_variable(tool_args: dict, target_dir: str, ts_module=None) -> str:
     try:
         tree_sitter = ts_module or init_sitter()
         abs_path = resolve_path(target_dir, file_path)
-        trace_result = tree_sitter.resolve_aliases(str(abs_path), var_name)
+        trace_result = tree_sitter.resolve_aliases_chain(str(abs_path), var_name)
 
         if trace_result:
 

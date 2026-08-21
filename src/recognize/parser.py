@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import re
 import xml.etree.ElementTree as ET
@@ -10,7 +10,11 @@ from src.recognize.detector import EXCLUDES
 DEPS = {
     "composer.json": "packagist",
     "package.json": "npm",
+    "package-lock.json": "npm",
+    "yarn.lock": "npm",
     "requirements.txt": "pypi",
+    "pyproject.toml": "pypi",
+    "poetry.lock": "pypi",
     "pom.xml": "maven",
     "go.mod": "go",
     "Gemfile": "rubygems",
@@ -61,6 +65,37 @@ def parse_npm(file_path: str) -> List[Dict[str, str]]:
 
     return parsed_deps
 
+def parse_package_lock(file_path: str) -> List[Dict[str, str]]:
+    parsed_deps = []
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            if "packages" in data:
+                for path, pkg_data in data["packages"].items():
+                    if path and "node_modules/" in path:
+                        pkg_name = path.split("node_modules/")[-1]
+                        if "version" in pkg_data:
+                            parsed_deps.append({"ecosystem": "npm", "package": pkg_name, "version": pkg_data["version"]})
+            elif "dependencies" in data:
+                for pkg_name, pkg_data in data["dependencies"].items():
+                    if "version" in pkg_data:
+                        parsed_deps.append({"ecosystem": "npm", "package": pkg_name, "version": pkg_data["version"]})
+    except Exception:
+        pass
+    return parsed_deps
+
+def parse_yarn_lock(file_path: str) -> List[Dict[str, str]]:
+    parsed_deps = []
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            matches = re.findall(r'^"?(@?[a-zA-Z0-9_\-\.]+)(?:@[^"]+)?(?:,.*?)?:\n\s*version\s+"([^"]+)"', content, re.MULTILINE)
+            for pkg_name, pkg_version in matches:
+                parsed_deps.append({"ecosystem": "npm", "package": pkg_name, "version": pkg_version})
+    except Exception:
+        pass
+    return parsed_deps
+
 def parse_pypi(file_path: str) -> List[Dict[str, str]]:
     parsed_deps = []
 
@@ -109,6 +144,32 @@ def parse_pypi(file_path: str) -> List[Dict[str, str]]:
     except Exception:
         pass
 
+    return parsed_deps
+
+def parse_pyproject(file_path: str) -> List[Dict[str, str]]:
+    parsed_deps = []
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            content = f.read()
+            matches = re.findall(r'^([a-zA-Z0-9_\-]+)\s*=\s*[\'"]([^\'"]+)[\'"]', content, re.MULTILINE)
+            for pkg_name, pkg_version in matches:
+                parsed_deps.append({"ecosystem": "pypi", "package": pkg_name, "version": pkg_version.strip('^~<>="')})
+    except Exception:
+        pass
+    return parsed_deps
+
+def parse_poetry_lock(file_path: str) -> List[Dict[str, str]]:
+    parsed_deps = []
+    try:
+        with open(file_path, "r", encoding="utf-8") as f:
+            blocks = f.read().split("[[package]]")
+            for block in blocks[1:]:
+                name_match = re.search(r'name\s*=\s*"([^"]+)"', block)
+                version_match = re.search(r'version\s*=\s*"([^"]+)"', block)
+                if name_match and version_match:
+                    parsed_deps.append({"ecosystem": "pypi", "package": name_match.group(1), "version": version_match.group(1)})
+    except Exception:
+        pass
     return parsed_deps
 
 def parse_maven(file_path: str) -> List[Dict[str, str]]:
@@ -245,9 +306,21 @@ def parse_deps(target_path: str) -> List[Dict[str, str]]:
 
                 elif file_name == "package.json":
                     parsed_deps.extend(parse_npm(full_path))
+                    
+                elif file_name == "package-lock.json":
+                    parsed_deps.extend(parse_package_lock(full_path))
+                    
+                elif file_name == "yarn.lock":
+                    parsed_deps.extend(parse_yarn_lock(full_path))
 
                 elif file_name == "requirements.txt":
                     parsed_deps.extend(parse_pypi(full_path))
+                    
+                elif file_name == "pyproject.toml":
+                    parsed_deps.extend(parse_pyproject(full_path))
+                    
+                elif file_name == "poetry.lock":
+                    parsed_deps.extend(parse_poetry_lock(full_path))
 
                 elif file_name == "pom.xml":
                     parsed_deps.extend(parse_maven(full_path))

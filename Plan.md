@@ -1,146 +1,471 @@
-# Sinful SAST — Weakness Analysis & Fix Plan
+# Sinful SAST — Kế hoạch Nâng cấp Chi tiết
 
-## Tóm tắt: Mạnh ở đâu, yếu ở đâu
-
-Sau khi đọc toàn bộ code, dự án của sếp **đúng hướng và mạnh về kiến trúc**. Nhưng có **6 điểm yếu kỹ thuật thực tế** khiến kết quả chạy hay bị sai hoặc không ổn định. Dưới đây là phân tích thẳng thắn.
+> Dựa trên phân tích so sánh toàn bộ source code với Argus (2026-08-21)
 
 ---
 
-## BUG #1 (NGHIÊM TRỌNG): Verifier Agent nhận context quá tệ
+## Mục tiêu
 
-### Vấn đề
-Trong `main.py` dòng 208, sau khi RAG chạy xong:
-```python
-cve_context = json.dumps(rag_summary, indent=2)
-```
-Cái `cve_context` này là một đống JSON thô dày bao gồm cả `osv`, `nvd`, `firecrawl_poc`, `github_issues`... Sếp truyền hết đống này vào `verifier.start_verify(cve_context, ...)`. Con Verifier nhận được **hàng nghìn token vô nghĩa** → nó lạc đường → không biết mình cần tìm gì trong codebase → `Agent loop did not complete`.
-
-### Fix
-Trước khi gọi Verifier, tóm tắt lại context cho nó chỉ còn:
-- Tên CVE
-- Tên thư viện bị ảnh hưởng
-- Các hàm nguy hiểm (từ `rag_summary["functions"]`)
-- Attack vector (1 câu)
-
-```python
-# Trước khi gọi verifier:
-verifier_brief = {
-    "cve_id": rag_summary.get("cve_id"),
-    "dependency": rag_summary.get("dependency"),
-    "vulnerable_functions": rag_summary.get("functions", []),
-    "attack_vector": rag_summary.get("attack_vector"),
-}
-poc_result = verifier.start_verify(json.dumps(verifier_brief, indent=2), ...)
-```
-
-**File sửa:** `main.py` (~5 dòng)
+Đưa Sinful từ một tool "prototype hoạt động được" lên một SAST tool cạnh tranh được với Argus bằng cách:
+1. **Tăng detection rate** – Giảm False Negative bằng cách nâng cấp taint engine
+2. **Giảm False Positive** – Audit Agent xác minh kỹ trước khi phán VULNERABLE
+3. **Cải thiện độ ổn định** – Fix retry logic, NVD fetching, model error handling
+4. **Mở rộng coverage** – Thêm sink/source cho tất cả 10 ngôn ngữ đang support
 
 ---
 
-## BUG #2 (NGHIÊM TRỌNG): Surrogate Sink retry không log và không rõ ràng
+## PHASE 1 — Critical Fixes (Làm ngay, ảnh hưởng detection rate)
 
-### Vấn đề
-Trong `main.py` dòng 341-344, khi Scan Agent đề xuất surrogate sink:
+### 1.1. Fix `sinful-cross-file-taint` — Tạo N findings thay vì 1
+
+**File:** `main.py` (~Line 117)
+
+**Vấn đề:** Khi `build_context` phát hiện nhiều cross-file taint path, code hiện tại chỉ tạo đúng **1 finding duy nhất** với `path = thư mục gốc`. Scanning Agent nhận finding đó không biết file nào để đọc, phải đoán mò → thường fail hoặc trace sai.
+
+**Fix chi tiết:**
+- Parse `build_context` string (vốn là join nhiều `[CROSS-FILE TAINT PATH DETECTED]` blocks) thành list
+- Với mỗi block → extract `file_path` và `start_line` từ dòng `Propagates to:`
+- Tạo ra **N findings riêng biệt**, mỗi finding có `path` và `start_line` cụ thể
+
 ```python
-elif trace_json and trace_json.get("surrogate_sink_proposed"):
-    surrogate_func = trace_json.get("surrogate_function", "Unknown")
-    finding_item["surrogate_sink_context"] = ...
-    retry_count += 1
+# Thay thế đoạn lines 117-129 bằng:
+if build_context:
+    taint_blocks = [b for b in build_context.split("[CROSS-FILE TAINT PATH DETECTED]") if b.strip()]
+    for taint_block in taint_blocks:
+        # Extract file path và line number từ "Propagates to : filename (line N)"
+        prop_match = re.search(r"Propagates to\s*:\s*(\S+)\s*\(line (\d+)\)", taint_block)
+        taint_file = prop_match.group(1) if prop_match else str(scan_dir)
+        taint_line = int(prop_match.group(2)) if prop_match else 1
+        find_flaws.append({
+            "id": "sinful-cross-file-taint",
+            "path": taint_file,
+            "start_line": taint_line,
+            "end_line": taint_line + 5,
+            "severity": "HIGH",
+            "message": "Cross-file taint path detected by inter-procedural analysis.",
+            "lines": "",
+            "cwe": ["CWE-20"],
+            "dataflow_trace": taint_block.strip(),
+        })
+    get_result["findings"] = find_flaws
 ```
-Không có **log nào** cho user biết là đang retry với surrogate nào. User thấy màn hình đứng im không biết đang làm gì.
 
-### Fix
-Thêm log dòng:
-```python
-logger.console.print(f"  ├─ [yellow]⚠ Flow broken → Surrogate: {surrogate_func} (retry {retry_count}/{max_retries})[/yellow]")
-```
-
-**File sửa:** `main.py` (1 dòng)
+**Effort:** ~30 phút | **Impact:** 🔴 Critical
 
 ---
 
-## BUG #3 (TRUNG BÌNH): Expanding Agent không có tool để verify
+### 1.2. Nâng cấp `SINKS` list — Thêm Web/JS/Java sinks
 
-### Vấn đề
-`SINK_EXPAND_TOOL_SET = [SUBMIT_VERDICT_SCHEMA]` — con Expander không có `search_pattern` hay `read_file`. Nó chỉ đoán mò từ CVE text rồi đề xuất pattern mà **không thể tự kiểm tra xem pattern đó có match gì trong codebase không**. Kết quả là nó hay đề xuất patterns quá generic (VD: `"execute"`) → gây noise lớn.
+**File:** `src/audit/tree-sitter.py` (SINKS, line 45)
 
-### Fix
-Thêm `SEARCH_PATTERN_SCHEMA` vào toolset của nó:
+**Thêm:**
 ```python
-SINK_EXPAND_TOOL_SET = [SEARCH_PATTERN_SCHEMA, SUBMIT_VERDICT_SCHEMA]
+SINKS = [
+    # ... existing ...
+    
+    # JavaScript DOM XSS
+    "innerHTML", "outerHTML", "document.write", "document.writeln",
+    "insertAdjacentHTML", "eval", "Function(",
+    
+    # JavaScript Command/File Injection  
+    "child_process.exec", "child_process.spawn", "child_process.execSync",
+    "fs.readFile", "fs.writeFile", "fs.appendFile", "fs.unlink",
+    
+    # JavaScript HTTP (reflected XSS/redirect)
+    "res.send", "res.json", "res.end", "res.redirect", "res.location",
+    
+    # Python deserialization
+    "pickle.load", "marshal.loads", "shelve.open",
+    "jsonpickle.decode", "__reduce__",
+    
+    # Java RCE
+    "Runtime.exec", "ProcessBuilder", "ScriptEngine.eval",
+    "Class.forName", "Method.invoke",
+    
+    # Java JNDI (Log4Shell family)
+    "InitialContext.lookup", "Context.lookup", "ldap://",
+    
+    # PHP
+    "passthru", "preg_replace", "create_function", "assert",
+    "include", "require", "include_once", "file_get_contents",
+    
+    # Go
+    "os.Exec", "exec.Command", "exec.CommandContext",
+    "ioutil.WriteFile", "os.WriteFile",
+    
+    # Ruby
+    "system", "exec", "open", "eval", "send",
+    "`",  # backtick shell exec
+]
 ```
-Và sửa prompt để bảo nó **bắt buộc chạy `search_pattern` để verify** pattern có tồn tại trong codebase trước khi submit.
 
-**File sửa:** `src/tools/schemas.py` (1 dòng), `src/rag/agents/prompts.py` (~5 dòng)
+**Effort:** ~20 phút | **Impact:** 🔴 High
 
 ---
 
-## BUG #4 (TRUNG BÌNH): RAG chỉ xử lý 1 CVE duy nhất
+### 1.3. Nâng cấp `SOURCES` list — Thêm source cho đủ 10 ngôn ngữ
 
-### Vấn đề
-`rag_agents.start_rag()` trả về **1 dict** duy nhất, nghĩa là nó chỉ phân tích 1 CVE. Nhưng sếp có thể thu thập về **nhiều CVEs** qua OSV/NVD (từ nhiều dependency). Hiện tại, chỉ có đống JSON của tất cả CVEs được truyền vào, và RAG Agent chọn lấy 1 cái để phân tích → **bỏ sót tất cả các CVE còn lại**.
+**File:** `src/audit/tree-sitter.py` (SOURCES, line 29)
 
-### Fix
-Trong `main.py`, sau khi có `scan_result["nvd_data"]` (list), loop qua từng CVE một, gọi RAG + Verifier + Expander cho từng cái:
+**Thêm:**
 ```python
-for single_nvd in scan_result["nvd_data"]:
-    rag_summary = rag_agents.start_rag(json.dumps(single_nvd), ...)
-    # ... verifier, expander ...
+SOURCES = [
+    # ... existing ...
+    
+    # Python — CLI & Environment
+    "os.environ", "sys.argv", "os.getenv",
+    
+    # Python — Network raw
+    "socket.recv", "socket.recvfrom", "socket.recvmsg",
+    
+    # JavaScript — Event handlers
+    "event.data", "event.target.value", "location.search",
+    "location.hash", "location.href", "document.cookie",
+    "window.name", "postMessage",
+    
+    # Java Spring (annotations handled separately)
+    "@PathVariable", "@RequestParam", "@RequestBody",
+    "HttpServletRequest.getParameter", "HttpServletRequest.getHeader",
+    "HttpServletRequest.getInputStream",
+    
+    # Go net/http & frameworks
+    "r.URL.Query()", "r.FormValue", "r.PostFormValue",
+    "r.Header.Get", "r.Body",
+    "gin.Context.Query", "gin.Context.PostForm", "gin.Context.Param",
+    "echo.Context.QueryParam", "echo.Context.FormValue",
+    
+    # PHP
+    "$_FILES", "$_ENV", "$_SESSION",
+    
+    # Ruby on Rails
+    "params[:"]", "request.params", "request.env",
+    
+    # C# ASP.NET
+    "Request.QueryString", "Request.Body", "HttpContext.Request",
+    
+    # Serverless / Cloud Functions
+    "event.body", "event.queryStringParameters",
+    "event.pathParameters", "context.clientContext",
+    
+    # C/C++ — additional
+    "fgets", "getchar", "getline", "readlink", "readdir",
+]
 ```
 
-**File sửa:** `main.py` (refactor vòng lặp RAG)
+**Effort:** ~20 phút | **Impact:** 🔴 High
 
 ---
 
-## BUG #5 (NHỎ): `fetch_llm` và `fetch_llm_tools` không share model fallback log
+### 1.4. Fix `cve_context` bị overwrite — Accumulate toàn bộ CVE context
 
-### Vấn đề
-Trong `src/llm.py`, khi model chính bị lỗi và fallback sang model khác, **không có log nào** thông báo cho user. User thấy agent chạy lặng lẽ nhưng không biết nó đang dùng model gì.
+**File:** `main.py` (~Line 241)
 
-### Fix
-Thêm log khi fallback:
+**Vấn đề:** Trong vòng lặp Verifier, mỗi iteration làm:
 ```python
-if target_model != model_fallback[0]:
-    from cli.views.logger import console
-    console.print(f"  [dim]Fallback to {target_model}[/dim]")
+cve_context = json.dumps(verifier_brief, indent=2)  # ← overwrite!
+```
+Auditing Agent chỉ nhận được CVE cuối cùng được xử lý, không có context của các CVE trước.
+
+**Fix:**
+```python
+# Khởi tạo trước vòng lặp:
+cve_context_parts = []
+
+# Trong vòng lặp:
+cve_context_parts.append(json.dumps(verifier_brief, indent=2))
+
+# Sau vòng lặp, gộp lại:
+cve_context = "\n\n---\n\n".join(cve_context_parts) if cve_context_parts else "No CVE context."
 ```
 
-**File sửa:** `src/llm.py` (~3 dòng)
+**Effort:** ~10 phút | **Impact:** 🟠 High
 
 ---
 
-## BUG #6 (NHỎ): Dynamic sinks từ Expander bị thiếu `severity` field
+### 1.5. Fix `fetch_llm` / `fetch_tools` — Retry thêm 500/503
 
-### Vấn đề
-Trong `main.py` dòng 263-269, khi tạo `new_finding` từ sink mới:
+**File:** `src/llm.py` (Line 80, 155)
+
+**Vấn đề:** Code chỉ retry `502`, `429`, `connection` error. HTTP `500` và `503` (rất phổ biến khi model bị overload) không được retry → drop thẳng → agent kết luận false safe.
+
+**Fix:**
 ```python
-new_finding = {
-    "id": f"dynamic-sink-{pat}",
-    "message": ...,
-    "path": file_path,
-    "start_line": line_num,
-    "end_line": line_num,
-}
+# Sửa cả 2 chỗ trong fetch_llm và fetch_tools:
+RETRYABLE_CODES = ("500", "502", "503", "429", "504")
+
+if any(code in last_error for code in RETRYABLE_CODES) or "connection" in last_error.lower() or "timeout" in last_error.lower():
+    if attempt < max_retries - 1:
+        time.sleep(2 ** attempt)  # exponential backoff: 1s, 2s, 4s
+        continue
 ```
-Thiếu field `"severity"` → khi đến dòng `summary_table` (`count_errors`, `count_warns`), nó raise `KeyError` hoặc không được đếm vào thống kê.
 
-### Fix
-Thêm `"severity": sink.get("severity", "WARNING")` vào `new_finding`.
+**Effort:** ~15 phút | **Impact:** 🟡 Medium-High
 
-**File sửa:** `main.py` (1 dòng)
+---
+
+## PHASE 2 — Taint Engine Improvements (Nâng độ sâu phân tích)
+
+### 2.1. Variable-level alias tracking trong `resolve_aliases`
+
+**File:** `src/audit/tree-sitter.py` (Line 539, `resolve_aliases`)
+
+**Vấn đề:** Hiện tại `resolve_aliases` chỉ tìm node nào chứa `var_name` bytes, trả về flat list. Không có khái niệm "upstream" – tức là nếu `y = x` và `x = request.args.get(...)`, hỏi về `y` thì không biết `y` ← `x` ← source.
+
+**Fix — Thêm 2-hop upstream chaining:**
+```python
+def resolve_aliases_chain(file_path: str, var_name: str, max_hops: int = 3) -> str:
+    """
+    Trace var_name qua tối đa max_hops assignment hops.
+    Ví dụ: z = y → y = x → x = request.args.get("id") → kết luận z là tainted
+    """
+    visited = set()
+    results = []
+    
+    def trace_one(current_var, hop):
+        if hop > max_hops or current_var in visited:
+            return
+        visited.add(current_var)
+        raw = resolve_aliases(file_path, current_var)  # existing function
+        results.append(f"[HOP {hop}] {current_var}:\n{raw}")
+        
+        # Extract RHS variable names từ raw (simple: "var = SOMETHING")
+        for line in raw.splitlines():
+            rhs_match = re.search(r'=\s*([a-zA-Z_]\w*)\b', line)
+            if rhs_match:
+                upstream_var = rhs_match.group(1)
+                if upstream_var not in visited:
+                    trace_one(upstream_var, hop + 1)
+    
+    trace_one(var_name, 1)
+    return "\n\n".join(results)
+```
+
+Expose qua `actions.py` → `trace_variable` gọi `resolve_aliases_chain` thay vì `resolve_aliases`.
+
+**Effort:** ~2 giờ | **Impact:** 🔴 Critical — đây là gap lớn nhất vs Argus
+
+---
+
+### 2.2. Tách `build_context` → sinh findings có line number cụ thể
+
+**File:** `src/audit/tree-sitter.py` (`find_sinks`, Line 283)
+
+**Vấn đề:** `find_sinks` hiện chỉ trả về string, không trả về structured data (file path, line number của sink).
+
+**Fix:** Thêm return type `List[Dict]` chứa `file`, `line`, `taint_source`, `sink_name`, `caller_code`:
+
+```python
+def find_sinks_structured(target_dir: str, tainted_funcs: dict) -> list:
+    """
+    Trả về list các dict thay vì string để main.py có thể tạo N findings riêng biệt.
+    """
+    results = []
+    # ... (logic tương tự find_sinks nhưng append dict thay vì string) ...
+    return results
+```
+
+**Effort:** ~1.5 giờ | **Impact:** 🔴 Critical
+
+---
+
+### 2.3. Fix `SANITIZERS` — Bổ sung check context (không match trong comment/string)
+
+**File:** `src/audit/tree-sitter.py` (`find_sanitizer`, Line 606)
+
+**Vấn đề:** Regex hiện tại match cả trong comment `# uses prepare_statement for ...` → false safe.
+
+**Fix:**
+```python
+# Trước khi check sanitizer pattern, bỏ qua line là comment
+def _strip_comment(line: str, file_ext: str) -> str:
+    """Strip single-line comment dựa trên ngôn ngữ"""
+    comment_markers = {
+        ".py": "#", ".js": "//", ".ts": "//", ".java": "//",
+        ".go": "//", ".php": "//", ".cs": "//", ".c": "//", ".cpp": "//"
+    }
+    marker = comment_markers.get(file_ext, "#")
+    idx = line.find(marker)
+    return line[:idx] if idx != -1 else line
+```
+
+**Effort:** ~30 phút | **Impact:** 🟡 Medium
+
+---
+
+## PHASE 3 — SCA Pipeline Improvements
+
+### 3.1. Fix NVD Semaphore — Dùng sequential + sleep thay vì ThreadPool
+
+**File:** `main.py` (~Line 147-176)
+
+**Vấn đề:** `ThreadPoolExecutor(max_workers=2)` + `Semaphore(5)` → semaphore vô nghĩa.
+NVD API limit là 5 request/30s nếu không có API key. Hiện tại gọi quá nhanh → bị reset.
+
+**Fix:**
+```python
+# Thay ThreadPool bằng sequential với exponential backoff:
+for cve_id in cve_id_list:
+    nvd_result = get_cve_info(cve_id)  # đã có retry bên trong
+    if nvd_result:
+        nvd.report_nvd(nvd_result)
+        scan_result["nvd_data"].append(nvd_result)
+    time.sleep(0.6)  # NVD rate limit safe zone (5 req/3s với API key)
+```
+
+**Effort:** ~15 phút | **Impact:** 🟢 Low-Medium
+
+---
+
+### 3.2. Cải thiện `usage.py` — Kiểm tra import thực sự, không chỉ function name
+
+**File:** `src/rag/usage.py`
+
+**Vấn đề:** Hiện tại check `find_callers(target_dir, text_token, ...)` chỉ tìm tên function. Nếu CVE của `marked` package, nó tìm hàm tên `marked` → match bất kỳ function nào tên `marked` trong codebase, kể cả function nội bộ không liên quan.
+
+**Fix — Thêm import verification:**
+```python
+def is_package_imported(target_dir: str, pkg_name: str) -> bool:
+    """
+    Kiểm tra xem package có thực sự được import/require không.
+    VD: require('marked'), import marked from 'marked', import 'marked'
+    """
+    import_patterns = [
+        rf"""require\s*\(\s*['\"]{re.escape(pkg_name)}['\"\s]*\)""",
+        rf"""from\s+['\"]{re.escape(pkg_name)}['\"]""",
+        rf"""import\s+['\"]{re.escape(pkg_name)}['\"]""",
+        rf"""import\s+\w+\s+from\s+['\"]{re.escape(pkg_name)}['\"]""",
+    ]
+    # Walk files, grep patterns...
+```
+
+**Effort:** ~45 phút | **Impact:** 🟡 Medium
+
+---
+
+## PHASE 4 — Prompt & Agent Quality
+
+### 4.1. Audit Agent — Thêm instruction cho JavaScript DOM XSS
+
+**File:** `src/audit/agents/prompts.py`
+
+Thêm vào `SYSTEM_PROMPT`:
+```
+JAVASCRIPT SPECIFIC:
+- DOM XSS: track data flow từ location.search / location.hash / postMessage → innerHTML / document.write / eval()
+- Prototype Pollution: track __proto__ / constructor.prototype assignments
+- Node.js Path Traversal: track req.params → fs.readFile/fs.writeFile
+```
+
+**Effort:** ~15 phút | **Impact:** 🟠 High
+
+---
+
+### 4.2. Scanning Agent — Tăng max_steps từ 8 lên 12
+
+**File:** `src/scan/agents/models.py` (Line 36)
+
+**Lý do:** Với cross-file flow phức tạp (4+ hops), agent hiện tại bị cắt ở step 8 trước khi trace xong. Argus không có giới hạn này.
+
+```python
+max_steps = 12,  # tăng từ 8
+```
+
+**Effort:** ~2 phút | **Impact:** 🟡 Medium
+
+---
+
+### 4.3. Verifier Agent — Thêm `find_callers` vào toolset
+
+**File:** `src/tools/schemas.py` — `VERIFY_TOOLS`
+
+Verifier hiện chỉ có `search_pattern`, `read_file`, `submit_verdict`. Không thể trace interprocedural. Thêm `find_callers` và `find_function` để nó có thể xác minh exploitability sâu hơn.
+
+**Effort:** ~20 phút | **Impact:** 🟠 High
+
+---
+
+## PHASE 5 — Infrastructure & Stability
+
+### 5.1. Dedup findings sau khi gộp Semgrep + Dynamic sinks
+
+**File:** `main.py` (sau khi build `scan_findings`)
+
+```python
+# Dedup bằng (path, start_line, rule_id)
+seen = set()
+deduped = []
+for f in scan_findings:
+    key = (f.get("path"), f.get("start_line"), f.get("id"))
+    if key not in seen:
+        seen.add(key)
+        deduped.append(f)
+scan_findings = deduped
+```
+
+**Effort:** ~10 phút | **Impact:** 🟡 Medium (tránh Audit Agent chạy 2 lần cho cùng 1 finding)
+
+---
+
+### 5.2. Thêm support `yarn.lock`, `package-lock.json` cho pinned version SCA
+
+**File:** `src/recognize/parser.py`
+
+Hiện tại chỉ đọc `package.json` → version có thể là `^4.15.2` (semver range). Nếu đọc `package-lock.json` → có version chính xác đã install → OSV lookup chính xác hơn nhiều.
+
+**Effort:** ~1 giờ | **Impact:** 🟠 High cho SCA accuracy
+
+---
+
+### 5.3. Thêm `pyproject.toml` và `poetry.lock` support
+
+**File:** `src/recognize/parser.py`
+
+```python
+# Thêm vào DEPS dict:
+"pyproject.toml": "pypi",
+"poetry.lock": "pypi",
+"Pipfile": "pypi",
+"Pipfile.lock": "pypi",
+```
+
+**Effort:** ~45 phút | **Impact:** 🟡 Medium
 
 ---
 
 ## Thứ tự thực hiện
 
 ```
-[Ưu tiên 1] BUG #1 — Fix Verifier context (5 dòng, impact cao nhất)
-[Ưu tiên 2] BUG #6 — Fix severity field (1 dòng, fix crash)  
-[Ưu tiên 3] BUG #2 — Thêm retry log (1 dòng, UX)
-[Ưu tiên 4] BUG #3 — Thêm tool cho Expander (đọc thêm tool)
-[Ưu tiên 5] BUG #5 — Thêm fallback log (3 dòng)
-[Ưu tiên 6] BUG #4 — Loop qua nhiều CVE (refactor lớn nhất)
+┌─ PHASE 1 (Critical, làm ngay)
+│  1.1  Fix sinful-cross-file-taint → N findings           [30 phút]
+│  1.2  Thêm SINKS (DOM XSS, JS RCE, Java RCE)             [20 phút]
+│  1.3  Thêm SOURCES (Go, Java, Serverless, CLI)            [20 phút]
+│  1.4  Fix cve_context accumulation                        [10 phút]
+│  1.5  Fix fetch_llm retry 500/503                         [15 phút]
+│
+├─ PHASE 2 (Taint Engine, quan trọng nhất về detection)
+│  2.1  Variable alias chain tracking (resolve_aliases)     [2 giờ]
+│  2.2  find_sinks_structured → structured findings         [1.5 giờ]
+│  2.3  Sanitizer comment stripping                         [30 phút]
+│
+├─ PHASE 3 (SCA)
+│  3.1  Fix NVD sequential + rate limit                     [15 phút]
+│  3.2  Import verification trong usage.py                  [45 phút]
+│
+├─ PHASE 4 (Prompt & Agent)
+│  4.1  JS DOM XSS instructions cho Audit Agent             [15 phút]
+│  4.2  Tăng max_steps Scanning Agent → 12                  [2 phút]
+│  4.3  Thêm find_callers cho Verifier toolset              [20 phút]
+│
+└─ PHASE 5 (Infrastructure)
+   5.1  Dedup findings                                      [10 phút]
+   5.2  yarn.lock / package-lock.json support               [1 giờ]
+   5.3  pyproject.toml / poetry.lock support                [45 phút]
 ```
 
+---
+
 > [!IMPORTANT]
-> BUG #1 và BUG #6 là quan trọng nhất. Fix 2 cái này trước, chạy lại test để xác nhận Verifier hoạt động đúng rồi mới làm tiếp.
+> **Làm ngay PHASE 1 toàn bộ trước.** Tổng ~95 phút nhưng giải quyết hết các lỗi ảnh hưởng trực tiếp đến số lỗ hổng bị bắt. Chạy lại `samples/mini-nodegoat` sau PHASE 1 để verify detection tăng lên trước khi làm PHASE 2.
+
+> [!NOTE]
+> **PHASE 2 item 2.1** (alias chain tracking) là item quan trọng nhất trong toàn bộ plan — đây là điểm thua Argus lớn nhất. Sau khi implement xong, chạy lại trên `samples/` toàn bộ để đo recall rate.

@@ -36,10 +36,35 @@ SOURCES = [
     "params[", "request.env",
     "getParameter", "getHeader", "getCookies",
     "Request.Query", "Request.Form", "Request.Headers",
+    # Python — CLI & Environment
+    "os.environ", "sys.argv", "os.getenv",
+    # Python — Network raw
+    "socket.recv", "socket.recvfrom", "socket.recvmsg",
+    # JavaScript — Event handlers
+    "event.data", "event.target.value", "location.search",
+    "location.hash", "location.href", "document.cookie",
+    "window.name", "postMessage",
+    # Java Spring
+    "@PathVariable", "@RequestParam", "@RequestBody",
+    "HttpServletRequest.getParameter", "HttpServletRequest.getHeader",
+    "HttpServletRequest.getInputStream",
+    # Go net/http & frameworks
+    "r.URL.Query()", "r.FormValue", "r.PostFormValue",
+    "r.Header.Get", "r.Body",
+    "gin.Context.Query", "gin.Context.PostForm", "gin.Context.Param",
+    "echo.Context.QueryParam", "echo.Context.FormValue",
+    # PHP
+    "$_FILES", "$_ENV", "$_SESSION",
+    # Ruby on Rails
+    "params[:", "request.params",
+    # C# ASP.NET
+    "Request.QueryString", "HttpContext.Request",
+    # Serverless / Cloud Functions
+    "event.body", "event.queryStringParameters",
+    "event.pathParameters", "context.clientContext",
     # C/C++
     "getenv", "gets", "scanf", "fscanf", "recv", "recvfrom", "fread", "read", "std::cin", "getline",
-    # Go
-    "http.Request", "c.Query", "c.PostForm", "c.Param",
+    "fgets", "getchar", "readlink", "readdir",
 ]
 
 SINKS = [
@@ -52,6 +77,30 @@ SINKS = [
     "strcpy", "sprintf", "gets",
     # C/C++ Memory & Command
     "memcpy", "strcat", "execl", "execv", "printf", "fopen", "unlink", "remove",
+    # JavaScript DOM XSS
+    "innerHTML", "outerHTML", "document.write", "document.writeln",
+    "insertAdjacentHTML", "Function(",
+    # JavaScript Command/File Injection  
+    "child_process.exec", "child_process.spawn", "child_process.execSync",
+    "fs.readFile", "fs.writeFile", "fs.appendFile", "fs.unlink",
+    # JavaScript HTTP (reflected XSS/redirect)
+    "res.send", "res.json", "res.end", "res.redirect", "res.location",
+    # Python deserialization
+    "pickle.load", "marshal.loads", "shelve.open",
+    "jsonpickle.decode", "__reduce__",
+    # Java RCE
+    "Runtime.exec", "ProcessBuilder", "ScriptEngine.eval",
+    "Class.forName", "Method.invoke",
+    # Java JNDI (Log4Shell family)
+    "InitialContext.lookup", "Context.lookup", "ldap://",
+    # PHP
+    "passthru", "preg_replace", "create_function", "assert",
+    "include", "require", "include_once", "file_get_contents",
+    # Go
+    "os.Exec", "exec.Command", "exec.CommandContext",
+    "ioutil.WriteFile", "os.WriteFile",
+    # Ruby
+    "open", "send", "`",
 ]
 
 SANITIZERS = [
@@ -603,6 +652,33 @@ def resolve_aliases(file_path: str, var_name: str) -> str:
         return f"[resolve_aliases error] {parse_err}"
 
 
+def resolve_aliases_chain(file_path: str, var_name: str, max_hops: int = 3) -> str:
+    import re
+    visited = set()
+    results = []
+    
+    def trace_one(current_var, hop):
+        if hop > max_hops or current_var in visited:
+            return
+        visited.add(current_var)
+        raw = resolve_aliases(file_path, current_var)
+        if not raw or raw.startswith("File not found") or raw.startswith("[resolve_aliases error]"):
+            return
+        results.append(f"[HOP {hop}] {current_var}:\n{raw}")
+        
+        for line in raw.splitlines():
+            rhs_match = re.search(r'=\s*([a-zA-Z_]\w*)\b', line)
+            if rhs_match:
+                upstream_var = rhs_match.group(1)
+                if upstream_var not in visited:
+                    trace_one(upstream_var, hop + 1)
+    
+    trace_one(var_name, 1)
+    if not results:
+        return ""
+    return "\n\n".join(results)
+
+
 def find_sanitizer(
     file_path: str,
     source_line: int,
@@ -611,6 +687,7 @@ def find_sanitizer(
     import re
 
     dir_path = Path(file_path)
+    file_ext = dir_path.suffix.lower()
 
     if not dir_path.exists():
 
@@ -631,13 +708,23 @@ def find_sanitizer(
     match_hits = []
 
     for loop_idx, line_text in enumerate(code_region, start=source_line):
+        indent_level = len(line_text) - len(line_text.lstrip())
+        
+        # STRIP COMMENT BEFORE CHECKING
+        comment_markers = {
+            ".py": "#", ".js": "//", ".ts": "//", ".java": "//",
+            ".go": "//", ".php": "//", ".cs": "//", ".c": "//", ".cpp": "//"
+        }
+        marker = comment_markers.get(file_ext, "#")
+        idx = line_text.find(marker)
+        if idx != -1:
+            line_text = line_text[:idx]
 
         for sanitizer_keyword in SANITIZERS:
 
             if re.search(sanitizer_keyword, line_text, re.IGNORECASE):
                 stripped_text = line_text.strip()
                 is_conditional = stripped_text.startswith(("if ", "elif ", "else:", "except", "try:"))
-                indent_level = len(line_text) - len(line_text.lstrip())
                 match_hits.append({
                     "line": loop_idx,
                     "text": stripped_text[:100],
