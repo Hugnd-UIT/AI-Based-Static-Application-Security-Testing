@@ -1,162 +1,97 @@
 rules:
-
   - id: sinful-taint-cpp
     mode: taint
     message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
     severity: WARNING
     languages: [c, cpp]
-
     pattern-sources:
       # Standard I/O 
-
       - pattern: getenv(...)
-
       - pattern: gets(...)
-
       - pattern: fgets(...)
-
       - pattern: scanf(...)
-
       - pattern: fscanf(...)
-
       - pattern: sscanf(...)
-
       - pattern: read(...)
-
       - pattern: recv(...)
-
       - pattern: recvfrom(...)
-
       - pattern: recvmsg(...)
-
       - pattern: fread(...)
-
       - pattern: getchar()
-
       - pattern: getc(...)
-
       - pattern: fgetc(...)
+
       # Network 
-
       - pattern: accept(...)
-
       - pattern: select(...)
-
       - pattern: epoll_wait(...)
+
       # C++ streams 
-
       - pattern: std::cin
-
       - pattern: std::getline(...)
-
       - pattern: std::cin >> $GET_VAR
-
     pattern-sinks:
       # Command Injection 
-
       - pattern: system(...)
-
       - pattern: popen(...)
-
       - pattern: exec(...)
-
       - pattern: execl(...)
-
       - pattern: execle(...)
-
       - pattern: execlp(...)
-
       - pattern: execv(...)
-
       - pattern: execvp(...)
-
       - pattern: execvpe(...)
-
       - pattern: execve(...)
-
       - pattern: posix_spawn(...)
+
       # Format String 
-
       - pattern: printf(...)
-
       - pattern: fprintf(...)
-
       - pattern: sprintf(...)
-
       - pattern: snprintf(...)
-
       - pattern: vprintf(...)
-
       - pattern: vfprintf(...)
-
       - pattern: vsprintf(...)
-
       - pattern: syslog(...)
-
       - pattern: err(...)
-
       - pattern: errx(...)
+
       # Buffer Overflow 
-
       - pattern: strcpy(...)
-
       - pattern: strcat(...)
-
       - pattern: strncpy(...)
-
       - pattern: strncat(...)
-
       - pattern: memcpy(...)
-
       - pattern: memmove(...)
-
       - pattern: memset(...)
-
       - pattern: stpcpy(...)
-
       - pattern: wcscpy(...)
-
       - pattern: wcscat(...)
+
       # File / Path Access 
-
       - pattern: fopen(...)
-
       - pattern: open(...)
-
       - pattern: creat(...)
-
       - pattern: freopen(...)
-
       - pattern: unlink(...)
-
       - pattern: remove(...)
-
       - pattern: rename(...)
+
       # Heap 
-
       - pattern: malloc(...)
-
       - pattern: realloc(...)
-
       - pattern: alloca(...)
-
     pattern-sanitizers:
       # Format string safe alternatives 
-
       - pattern: snprintf($BUF, sizeof($BUF), "%s", ...)
+
       # Safe string ops 
-
       - pattern: strlcpy(...)
-
       - pattern: strlcat(...)
-
       - pattern: strdup(...)
+
       # Input validation 
-
       - pattern: atoi(...)
-
       - pattern: strtol(...)
-
       - pattern: strtoul(...)
-
       - pattern: strtod(...)

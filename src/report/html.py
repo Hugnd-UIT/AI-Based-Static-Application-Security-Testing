@@ -1,13 +1,13 @@
 import os
 from datetime import datetime
 
-def to_html(findings: list, target_path: str, report_dir: str) -> str:
-    """Generate an HTML report for the findings and save it."""
-    
-    html_content = [
+# Hàm tạo report dạng HTML
+def report_html(findings: list, target: str, out: str) -> str:
+    # Giao diện HTML
+    html = [
         "<html>",
         "<head>",
-        "<title>Sinful SAST Report</title>",
+        "<title>Sinful Report</title>",
         "<style>",
         "body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }",
         "h1 { color: #2c3e50; }",
@@ -20,53 +20,53 @@ def to_html(findings: list, target_path: str, report_dir: str) -> str:
         "</style>",
         "</head>",
         "<body>",
-        "<h1>Sinful SAST Report</h1>",
-        f"<p><strong>Target:</strong> {target_path}</p>",
+        "<h1>Sinful Report</h1>",
+        f"<p><strong>Target:</strong> {target}</p>",
         f"<p><strong>Total Findings:</strong> {len(findings)}</p>"
     ]
     
     if not findings:
-        html_content.append("<p>No vulnerabilities found.</p>")
+        html.append("<p>No vulnerabilities found.</p>")
     else:
         for f in findings:
             sev = f.get('severity', 'INFO').lower()
-            html_content.append(f"<div class='finding {sev}'>")
+            html.append(f"<div class='finding {sev}'>")
             
-            rule_id = f.get('id') or f.get('check_id') or f.get('rule_id', 'Unknown')
+            rule = f.get('id') or f.get('check_id') or f.get('rule_id', 'Unknown')
             msg = f.get('message') or f.get('title') or f.get('description', 'N/A')
-            file_path = f.get('path') or f.get('file', 'N/A')
-            line_num = f.get('start_line') or f.get('start') or f.get('line', 'N/A')
-            if isinstance(line_num, dict): line_num = line_num.get('line', 'N/A')
+            file = f.get('path') or f.get('file', 'N/A')
+            line = f.get('start_line') or f.get('start') or f.get('line', 'N/A')
+            if isinstance(line, dict): line = line.get('line', 'N/A')
             
-            html_content.append(f"<h3>{rule_id} ({f.get('severity', 'INFO')})</h3>")
-            html_content.append(f"<p><strong>File:</strong> {file_path} (Line: {line_num})</p>")
-            html_content.append(f"<p><strong>Message:</strong> {msg}</p>")
+            html.append(f"<h3>{rule} ({f.get('severity', 'INFO')})</h3>")
+            html.append(f"<p><strong>File:</strong> {file} (Line: {line})</p>")
+            html.append(f"<p><strong>Message:</strong> {msg}</p>")
             
             if f.get('cwe'):
-                html_content.append(f"<p><strong>CWE:</strong> {', '.join(f.get('cwe'))}</p>")
+                html.append(f"<p><strong>CWE:</strong> {', '.join(f.get('cwe'))}</p>")
                 
             code = f.get("code")
             if code:
-                html_content.append("<p><strong>Code Snippet:</strong></p>")
-                html_content.append(f"<pre><code>{code}</code></pre>")
+                html.append("<p><strong>Code:</strong></p>")
+                html.append(f"<pre><code>{code}</code></pre>")
                 
             dflow = f.get("data_flow")
             if dflow and isinstance(dflow, list):
-                html_content.append("<p><strong>Data Flow:</strong></p>")
-                html_content.append("<ul>")
+                html.append("<p><strong>Data Flow:</strong></p>")
+                html.append("<ul>")
                 for step in dflow:
-                    html_content.append(f"<li>{step}</li>")
-                html_content.append("</ul>")
+                    html.append(f"<li>{step}</li>")
+                html.append("</ul>")
                 
-            html_content.append("</div>")
+            html.append("</div>")
             
-    html_content.append("</body></html>")
+    html.append("</body></html>")
     
-    os.makedirs(report_dir, exist_ok=True)
-    time_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_path = os.path.join(report_dir, f"sinful_report_{time_stamp}.html")
+    os.makedirs(out, exist_ok=True)
+    time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report = os.path.join(out, f"sinful_report_{time}.html")
     
-    with open(report_path, "w", encoding="utf-8") as f:
-        f.write("\n".join(html_content))
+    with open(report, "w", encoding="utf-8") as f:
+        f.write("\n".join(html))
         
-    return report_path
+    return report

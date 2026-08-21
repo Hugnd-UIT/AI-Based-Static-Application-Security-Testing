@@ -159,16 +159,16 @@ def execute_scan(target_path: str, auto_fix: bool = False):
             except Exception as fix_err:
                 logger.log_critical(f"Failed to apply fix for {finding_item.get('id', 'Unknown')}: {fix_err}")
 
-    from src.report.json import to_json
-    from src.report.sarif import to_sarif
-    from src.report.html import to_html
+    from src.report.json import report_json
+    from src.report.sarif import report_sarif
+    from src.report.html import report_html
     
     report_dir = os.path.join(os.getcwd(), "reports")
     
     try:
-        json_path = to_json(scan_result, report_dir)
-        sarif_path = to_sarif(scan_findings, target_path, report_dir)
-        html_path = to_html(scan_findings, target_path, report_dir)
+        json_path = report_json(scan_result, report_dir)
+        sarif_path = report_sarif(scan_findings, target_path, report_dir)
+        html_path = report_html(scan_findings, target_path, report_dir)
         
         logger.blank_line()
         logger.log_success(f"Reports saved to:")

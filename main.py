@@ -502,9 +502,9 @@ def run_scan(scan_path, scan_rules=None, use_model=None, do_fix=False):
                 while count_retry <= set_retries:
                     get_trace = scan_agents.start_scan(
                         check_item, get_ast,
-                        model_name=MODELS[4], # Scanning Agent Role
-                        target_dir=str(scan_dir),
-                        ts_module=use_module,
+                        model=MODELS[4], # Scanning Agent Role
+                        target=str(scan_dir),
+                        module=use_module,
                     )
                     
                     if get_trace and get_trace.get("data_flow"):

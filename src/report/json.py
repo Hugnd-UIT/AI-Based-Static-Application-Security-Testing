@@ -2,13 +2,13 @@ import json
 import os
 from datetime import datetime
 
-def to_json(scan_result: dict, report_dir: str) -> str:
-    """Exports the scan result to a JSON file."""
-    os.makedirs(report_dir, exist_ok=True)
-    time_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_path = os.path.join(report_dir, f"sinful_report_{time_stamp}.json")
+# Hàm tạo report dạng JSON
+def report_json(result: dict, out: str) -> str:
+    os.makedirs(out, exist_ok=True)
+    time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report = os.path.join(out, f"sinful_report_{time}.json")
     
-    with open(report_path, "w", encoding="utf-8") as file_obj:
-        json.dump(scan_result, file_obj, indent=2, ensure_ascii=False)
+    with open(report, "w", encoding="utf-8") as f:
+        json.dump(result, f, indent=2, ensure_ascii=False)
         
-    return report_path
+    return report

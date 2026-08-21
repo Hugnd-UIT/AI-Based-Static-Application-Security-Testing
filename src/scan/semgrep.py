@@ -4,15 +4,20 @@ from pathlib import Path
 from typing import Dict, List, Any
 
 RULES = [
+    # Bộ quy tắc tiêu chuẩn
     "p/owasp-top-ten",
     "p/security-audit",
     "p/secrets",
     "p/default",
+
+    # Nhóm lỗ hổng bảo mật
     "p/xss",
     "p/sql-injection",
     "p/command-injection",
     "p/insecure-transport",
     "p/supply-chain",
+
+    # Nhóm Ngôn ngữ & Framework
     "p/python",
     "p/django",
     "p/flask",
@@ -25,174 +30,170 @@ RULES = [
     "p/golang",
     "p/php",
     "p/ruby",
+    "p/c",
+
+    # Nhóm quy tắc đặc thù
     "p/trailofbits",
     "p/jwt",
-    "p/c",
 ]
 
-def scan_code(target_path: str, rule_list: List[str] = None) -> List[Dict[str, Any]]:
-    dir_path = Path(target_path)
+# Hàm quét mã nguồn
+def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
+    path = Path(target)
 
-    if not dir_path.exists() or not dir_path.is_dir():
-        raise ValueError(f"[!] The path is invalid: {target_path}")
+    # Kiểm tra đường dẫn
+    if not path.exists() or not path.is_dir():
+        raise ValueError(f"[!] The path is invalid: {target}")
 
-    rule_list = rule_list if rule_list else RULES
+    rules = rules if rules else RULES
     
     import sys
     import os
     
-    python_dir = Path(sys.executable).parent
-    # On Windows, semgrep is usually semgrep.exe in Scripts, on Linux/WSL it's in bin
-    semgrep_bin = "semgrep.exe" if os.name == "nt" else "semgrep"
-    semgrep_path = python_dir / semgrep_bin
+    # Kiểm tra semgrep
+    python = Path(sys.executable).parent
+    binary = "semgrep.exe" if os.name == "nt" else "semgrep"
+    exe = python / binary
 
-    # If the binary doesn't exist next to python, fallback using shutil.which to search the system PATH
-    if not semgrep_path.exists():
+    if not exe.exists():
         import shutil
-        semgrep_path = shutil.which(semgrep_bin) or semgrep_bin
+        exe = shutil.which(binary) or binary
     else:
-        semgrep_path = str(semgrep_path)
+        exe = str(exe)
 
-    scan_cmd = [semgrep_path, "scan", "--json", "--quiet", "--no-git-ignore"]
+    # Cấu hình semgrep
+    cmd = [exe, "scan", "--json", "--quiet", "--no-git-ignore"]
 
-    for rule_name in rule_list:
-        scan_cmd.extend(["--config", rule_name])
+    for rule in rules:
+        cmd.extend(["--config", rule])
 
-    custom_rules = Path(__file__).parent / "rules"
+    custom = Path(__file__).parent / "rules"
 
-    if custom_rules.exists() and custom_rules.is_dir():
-        scan_cmd.extend(["--config", str(custom_rules)])
+    if custom.exists() and custom.is_dir():
+        cmd.extend(["--config", str(custom)])
 
-    scan_cmd.append(str(dir_path))
+    cmd.append(str(path))
     
     try:
-        # Disable metrics to prevent hanging on the interactive prompt
+        # Khởi động semgrep
         env = os.environ.copy()
         env["SEMGREP_SEND_METRICS"] = "off"
         
-        cmd_result = subprocess.run(scan_cmd, capture_output=True, text=True, timeout=600, env=env)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600, env=env)
 
-        output_text = cmd_result.stdout.strip()
+        output = result.stdout.strip()
 
-        with open("semgrep_debug.txt", "w") as dbg:
-            dbg.write("STDOUT:\n")
-            dbg.write(output_text[:1000] + "\n...")
-            dbg.write("\n\nSTDERR:\n")
-            dbg.write(cmd_result.stderr)
-            dbg.write(f"\n\nRETURN CODE: {cmd_result.returncode}")
-
-        if not output_text:
-            if hasattr(cmd_result, "stderr") and cmd_result.stderr.strip():
-                print(f"[!] Semgrep failed or returned no output. Error log: {cmd_result.stderr.strip()}")
+        # Kiểm tra kết quả
+        if not output:
+            if hasattr(result, "stderr") and result.stderr.strip():
+                print(f"[!] Semgrep failed: {result.stderr.strip()}")
             return []
             
-        json_start = output_text.find('{')
+        start = output.find('{')
 
-        if json_start != -1:
-            output_text = output_text[json_start:]
+        if start != -1:
+            output = output[start:]
 
-        json_data = json.loads(output_text)
-        scan_findings = json_data.get("results", [])
+        data = json.loads(output)
+        findings = data.get("results", [])
 
-        cleaned_findings = []
-        seen_locations = set()
+        cleaned = []
+        seen = set()
 
-        for finding_item in scan_findings:
-            file_path = finding_item.get("path")
-            start_line = finding_item.get("start", {}).get("line")
+        # Làm sạch kết quả
+        for item in findings:
+            file = item.get("path")
+            line = item.get("start", {}).get("line")
             
-            loc_key = f"{file_path}:{start_line}"
+            key = f"{file}:{line}"
 
-            if loc_key in seen_locations:
+            if key in seen:
                 continue
 
-            seen_locations.add(loc_key)
+            seen.add(key)
 
-            extra_data = finding_item.get("extra", {})
-            meta_data = extra_data.get("metadata", {})
+            extra = item.get("extra", {})
+            meta = extra.get("metadata", {})
 
-            clean_item = {
-                "id": finding_item.get("check_id"),
-                "path": finding_item.get("path"),
-                "start_line": finding_item.get("start", {}).get("line"),
-                "start_col": finding_item.get("start", {}).get("col"),
-                "end_line": finding_item.get("end", {}).get("line"),
-                "end_col": finding_item.get("end", {}).get("col"),
-                "severity": extra_data.get("severity"),
-                "message": extra_data.get("message"),
-                "lines": extra_data.get("lines"),
-                "cwe": meta_data.get("cwe", []),
-                "owasp": meta_data.get("owasp", []),
-                "category": meta_data.get("category", ""),
-                "technology": meta_data.get("technology", []),
-                "confidence": meta_data.get("confidence", ""),
-                "impact": meta_data.get("impact", ""),
-                "likelihood": meta_data.get("likelihood", ""),
-                "references": meta_data.get("references", []),
-                "shortlink": meta_data.get("shortlink", ""),
-                "vulnerability_class": meta_data.get("vulnerability_class", []),
-                "dataflow_trace": extra_data.get("dataflow_trace"),
-                "fix": extra_data.get("fix"),
-                "fix_regex": extra_data.get("fix_regex")
+            clean = {
+                "id": item.get("check_id"),
+                "path": item.get("path"),
+                "start_line": item.get("start", {}).get("line"),
+                "start_col": item.get("start", {}).get("col"),
+                "end_line": item.get("end", {}).get("line"),
+                "end_col": item.get("end", {}).get("col"),
+                "severity": extra.get("severity"),
+                "message": extra.get("message"),
+                "lines": extra.get("lines"),
+                "cwe": meta.get("cwe", []),
+                "owasp": meta.get("owasp", []),
+                "category": meta.get("category", ""),
+                "technology": meta.get("technology", []),
+                "confidence": meta.get("confidence", ""),
+                "impact": meta.get("impact", ""),
+                "likelihood": meta.get("likelihood", ""),
+                "references": meta.get("references", []),
+                "shortlink": meta.get("shortlink", ""),
+                "vulnerability_class": meta.get("vulnerability_class", []),
+                "dataflow_trace": extra.get("dataflow_trace"),
+                "fix": extra.get("fix"),
+                "fix_regex": extra.get("fix_regex")
             }
 
-            cleaned_findings.append(clean_item)
+            cleaned.append(clean)
 
-        return cleaned_findings
+        return cleaned
 
     except subprocess.TimeoutExpired:
-        print("[!] Semgrep scan timed out")
-
+        print("[!] Semgrep timed out")
         return []
 
     except json.JSONDecodeError:
-        print("[!] Failed to parse Semgrep JSON output.")
-
+        print("[!] Failed to parse Semgrep output")
         return []
 
     except FileNotFoundError:
-        print("[!] Semgrep is not installed or blocked. Please run: pip install semgrep")
-
+        print("[!] Semgrep not found. Please run: pip install semgrep")
         return []
         
     except PermissionError:
-        print("[!] Permission denied when running Semgrep.")
-
+        print("[!] Permission denied when running Semgrep")
         return []
 
 from cli.views import logger
 
-def report_scan(scan_findings: List[Dict[str, Any]]):
+# Hàm báo cáo kết quả
+def report_scan(findings: List[Dict[str, Any]]):
     logger.section("SAST")
 
     from cli.views.logger import console
 
-    if not scan_findings:
+    if not findings:
         console.print("  [green]- No vulnerabilities detected[/green]")
         return
 
-    console.print(f"  [bold]{len(scan_findings)} vulnerabilities detected[/bold]")
+    console.print(f"  [bold]{len(findings)} vulnerabilities detected[/bold]")
     console.print()
 
-    for finding_item in scan_findings:
-        severity_level = finding_item.get("severity") or "WARNING"
-        rule_id = finding_item["id"]
-        file_path = finding_item["path"]
-        line_num = finding_item["start_line"]
+    for item in findings:
+        severity = item.get("severity") or "WARNING"
+        rule = item["id"]
+        file = item["path"]
+        line = item["start_line"]
 
-        sev_upper = severity_level.upper()
+        level = severity.upper()
 
-        if sev_upper in ["ERROR", "CRITICAL", "HIGH"]:
-            color_str = "red"
+        if level in ["ERROR", "CRITICAL", "HIGH"]:
+            color = "red"
 
-        elif sev_upper in ["WARNING", "MEDIUM"]:
-            color_str = "yellow"
+        elif level in ["WARNING", "MEDIUM"]:
+            color = "yellow"
 
         else:
-            color_str = "cyan"
+            color = "cyan"
 
-        console.print(f"  ┌─ [bold {color_str}]{severity_level}[/bold {color_str}]")
-        console.print(f"  ├─ Rule   [cyan]{rule_id}[/cyan]")
-        console.print(f"  ├─ File   [dim]{file_path}[/dim]")
-        console.print(f"  └─ Line   [bold yellow]{line_num}[/bold yellow]")
+        console.print(f"  ┌─ [bold {color}]{severity}[/bold {color}]")
+        console.print(f"  ├─ Rule   [cyan]{rule}[/cyan]")
+        console.print(f"  ├─ File   [dim]{file}[/dim]")
+        console.print(f"  └─ Line   [bold yellow]{line}[/bold yellow]")
         console.print()

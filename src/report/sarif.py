@@ -2,24 +2,18 @@ import json
 import os
 from datetime import datetime
 
-def severity_to_sarif(severity: str) -> str:
-    severity = severity.upper()
-    if severity in ("CRITICAL", "HIGH"):
-        return "error"
-    elif severity == "MEDIUM":
-        return "warning"
-    return "note"
-
-def to_sarif(findings: list, target_path: str, report_dir: str) -> str:
-    """Convert findings list to SARIF 2.1.0 format and save it."""
+# Hàm tạo report dạng SARIF
+def report_sarif(findings: list, target: str, out: str) -> str:
     results = []
     for f in findings:
-        rule_id = f.get("id", "sinful-unknown")
-        severity = f.get("severity", "WARNING")
+        rule = f.get("id", "sinful-unknown")
+        severity = f.get("severity", "WARNING").upper()
+        
+        level = "error" if severity in ("CRITICAL", "HIGH") else "warning" if severity == "MEDIUM" else "note"
         
         results.append({
-            "ruleId": rule_id,
-            "level": severity_to_sarif(severity),
+            "ruleId": rule,
+            "level": level,
             "message": {"text": f.get("message", "Vulnerability detected")},
             "locations": [{
                 "physicalLocation": {
@@ -37,17 +31,17 @@ def to_sarif(findings: list, target_path: str, report_dir: str) -> str:
             }
         })
         
-    sarif_data = {
+    data = {
         "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
         "version": "2.1.0",
         "runs": [{"tool": {"driver": {"name": "Sinful", "version": "1.0.0"}}, "results": results}]
     }
 
-    os.makedirs(report_dir, exist_ok=True)
-    time_stamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    report_path = os.path.join(report_dir, f"sinful_report_{time_stamp}.sarif")
+    os.makedirs(out, exist_ok=True)
+    time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    report = os.path.join(out, f"sinful_report_{time}.sarif")
     
-    with open(report_path, "w", encoding="utf-8") as f:
-        json.dump(sarif_data, f, indent=2)
+    with open(report, "w", encoding="utf-8") as f:
+        json.dump(data, f, indent=2)
         
-    return report_path
+    return report

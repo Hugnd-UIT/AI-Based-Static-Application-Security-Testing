@@ -1,38 +1,38 @@
-from src.scan.agents.prompts import SYSTEM_PROMPT, USER_TEMPLATE
+from src.scan.agents.prompts import SYSTEM, USER
 from src.tools.handlers import run_agent
 from src.tools.schemas import SCAN_TOOLS
 
+# Hàm gọi scanning agent
 def start_scan(
-    finding_item: dict,
-    source_code: str,
-    model_name: str = None,
-    target_dir: str = "",
-    ts_module=None,
+    finding: dict,
+    code: str,
+    model: str = None,
+    target: str = "",
+    module=None,
 ) -> dict:
     from main import MODELS
-    resolved_model = model_name or MODELS[0]
+    resolved = model or MODELS[0]
 
-    extra_context = ""
+    extra = ""
 
-    if finding_item.get("sink_context"):
-        extra_context = f"\n\n[RETRY WITH SURROGATE SINK]\n{finding_item['sink_context']}"
+    if finding.get("sink_context"):
+        extra = f"\n\n[RETRY WITH SURROGATE SINK]\n{finding['sink_context']}"
 
-    user_message = USER_TEMPLATE.format(
-        rule  = finding_item.get("id", "N/A"),
-        msg   = finding_item.get("message", ""),
-        path  = finding_item.get("path", ""),
-        dflow = finding_item.get("dataflow_trace", "No dataflow trace provided."),
-        code  = source_code + extra_context,
+    message = USER.format(
+        rule  = finding.get("id", "N/A"),
+        msg   = finding.get("message", ""),
+        path  = finding.get("path", ""),
+        dflow = finding.get("dataflow_trace", "No dataflow trace provided."),
+        code  = code + extra,
     )
 
     return run_agent(
-
-        system_prompt   = SYSTEM_PROMPT,
-        initial_message = user_message,
-        tool_schemas    = SCAN_TOOLS,
-        target_dir      = target_dir,
-        ts_module       = ts_module,
-        model_name      = resolved_model,
-        max_steps       = 12,
-        agent_name      = "SCAN",
+        prompt    = SYSTEM,
+        message   = message,
+        schemas   = SCAN_TOOLS,
+        directory = target,
+        module    = module,
+        model     = resolved,
+        steps     = 15,
+        agent     = "SCAN",
     )

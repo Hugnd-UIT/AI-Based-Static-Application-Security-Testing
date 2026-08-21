@@ -1,168 +1,109 @@
 rules:
-
   - id: sinful-taint-go
     mode: taint
     message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
     severity: WARNING
     languages: [go]
-
     pattern-sources:
       # net/http 
-
       - pattern: $USE_REQ.URL.Query()
-
       - pattern: $USE_REQ.URL.Query().Get(...)
-
       - pattern: $USE_REQ.FormValue(...)
-
       - pattern: $USE_REQ.PostFormValue(...)
-
       - pattern: $USE_REQ.Cookie(...)
-
       - pattern: $USE_REQ.Header.Get(...)
-
       - pattern: $USE_REQ.Body
-
       - pattern: $USE_REQ.URL.Path
-
       - pattern: $USE_REQ.URL.RawQuery
+
       # Gin 
-
       - pattern: $C.Query(...)
-
       - pattern: $C.DefaultQuery(...)
-
       - pattern: $C.PostForm(...)
-
       - pattern: $C.Param(...)
-
       - pattern: $C.GetHeader(...)
-
       - pattern: $C.Cookie(...)
-
       - pattern: $C.ShouldBindJSON(...)
-
       - pattern: $C.ShouldBind(...)
+
       # Echo / Fiber 
-
       - pattern: $CTX.QueryParam(...)
-
       - pattern: $CTX.FormValue(...)
-
       - pattern: $CTX.Param(...)
-
       - pattern: $CTX.Request().Header.Get(...)
+
       # General 
-
       - pattern: os.Getenv(...)
-
       - pattern: os.Args
-
     pattern-sinks:
       # SQL Injection 
-
       - pattern: $USE_DB.Query(...)
-
       - pattern: $USE_DB.QueryRow(...)
-
       - pattern: $USE_DB.Exec(...)
-
       - pattern: $USE_DB.QueryContext(...)
-
       - pattern: $USE_DB.ExecContext(...)
-
       - pattern: $TX.Query(...)
-
       - pattern: $TX.Exec(...)
-
       - pattern: $GORM.Raw(...)
-
       - pattern: $GORM.Where(...).Find(...)
-
       - pattern: $GORM.Exec(...)
+
       # Command Injection 
-
       - pattern: exec.Command(...)
-
       - pattern: exec.CommandContext(...)
-
       - pattern: syscall.Exec(...)
-
       - pattern: syscall.ForkExec(...)
-
       - pattern: syscall.StartProcess(...)
+
       # Path Traversal / File Access 
-
       - pattern: os.Open(...)
-
       - pattern: os.OpenFile(...)
-
       - pattern: os.ReadFile(...)
-
       - pattern: os.WriteFile(...)
-
       - pattern: os.Remove(...)
-
       - pattern: ioutil.ReadFile(...)
-
       - pattern: ioutil.WriteFile(...)
-
       - pattern: filepath.Join(...)
+
       # SSRF 
-
       - pattern: http.Get(...)
-
       - pattern: http.Post(...)
-
       - pattern: http.NewRequest(...)
-
       - pattern: $CLIENT.Get(...)
-
       - pattern: $CLIENT.Do(...)
+
       # Open Redirect 
-
       - pattern: http.Redirect(...)
+
       # XSS 
-
       - pattern: fmt.Fprintf($W, ...)
-
       - pattern: $W.Write(...)
-
       - pattern: template.HTML(...)
-
       - pattern: $T.Execute($W, ...)
+
       # LDAP 
-
       - pattern: $USE_CONN.Search(...)
+
       # Deserialzation / Code Execution 
-
       - pattern: gob.NewDecoder($R).Decode(...)
-
       - pattern: plugin.Open(...)
-
     pattern-sanitizers:
       # SQL — use parameterized queries 
-
       - pattern: $USE_DB.Prepare(...)
+
       # Path 
-
       - pattern: filepath.Base(...)
-
       - pattern: filepath.Clean(...)
+
       # HTML 
-
       - pattern: html.EscapeString(...)
-
       - pattern: template.HTMLEscapeString(...)
+
       # URL 
-
       - pattern: url.QueryEscape(...)
-
       - pattern: url.PathEscape(...)
+
       # Type casting 
-
       - pattern: strconv.Atoi(...)
-
       - pattern: strconv.ParseInt(...)
-
       - pattern: strconv.ParseFloat(...)

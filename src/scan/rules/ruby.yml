@@ -1,151 +1,96 @@
 rules:
-
   - id: sinful-taint-ruby
     mode: taint
     message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
     severity: WARNING
     languages: [ruby]
-
     pattern-sources:
       # Rails 
-
       - pattern: params[...]
-
       - pattern: params.require(...)
-
       - pattern: params.permit(...)
-
       - pattern: request.body.read
-
       - pattern: request.env[...]
-
       - pattern: request.cookies[...]
-
       - pattern: request.headers[...]
-
       - pattern: request.query_parameters[...]
-
       - pattern: request.request_parameters[...]
-
       - pattern: request.path_parameters[...]
-
       - pattern: request.raw_post
+
       # Sinatra 
-
       - pattern: env[...]
+
       # General 
-
       - pattern: ENV[...]
-
       - pattern: ARGV[...]
-
       - pattern: $stdin.gets
-
     pattern-sinks:
       # SQL Injection 
-
       - pattern: $USE_DB.execute(...)
-
       - pattern: ActiveRecord::Base.connection.execute(...)
-
       - pattern: $GET_MODEL.find_by_sql(...)
-
       - pattern: $GET_MODEL.where(...)
-
       - pattern: $GET_MODEL.select(...)
-
       - pattern: $GET_MODEL.joins(...)
-
       - pattern: $GET_MODEL.having(...)
-
       - pattern: $GET_MODEL.order(...)
-
       - pattern: $GET_MODEL.group(...)
+
       # Command Injection 
-
       - pattern: system(...)
-
       - pattern: exec(...)
-
       - pattern: "`#{...}`" 
-
       - pattern: "%x{...}"
-
       - pattern: Open3.popen3(...)
-
       - pattern: Open3.capture3(...)
-
       - pattern: IO.popen(...)
-
       - pattern: Kernel.exec(...)
-
       - pattern: Kernel.system(...)
+
       # Code Execution / Deserialization 
-
       - pattern: eval(...)
-
       - pattern: Marshal.load(...)
-
       - pattern: Marshal.restore(...)
-
       - pattern: YAML.load(...)
-
       - pattern: Kernel.load(...)
+
       # Path Traversal / File Access 
-
       - pattern: File.open(...)
-
       - pattern: File.read(...)
-
       - pattern: IO.read(...)
-
       - pattern: File.write(...)
-
       - pattern: File.delete(...)
-
       - pattern: Pathname.new(...)
+
       # SSRF 
-
       - pattern: Net::HTTP.get(...)
-
       - pattern: open(...)
-
       - pattern: URI.open(...)
-
       - pattern: Faraday.get(...)
-
       - pattern: HTTParty.get(...)
+
       # XSS / Open Redirect 
-
       - pattern: 'render inline: ...'
-
       - pattern: redirect_to(...)
-
     pattern-sanitizers:
       # SQL use ActiveRecord parameterization 
-
       - pattern: $GET_MODEL.sanitize(...)
-
       - pattern: ActiveRecord::Base.sanitize_sql(...)
+
       # HTML 
-
       - pattern: CGI.escapeHTML(...)
-
       - pattern: ERB::Util.html_escape(...)
-
       - pattern: Rack::Utils.escape_html(...)
+
       # Path 
-
       - pattern: File.basename(...)
-
       - pattern: Pathname.new(...).basename
+
       # URL 
-
       - pattern: CGI.escape(...)
-
       - pattern: URI.encode_www_form_component(...)
+
       # Type casting 
-
       - pattern: Integer(...)
-
       - pattern: Float(...)
