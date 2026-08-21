@@ -120,8 +120,6 @@ def run_scan(path, rules=None, model=None, fix=False):
     except Exception:
         ctx = ""
 
-
-
     if ctx:
         blocks = [b for b in ctx.split("[CROSS-FILE TAINT PATH DETECTED]") if b.strip()]
         for block in blocks:
@@ -242,7 +240,7 @@ def run_scan(path, rules=None, model=None, fix=False):
 
             pcves.append(mcve)
 
-        # Loop 1: SCA (RAG Agents)
+        # SCA
         rags = []
 
         for idx, data in enumerate(pcves):
@@ -277,7 +275,7 @@ def run_scan(path, rules=None, model=None, fix=False):
             except Exception as e:
                 console.print(f"  └─ [bold red]✖ RAG failed: {e}[/bold red]")
 
-        # Loop 2: SAST (Verifier and Expander)
+        # SAST
         logger.section("SAST")
 
         for idx, sum in enumerate(rags):
@@ -298,7 +296,7 @@ def run_scan(path, rules=None, model=None, fix=False):
                 console.print(f"\n  [bold magenta]● VERIFYING AGENT[/bold magenta] [[cyan]{role}[/cyan]]")
                 console.print(f"  ├─ [cyan]◆ Target: {tstr}[/cyan]")
                 from src.rag.agents import verifier
-                poc = verifier.start_verify(ctx, model=role, target=str(sdir), module=use_module) # Verifier Agent Role
+                poc = verifier.start_verify(ctx, model=role, target=str(sdir), module=use_module)
                 
                 exploit = poc.get("exploitable", False)
                 width = max(60, console.width - 15)
@@ -356,7 +354,7 @@ def run_scan(path, rules=None, model=None, fix=False):
                     console.print(f"\n  [bold magenta]● EXPANDING AGENT[/bold magenta] [[cyan]{expand}[/cyan]]")
                     console.print(f"  ├─ [cyan]◆ Target: {tstr}[/cyan]")
                     from src.rag.agents import expander
-                    exp = expander.start_expand(ctx, model=expand, target=str(sdir), module=use_module) # Expander Agent Role
+                    exp = expander.start_expand(ctx, model=expand, target=str(sdir), module=use_module)
 
                     sinks = exp.get("extra_sinks", [])
 
@@ -445,10 +443,8 @@ def run_scan(path, rules=None, model=None, fix=False):
         console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{tag}")
         console.print("  └─ [dim]No vulnerabilities found! Skip![/dim]")
 
-    # Build combined CVE context for Auditing Agent (from all CVEs processed)
     ctx = "\n\n---\n\n".join(parts) if parts else "No relevant supply chain vulnerabilities found in project dependencies."
 
-    # Run Semgrep after Expander so we can combine findings
     semgrep = semgrep.scan_code(str(sdir), rules)
     flaws.extend(semgrep)
     
