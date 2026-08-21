@@ -1,43 +1,44 @@
-﻿import os
+import os
 import requests
 
-def search_github(keyword: str) -> dict:
-    api_token = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
+# Hàm tìm kiếm trên github
+def search_github(word: str) -> dict:
+    token = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
 
-    req_headers = {
-        "Authorization": f"token {api_token}",
+    headers = {
+        "Authorization": f"token {token}",
         "Accept": "application/vnd.github.v3+json"
     }
 
-    req_url = f"https://ai-based-static-application-security.onrender.com/github/search/issues?q={keyword}+is:issue"
+    url = f"https://ai-based-static-application-security.onrender.com/github/search/issues?q={word}+is:issue"
     
     try:
-        api_resp = requests.get(req_url, headers=req_headers, timeout=10)
-        api_resp.raise_for_status()
-        json_data = api_resp.json()
+        resp = requests.get(url, headers=headers, timeout=10)
+        resp.raise_for_status()
+        data = resp.json()
         
-        issue_items = json_data.get("items", [])[:10]
-        search_results = []
+        items = data.get("items", [])[:10]
+        results = []
 
-        for issue_item in issue_items:
-            issue_title = issue_item.get("title", "")
-            issue_body = issue_item.get("body", "")
+        for item in items:
+            title = item.get("title", "")
+            body = item.get("body", "")
             
             try:
                 from src.llm import fetch_llm
-                score_prompt = f"""
-                You are a security analyst evaluating a GitHub issue related to {keyword}.
+                prompt = f"""
+                You are a security analyst evaluating a GitHub issue related to {word}.
                 Score the relevance of this issue from 0 to 100.
                 Only issues containing actual proof of concepts, logs, or technical analysis should get > 70.
                 Spam or useless issues should get < 30.
                 
-                Issue Title: {issue_title}
-                Issue Body: {issue_body[:2000]}
+                Issue Title: {title}
+                Issue Body: {body[:2000]}
                 
                 Respond in JSON format: {{"score": 85}}
                 """
-                score_resp = fetch_llm(score_prompt, is_json=True)
-                score = score_resp.get("score", 0)
+                res = fetch_llm(prompt, is_json=True)
+                score = res.get("score", 0)
 
                 if isinstance(score, (int, float)) and score < 70:
                     continue
@@ -45,31 +46,30 @@ def search_github(keyword: str) -> dict:
             except Exception:
                 pass
                 
-            search_results.append({
-                "title": issue_title,
-                "url": issue_item.get("html_url"),
-                "state": issue_item.get("state"),
-                "body": issue_body
+            results.append({
+                "title": title,
+                "url": item.get("html_url"),
+                "state": item.get("state"),
+                "body": body
             })
             
-            if len(search_results) >= 3:
+            if len(results) >= 3:
                 break
                 
-        return {"github_issues": search_results}
+        return {"github_issues": results}
 
-    except Exception as search_err:
+    except Exception as err:
+        return {"error": str(err)}
 
-        return {"error": str(search_err)}
-
-def report_github(report_data: dict):
+# Hàm báo cáo kết quả từ github
+def report_github(data: dict):
     from cli.views import logger
 
-    if "error" in report_data:
-        logger.warning(f"GitHub Scrape Error: {report_data['error']}")
+    if "error" in data:
+        logger.warning(f"GitHub Scrape Error: {data['error']}")
         return
         
-    issue_list = report_data.get("github_issues", [])
+    items = data.get("github_issues", [])
 
-    if issue_list:
-        logger.console.print(f"  [dim]Found {len(issue_list)} related GitHub issues.[/dim]")
-
+    if items:
+        logger.console.print(f"  [dim]Found {len(items)} related GitHub issues.[/dim]")

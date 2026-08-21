@@ -14,108 +14,103 @@ ECO = {
     "nuget": "NuGet",
 }
 
-def check_osv(parsed_deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
-    if not parsed_deps:
-
+# Hàm kiểm tra lỗ hổng OSV
+def check_osv(deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+    if not deps:
         return []
 
-    query_list = []
+    queries = []
 
-    for dep_item in parsed_deps:
-        # Skip packages without a pinned version — OSV returns ALL vulns for any version
-
-        if not dep_item.get("version"):
+    # Map hệ sinh thái của hệ thống sang hệ sinh thái của osv
+    for dep in deps:
+        if not dep.get("version"):
             continue
 
-        ecosystem_name = ECO.get(dep_item["ecosystem"], dep_item["ecosystem"])
-        query_dict = {
-            "package": {"name": dep_item["package"], "ecosystem": ecosystem_name},
-            "version": dep_item["version"],
+        eco = ECO.get(dep["ecosystem"], dep["ecosystem"])
+        query = {
+            "package": {"name": dep["package"], "ecosystem": eco},
+            "version": dep["version"],
         }
-        query_list.append(query_dict)
+        queries.append(query)
 
-    payload_data = json.dumps({"queries": query_list}).encode("utf-8")
-    api_req = urllib.request.Request(URL, data=payload_data, headers={"Content-Type": "application/json"})
+    payload = json.dumps({"queries": queries}).encode("utf-8")
+    req = urllib.request.Request(URL, data=payload, headers={"Content-Type": "application/json"})
 
     try:
-        with urllib.request.urlopen(api_req, timeout=30) as api_resp:
-            json_data = json.loads(api_resp.read().decode("utf-8"))
-            results_list = json_data.get("results", [])
-            vuln_list = []
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            results = data.get("results", [])
+            vulns = []
 
-            for loop_idx, result_item in enumerate(results_list):
+            for idx, result in enumerate(results):
+                if "vulns" in result:
+                    info = deps[idx]
 
-                if "vulns" in result_item:
-                    pkg_info = parsed_deps[loop_idx]
+                    for vuln in result["vulns"]:
+                        aliases = vuln.get("aliases", [])
 
-                    for vuln_item in result_item["vulns"]:
-                        alias_list = vuln_item.get("aliases", [])
-
-                        if not alias_list and vuln_item.get("id", "").startswith("GHSA"):
-
+                        if not aliases and vuln.get("id", "").startswith("GHSA"):
                             try:
-                                api_url = f"https://api.osv.dev/v1/vulns/{vuln_item['id']}"
-                                with urllib.request.urlopen(api_url, timeout=10) as alias_resp:
-                                    alias_data = json.loads(alias_resp.read().decode("utf-8"))
-                                    alias_list = alias_data.get("aliases", [])
-
+                                url = f"https://api.osv.dev/v1/vulns/{vuln['id']}"
+                                with urllib.request.urlopen(url, timeout=10) as res:
+                                    alias_data = json.loads(res.read().decode("utf-8"))
+                                    aliases = alias_data.get("aliases", [])
                             except Exception:
                                 pass
 
-                        vuln_list.append(
+                        vulns.append(
                             {
-                                "package": pkg_info["package"],
-                                "version": pkg_info["version"],
-                                "ecosystem": pkg_info["ecosystem"],
-                                "vuln_id": vuln_item.get("id"),
-                                "cve": alias_list,
-                                "summary": vuln_item.get("summary", "No summary provided"),
-                                "details": vuln_item.get("details", ""),
-                                "references": [ref.get("url") for ref in vuln_item.get("references", [])],
+                                "package": info["package"],
+                                "version": info["version"],
+                                "ecosystem": info["ecosystem"],
+                                "vuln_id": vuln.get("id"),
+                                "cve": aliases,
+                                "summary": vuln.get("summary", "No summary provided"),
+                                "details": vuln.get("details", ""),
+                                "references": [ref.get("url") for ref in vuln.get("references", [])],
                             }
                         )
 
-            return vuln_list
+            return vulns
 
-    except Exception as api_err:
-        print(f"[!] Failed to connect to OSV API: {api_err}")
-
+    except Exception as err:
+        print(f"[!] Failed to connect to OSV API: {err}")
         return []
 
 from cli.views import logger
 
-def report_osv(vuln_list: List[Dict[str, Any]]):
+# Hàm báo cáo kết quả
+def report_osv(vulns: List[Dict[str, Any]]):
     from cli.views.logger import console
 
-    if not vuln_list:
+    if not vulns:
         console.print("  [green]- No known vulnerabilities found in dependencies[/green]")
         return
 
-    console.print(f"\n  [bold]{len(vuln_list)} vulnerabilities detected[/bold]")
+    console.print(f"\n  [bold]{len(vulns)} vulnerabilities detected[/bold]")
     console.print()
 
-    vuln_groups = {}
+    groups = {}
 
-    for vuln_item in vuln_list:
-        pkg_name = f"{vuln_item['package']} v{vuln_item['version']}"
+    for vuln in vulns:
+        pkg = f"{vuln['package']} v{vuln['version']}"
 
-        if pkg_name not in vuln_groups:
-            vuln_groups[pkg_name] = []
-        vuln_groups[pkg_name].append(vuln_item)
+        if pkg not in groups:
+            groups[pkg] = []
+        groups[pkg].append(vuln)
 
-    for pkg_name, issue_list in vuln_groups.items():
-        console.print(f"  ● [magenta]{pkg_name}[/magenta]")
+    for pkg, issues in groups.items():
+        console.print(f"  ● [magenta]{pkg}[/magenta]")
 
-        for loop_idx, issue_item in enumerate(issue_list):
-            cve_str = ", ".join(c for c in issue_item["cve"] if str(c).startswith("CVE"))
-            display_cve = f" [{cve_str}]" if cve_str else ""
-            vuln_id = issue_item['vuln_id']
-            summary_text = issue_item['summary'][:80] + "..." if len(issue_item['summary']) > 80 else issue_item['summary']
+        for idx, issue in enumerate(issues):
+            cve = ", ".join(c for c in issue["cve"] if str(c).startswith("CVE"))
+            text = f" [{cve}]" if cve else ""
+            id = issue['vuln_id']
+            summary = issue['summary'][:80] + "..." if len(issue['summary']) > 80 else issue['summary']
             
-            is_last = (loop_idx == len(issue_list) - 1)
-            display_prefix = "  └─" if is_last else "  ├─"
+            last = (idx == len(issues) - 1)
+            prefix = "  └─" if last else "  ├─"
             
-            console.print(f"{display_prefix} [red]{vuln_id}{display_cve}[/red]: {summary_text}")
+            console.print(f"{prefix} [red]{id}{text}[/red]: {summary}")
         
         console.print()
-

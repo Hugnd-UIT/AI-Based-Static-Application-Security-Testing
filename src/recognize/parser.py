@@ -21,122 +21,123 @@ DEPS = {
     "packages.config": "nuget",
 }
 
-def parse_php(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện php
+def parse_php(path: str) -> List[Dict[str, str]]:
+    deps = []
 
     try:
-        with open(file_path, "r", encoding="utf-8") as file_handle:
-            json_data = json.load(file_handle)
-            req_dict = {**json_data.get("require", {}), **json_data.get("require-dev", {})}
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            reqs = {**data.get("require", {}), **data.get("require-dev", {})}
 
-            for pkg_name, pkg_version in req_dict.items():
+            for pkg, ver in reqs.items():
 
-                if pkg_name == "php" or "/" not in pkg_name:
+                if pkg == "php" or "/" not in pkg:
                     continue
 
-                parsed_deps.append(
+                deps.append(
                     {
                         "ecosystem": "packagist",
-                        "package": pkg_name,
-                        "version": pkg_version.strip("^~<>="),
+                        "package": pkg,
+                        "version": ver.strip("^~<>="),
                     }
                 )
 
     except Exception:
         pass
 
-    return parsed_deps
+    return deps
 
-def parse_npm(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện npm
+def parse_npm(path: str) -> List[Dict[str, str]]:
+    deps = []
 
     try:
-        with open(file_path, "r", encoding="utf-8") as file_handle:
-            json_data = json.load(file_handle)
-            req_dict = {**json_data.get("dependencies", {}), **json_data.get("devDependencies", {})}
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            reqs = {**data.get("dependencies", {}), **data.get("devDependencies", {})}
 
-            for pkg_name, pkg_version in req_dict.items():
-                parsed_deps.append(
-                    {"ecosystem": "npm", "package": pkg_name, "version": pkg_version.strip("^~<>=")}
+            for pkg, ver in reqs.items():
+                deps.append(
+                    {"ecosystem": "npm", "package": pkg, "version": ver.strip("^~<>=")}
                 )
 
     except Exception:
         pass
 
-    return parsed_deps
+    return deps
 
-def parse_package_lock(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện package lock
+def parse_package_lock(path: str) -> List[Dict[str, str]]:
+    deps = []
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
             if "packages" in data:
-                for path, pkg_data in data["packages"].items():
-                    if path and "node_modules/" in path:
-                        pkg_name = path.split("node_modules/")[-1]
-                        if "version" in pkg_data:
-                            parsed_deps.append({"ecosystem": "npm", "package": pkg_name, "version": pkg_data["version"]})
+                for p, info in data["packages"].items():
+                    if p and "node_modules/" in p:
+                        pkg = p.split("node_modules/")[-1]
+                        if "version" in info:
+                            deps.append({"ecosystem": "npm", "package": pkg, "version": info["version"]})
             elif "dependencies" in data:
-                for pkg_name, pkg_data in data["dependencies"].items():
-                    if "version" in pkg_data:
-                        parsed_deps.append({"ecosystem": "npm", "package": pkg_name, "version": pkg_data["version"]})
+                for pkg, info in data["dependencies"].items():
+                    if "version" in info:
+                        deps.append({"ecosystem": "npm", "package": pkg, "version": info["version"]})
     except Exception:
         pass
-    return parsed_deps
+    return deps
 
-def parse_yarn_lock(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện yarn lock
+def parse_yarn_lock(path: str) -> List[Dict[str, str]]:
+    deps = []
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read()
             matches = re.findall(r'^"?(@?[a-zA-Z0-9_\-\.]+)(?:@[^"]+)?(?:,.*?)?:\n\s*version\s+"([^"]+)"', content, re.MULTILINE)
-            for pkg_name, pkg_version in matches:
-                parsed_deps.append({"ecosystem": "npm", "package": pkg_name, "version": pkg_version})
+            for pkg, ver in matches:
+                deps.append({"ecosystem": "npm", "package": pkg, "version": ver})
     except Exception:
         pass
-    return parsed_deps
+    return deps
 
-def parse_pypi(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện pypi
+def parse_pypi(path: str) -> List[Dict[str, str]]:
+    deps = []
 
     try:
-        with open(file_path, "r", encoding="utf-8") as file_handle:
+        with open(path, "r", encoding="utf-8") as f:
 
-            for line_text in file_handle:
-                line_text = line_text.strip()
+            for line in f:
+                line = line.strip()
 
-                if not line_text or line_text.startswith("#") or line_text.startswith("-"):
+                if not line or line.startswith("#") or line.startswith("-"):
                     continue
 
-                # Strip extras like package[extra]==1.0 and env markers
-                line_text = line_text.split(";")[0].strip()
+                line = line.split(";")[0].strip()
+                match = re.search(r'([><=!~]+)\s*([\w.]+)', line)
 
-                version_match = re.search(r'([><=!~]+)\s*([\w.]+)', line_text)
+                if match:
+                    pkg = line[:match.start()].strip()
+                    ver = match.group(2).strip()
+                    pkg = re.sub(r'\[.*?\]', '', pkg).strip()
 
-                if version_match:
-                    pkg_name = line_text[:version_match.start()].strip()
-                    pkg_version = version_match.group(2).strip()
-                    # Strip bracket extras from package name
-                    pkg_name = re.sub(r'\[.*?\]', '', pkg_name).strip()
-
-                    if pkg_name:
-                        parsed_deps.append(
+                    if pkg:
+                        deps.append(
                             {
                                 "ecosystem": "pypi",
-                                "package": pkg_name,
-                                "version": pkg_version,
+                                "package": pkg,
+                                "version": ver,
                             }
                         )
 
                 else:
-                    # Bare package name with no version
-                    pkg_name = re.sub(r'\[.*?\]', '', line_text).strip()
+                    pkg = re.sub(r'\[.*?\]', '', line).strip()
 
-                    if pkg_name:
-                        parsed_deps.append(
+                    if pkg:
+                        deps.append(
                             {
                                 "ecosystem": "pypi",
-                                "package": pkg_name,
+                                "package": pkg,
                                 "version": "",
                             }
                         )
@@ -144,230 +145,238 @@ def parse_pypi(file_path: str) -> List[Dict[str, str]]:
     except Exception:
         pass
 
-    return parsed_deps
+    return deps
 
-def parse_pyproject(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện pyproject
+def parse_pyproject(path: str) -> List[Dict[str, str]]:
+    deps = []
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             content = f.read()
             matches = re.findall(r'^([a-zA-Z0-9_\-]+)\s*=\s*[\'"]([^\'"]+)[\'"]', content, re.MULTILINE)
-            for pkg_name, pkg_version in matches:
-                parsed_deps.append({"ecosystem": "pypi", "package": pkg_name, "version": pkg_version.strip('^~<>="')})
+            for pkg, ver in matches:
+                deps.append({"ecosystem": "pypi", "package": pkg, "version": ver.strip('^~<>="')})
     except Exception:
         pass
-    return parsed_deps
+    return deps
 
-def parse_poetry_lock(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện poetry lock
+def parse_poetry_lock(path: str) -> List[Dict[str, str]]:
+    deps = []
     try:
-        with open(file_path, "r", encoding="utf-8") as f:
+        with open(path, "r", encoding="utf-8") as f:
             blocks = f.read().split("[[package]]")
             for block in blocks[1:]:
-                name_match = re.search(r'name\s*=\s*"([^"]+)"', block)
-                version_match = re.search(r'version\s*=\s*"([^"]+)"', block)
-                if name_match and version_match:
-                    parsed_deps.append({"ecosystem": "pypi", "package": name_match.group(1), "version": version_match.group(1)})
+                n_match = re.search(r'name\s*=\s*"([^"]+)"', block)
+                v_match = re.search(r'version\s*=\s*"([^"]+)"', block)
+                if n_match and v_match:
+                    deps.append({"ecosystem": "pypi", "package": n_match.group(1), "version": v_match.group(1)})
     except Exception:
         pass
-    return parsed_deps
+    return deps
 
-def parse_maven(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện maven
+def parse_maven(path: str) -> List[Dict[str, str]]:
+    deps = []
 
     try:
-        xml_tree = ET.parse(file_path)
-        xml_root = xml_tree.getroot()
-        xml_ns = ""
+        tree = ET.parse(path)
+        root = tree.getroot()
+        ns = ""
 
-        if xml_root.tag.startswith("{"):
-            xml_ns = xml_root.tag.split("}")[0] + "}"
+        if root.tag.startswith("{"):
+            ns = root.tag.split("}")[0] + "}"
 
-        for dep_node in xml_root.findall(f".//{xml_ns}dependency"):
-            group_id = dep_node.find(f"{xml_ns}groupId")
-            artifact_id = dep_node.find(f"{xml_ns}artifactId")
-            pkg_version = dep_node.find(f"{xml_ns}version")
+        for node in root.findall(f".//{ns}dependency"):
+            group = node.find(f"{ns}groupId")
+            artifact = node.find(f"{ns}artifactId")
+            ver = node.find(f"{ns}version")
 
-            if group_id is not None and artifact_id is not None and pkg_version is not None:
+            if group is not None and artifact is not None and ver is not None:
 
-                if "$" not in pkg_version.text:
-                    pkg_name = f"{group_id.text}:{artifact_id.text}"
-                    parsed_deps.append(
-                        {"ecosystem": "maven", "package": pkg_name, "version": pkg_version.text}
+                if "$" not in ver.text:
+                    pkg = f"{group.text}:{artifact.text}"
+                    deps.append(
+                        {"ecosystem": "maven", "package": pkg, "version": ver.text}
                     )
 
     except Exception:
         pass
 
-    return parsed_deps
+    return deps
 
-def parse_go(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện go
+def parse_go(path: str) -> List[Dict[str, str]]:
+    deps = []
 
     try:
-        with open(file_path, "r", encoding="utf-8") as file_handle:
-            file_content = file_handle.read()
-            regex_matches = re.findall(r"([a-zA-Z0-9.\-_/]+)\s+v([0-9a-zA-Z.\-_]+)", file_content)
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+            matches = re.findall(r"([a-zA-Z0-9.\-_/]+)\s+v([0-9a-zA-Z.\-_]+)", content)
 
-            for pkg_name, pkg_version in regex_matches:
+            for pkg, ver in matches:
 
-                if pkg_name != "go":
-                    parsed_deps.append({"ecosystem": "go", "package": pkg_name, "version": pkg_version})
+                if pkg != "go":
+                    deps.append({"ecosystem": "go", "package": pkg, "version": ver})
 
     except Exception:
         pass
 
-    return parsed_deps
+    return deps
 
-def parse_ruby(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện ruby
+def parse_ruby(path: str) -> List[Dict[str, str]]:
+    deps = []
 
     try:
-        with open(file_path, "r", encoding="utf-8") as file_handle:
+        with open(path, "r", encoding="utf-8") as f:
 
-            for line_text in file_handle:
-                line_text = line_text.strip()
+            for line in f:
+                line = line.strip()
 
-                if line_text.startswith("gem "):
-                    regex_match = re.search(
-                        r"""gem\s+['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])?""", line_text
+                if line.startswith("gem "):
+                    match = re.search(
+                        r"""gem\s+['"]([^'"]+)['"](?:\s*,\s*['"]([^'"]+)['"])?""", line
                     )
 
-                    if regex_match:
-                        pkg_name = regex_match.group(1)
-                        pkg_version = regex_match.group(2) if regex_match.group(2) else ""
-                        pkg_version = re.sub(r"^[~>=<\s]+", "", pkg_version)
+                    if match:
+                        pkg = match.group(1)
+                        ver = match.group(2) if match.group(2) else ""
+                        ver = re.sub(r"^[~>=<\s]+", "", ver)
 
-                        parsed_deps.append(
-                            {"ecosystem": "rubygems", "package": pkg_name, "version": pkg_version}
+                        deps.append(
+                            {"ecosystem": "rubygems", "package": pkg, "version": ver}
                         )
 
     except Exception:
         pass
 
-    return parsed_deps
+    return deps
 
-def parse_csproj(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện csproj
+def parse_csproj(path: str) -> List[Dict[str, str]]:
+    deps = []
 
     try:
-        xml_tree = ET.parse(file_path)
-        xml_root = xml_tree.getroot()
+        tree = ET.parse(path)
+        root = tree.getroot()
 
-        for pkg_node in xml_root.findall(".//PackageReference"):
-            pkg_name = pkg_node.get("Include")
-            pkg_version = pkg_node.get("Version")
+        for node in root.findall(".//PackageReference"):
+            pkg = node.get("Include")
+            ver = node.get("Version")
 
-            if pkg_name and pkg_version:
-                parsed_deps.append({"ecosystem": "nuget", "package": pkg_name, "version": pkg_version})
+            if pkg and ver:
+                deps.append({"ecosystem": "nuget", "package": pkg, "version": ver})
 
     except Exception:
         pass
 
-    return parsed_deps
+    return deps
 
-def parse_nuget(file_path: str) -> List[Dict[str, str]]:
-    parsed_deps = []
+# Hàm phân tích thư viện nuget
+def parse_nuget(path: str) -> List[Dict[str, str]]:
+    deps = []
 
     try:
-        xml_tree = ET.parse(file_path)
-        xml_root = xml_tree.getroot()
+        tree = ET.parse(path)
+        root = tree.getroot()
 
-        for pkg_node in xml_root.findall(".//package"):
-            pkg_name = pkg_node.get("id")
-            pkg_version = pkg_node.get("version")
+        for node in root.findall(".//package"):
+            pkg = node.get("id")
+            ver = node.get("version")
 
-            if pkg_name and pkg_version:
-                parsed_deps.append({"ecosystem": "nuget", "package": pkg_name, "version": pkg_version})
+            if pkg and ver:
+                deps.append({"ecosystem": "nuget", "package": pkg, "version": ver})
 
     except Exception:
         pass
 
-    return parsed_deps
+    return deps
 
-def parse_deps(target_path: str) -> List[Dict[str, str]]:
-    dir_path = Path(target_path)
+# Hàm phân tích thư viện
+def parse_deps(target: str) -> List[Dict[str, str]]:
+    path = Path(target)
 
-    if not dir_path.exists() or not dir_path.is_dir():
-        raise ValueError(f"[!] The path is invalid: {target_path}")
+    if not path.exists() or not path.is_dir():
+        raise ValueError(f"[!] The path is invalid: {target}")
 
-    manifest_deps = []
-    lockfile_deps = []
+    manifests = []
+    locks = []
 
-    for root_dir, sub_dirs, file_list in os.walk(dir_path):
-        sub_dirs[:] = [sub for sub in sub_dirs if sub not in EXCLUDES]
+    for root, dirs, files in os.walk(path):
+        dirs[:] = [d for d in dirs if d not in EXCLUDES]
 
-        for file_name in file_list:
-            full_path = os.path.join(root_dir, file_name)
+        for name in files:
+            full = os.path.join(root, name)
 
-            if file_name in DEPS:
+            if name in DEPS:
 
-                if file_name == "composer.json":
-                    manifest_deps.extend(parse_php(full_path))
+                if name == "composer.json":
+                    manifests.extend(parse_php(full))
 
-                elif file_name == "package.json":
-                    manifest_deps.extend(parse_npm(full_path))
+                elif name == "package.json":
+                    manifests.extend(parse_npm(full))
                     
-                elif file_name == "package-lock.json":
-                    lockfile_deps.extend(parse_package_lock(full_path))
+                elif name == "package-lock.json":
+                    locks.extend(parse_package_lock(full))
                     
-                elif file_name == "yarn.lock":
-                    lockfile_deps.extend(parse_yarn_lock(full_path))
+                elif name == "yarn.lock":
+                    locks.extend(parse_yarn_lock(full))
 
-                elif file_name == "requirements.txt":
-                    manifest_deps.extend(parse_pypi(full_path))
+                elif name == "requirements.txt":
+                    manifests.extend(parse_pypi(full))
                     
-                elif file_name == "pyproject.toml":
-                    manifest_deps.extend(parse_pyproject(full_path))
+                elif name == "pyproject.toml":
+                    manifests.extend(parse_pyproject(full))
                     
-                elif file_name == "poetry.lock":
-                    lockfile_deps.extend(parse_poetry_lock(full_path))
+                elif name == "poetry.lock":
+                    locks.extend(parse_poetry_lock(full))
 
-                elif file_name == "pom.xml":
-                    manifest_deps.extend(parse_maven(full_path))
+                elif name == "pom.xml":
+                    manifests.extend(parse_maven(full))
 
-                elif file_name == "go.mod":
-                    manifest_deps.extend(parse_go(full_path))
+                elif name == "go.mod":
+                    manifests.extend(parse_go(full))
 
-                elif file_name == "Gemfile":
-                    manifest_deps.extend(parse_ruby(full_path))
+                elif name == "Gemfile":
+                    manifests.extend(parse_ruby(full))
 
-                elif file_name == "packages.config":
-                    manifest_deps.extend(parse_nuget(full_path))
+                elif name == "packages.config":
+                    manifests.extend(parse_nuget(full))
 
-            elif file_name.endswith(".csproj"):
-                manifest_deps.extend(parse_csproj(full_path))
+            elif name.endswith(".csproj"):
+                manifests.extend(parse_csproj(full))
 
-    lock_map = {(d["ecosystem"], d["package"]): d["version"] for d in lockfile_deps}
+    mapping = {(d["ecosystem"], d["package"]): d["version"] for d in locks}
     
-    final_deps = []
+    finals = []
     seen = set()
     
-    for d in manifest_deps + lockfile_deps:
+    for d in manifests + locks:
         key = (d["ecosystem"], d["package"])
         if key in seen:
             continue
         seen.add(key)
         
-        if key in lock_map:
-            d["version"] = lock_map[key]
-        final_deps.append(d)
+        if key in mapping:
+            d["version"] = mapping[key]
+        finals.append(d)
 
-    return final_deps
+    return finals
 
 from cli.views import logger
 
-def report_deps(parsed_deps: List[Dict[str, str]]):
+# Hàm báo cáo kết quả
+def report_deps(deps: List[Dict[str, str]]):
     logger.section("DEPENDENCIES")
 
-    if not parsed_deps:
+    if not deps:
         logger.warning("No dependencies found!")
         return
 
     from cli.views.logger import console
-    console.print(f"  [cyan]{len(parsed_deps)}[/cyan] dependencies detected")
+    console.print(f"  [cyan]{len(deps)}[/cyan] dependencies detected")
     console.print()
 
-    for dep_item in parsed_deps:
-        console.print(f"  - [magenta]{dep_item['ecosystem']}[/magenta] [blue]{dep_item['package']}[/blue] v{dep_item['version']}")
-
+    for dep in deps:
+        console.print(f"  - [magenta]{dep['ecosystem']}[/magenta] [blue]{dep['package']}[/blue] v{dep['version']}")
