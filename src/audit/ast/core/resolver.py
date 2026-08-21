@@ -1,9 +1,9 @@
 import os
 import re
 from pathlib import Path
-from src.audit.tree_sitter.core.utils import *
-from src.audit.tree_sitter.rule.sanitizers import SANITIZERS
-from src.audit.tree_sitter.core.analyzer import has_sink
+from src.audit.ast.core.utils import *
+from src.audit.ast.rule.sanitizers import SANITIZERS
+from src.audit.ast.core.analyzer import has_sink
 
 # Hàm tìm kiếm alias
 def resolve_aliases(path: str, var: str) -> str:

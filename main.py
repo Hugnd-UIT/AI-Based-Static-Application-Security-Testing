@@ -31,7 +31,7 @@ MODELS = [
 
 # Khởi tạo công cụ phân tích cú pháp Tree-sitter
 def init_sitter():
-    set_path = Path("src/audit/tree_sitter/tree_sitter.py").resolve()
+    set_path = Path("src/audit/ast/tree-sitter.py").resolve()
     load_spec = importlib.util.spec_from_file_location("ts_module", set_path)
     use_module = importlib.util.module_from_spec(load_spec)
     load_spec.loader.exec_module(use_module)
