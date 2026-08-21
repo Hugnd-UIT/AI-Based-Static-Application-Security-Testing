@@ -17,7 +17,7 @@ TOOLS = {
 def start_tree_siiter():
     import importlib.util
     from pathlib import Path
-    path = Path(__file__).parent.parent / "audit" / "tree-sitter" / "tree-sitter.py"
+    path = Path(__file__).parent.parent / "audit" / "tree_sitter" / "tree_sitter.py"
     spec = importlib.util.spec_from_file_location("module", str(path.resolve()))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)

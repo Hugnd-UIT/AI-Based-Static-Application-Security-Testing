@@ -31,7 +31,7 @@ MODELS = [
 
 # Khởi tạo công cụ phân tích cú pháp Tree-sitter
 def init_sitter():
-    set_path = Path("src/audit/tree-sitter.py").resolve()
+    set_path = Path("src/audit/tree_sitter/tree_sitter.py").resolve()
     load_spec = importlib.util.spec_from_file_location("ts_module", set_path)
     use_module = importlib.util.module_from_spec(load_spec)
     load_spec.loader.exec_module(use_module)
@@ -178,28 +178,28 @@ def run_scan(path, rules=None, model=None, fix=False):
             from cli.views.logger import console as ccons
             
             def fetch_cve(ccve: str):
-                nvd = nvd.fetch_cve(ccve)
+                ndata = nvd.fetch_cve(ccve)
 
-                if not nvd:
+                if not ndata:
                     return None
 
-                links = nvd.get("references", [])
+                links = ndata.get("references", [])
 
                 if links:
-                    nvd["firecrawl_poc"] = ""
+                    ndata["firecrawl_poc"] = ""
 
                     for url in links[:2]:
                         md = firecrawl.scrape_url(url)
 
                         if md:
-                            nvd["firecrawl_poc"] += f"\n\nSource: {url}\n{md}"
+                            ndata["firecrawl_poc"] += f"\n\nSource: {url}\n{md}"
 
                 gh = github.search_github(ccve)
 
                 if "error" not in gh:
-                    nvd["github_issues"] = gh.get("github_issues", [])
+                    ndata["github_issues"] = gh.get("github_issues", [])
 
-                return nvd
+                return ndata
 
             ids = list(scves)
 
@@ -252,23 +252,23 @@ def run_scan(path, rules=None, model=None, fix=False):
             }, indent=2)
             
             try:
-                sum = rag_agents.start_rag(jstr, model=MODELS[0]) # RAG Agent Role
-                res["rag_summaries"].append(sum)
-                rags.append(sum)
+                rsum = rag_agents.start_rag(jstr, model=MODELS[0]) # RAG Agent Role
+                res["rag_summaries"].append(rsum)
+                rags.append(rsum)
 
-                if "ccve" in sum and sum["ccve"] not in ["None", "Unknown"]:
-                    console.print(f"  ├─ [cyan]◆ Analyzing {sum['ccve']}[/cyan]")
+                if "ccve" in rsum and rsum["ccve"] not in ["None", "Unknown"]:
+                    console.print(f"  ├─ [cyan]◆ Analyzing {rsum['ccve']}[/cyan]")
 
-                if "attack_vector" in sum and str(sum["attack_vector"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
+                if "attack_vector" in rsum and str(rsum["attack_vector"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
                     width = max(60, console.width - 15)
 
-                    for line in textwrap.wrap(sum['attack_vector'], width=width, initial_indent="Vector: ", subsequent_indent="        "):
+                    for line in textwrap.wrap(rsum['attack_vector'], width=width, initial_indent="Vector: ", subsequent_indent="        "):
                         console.print(f"  │  [dim]{line}[/dim]")
 
-                if "mitigation" in sum and str(sum["mitigation"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
+                if "mitigation" in rsum and str(rsum["mitigation"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
                     width = max(60, console.width - 15)
 
-                    for line in textwrap.wrap(sum['mitigation'], width=width, initial_indent="Mitigation: ", subsequent_indent="            "):
+                    for line in textwrap.wrap(rsum['mitigation'], width=width, initial_indent="Mitigation: ", subsequent_indent="            "):
                         console.print(f"  │  [dim]{line}[/dim]")
                 console.print(f"  └─ [bold green]✔ Analysis completed[/bold green]")
             
@@ -278,21 +278,21 @@ def run_scan(path, rules=None, model=None, fix=False):
         # SAST
         logger.section("SAST")
 
-        for idx, sum in enumerate(rags):
+        for idx, rsum in enumerate(rags):
 
             try:
                 brief = {
-                    "ccve": sum.get("ccve"),
-                    "dependency": sum.get("dependency"),
-                    "vulnerable_functions": sum.get("functions", []),
-                    "attack_vector": sum.get("attack_vector"),
+                    "ccve": rsum.get("ccve"),
+                    "dependency": rsum.get("dependency"),
+                    "vulnerable_functions": rsum.get("functions", []),
+                    "attack_vector": rsum.get("attack_vector"),
                 }
                 cjson = json.dumps(brief, indent=2)
                 parts.append(cjson)
                 ctx = cjson
                 
                 role = MODELS[1] # Codestral for Verifier
-                tstr = sum.get("ccve", "Unknown CVE")
+                tstr = rsum.get("ccve", "Unknown CVE")
                 console.print(f"\n  [bold magenta]● VERIFYING AGENT[/bold magenta] [[cyan]{role}[/cyan]]")
                 console.print(f"  ├─ [cyan]◆ Target: {tstr}[/cyan]")
                 from src.rag.agents import verifier
@@ -445,8 +445,8 @@ def run_scan(path, rules=None, model=None, fix=False):
 
     ctx = "\n\n---\n\n".join(parts) if parts else "No relevant supply chain vulnerabilities found in project dependencies."
 
-    semgrep = semgrep.scan_code(str(sdir), rules)
-    flaws.extend(semgrep)
+    sgres = semgrep.scan_code(str(sdir), rules)
+    flaws.extend(sgres)
     
     seen = set()
     deduped = []
@@ -642,7 +642,7 @@ def run_scan(path, rules=None, model=None, fix=False):
     langs = len(res.get("languages", {}))
     files = sum(res.get("languages", {}).values())
     cdeps = len(res.get("dependencies", []))
-    time = logger.get_time()
+    dur = logger.get_time()
     cfinds = len(flaws)
     cerrs = len([f for f in flaws if f.get("severity") == "ERROR"])
     cwarns = len([f for f in flaws if f.get("severity") == "WARNING"])
@@ -653,7 +653,7 @@ def run_scan(path, rules=None, model=None, fix=False):
 
     table.add_row("Target", f"[bold]{sdir.name}[/bold]")
     table.add_row("Languages", f"[cyan]{langs}[/cyan]", "Files", f"[cyan]{files}[/cyan]")
-    table.add_row("Dependencies", f"[cyan]{cdeps}[/cyan]", "Duration", f"{time}s")
+    table.add_row("Dependencies", f"[cyan]{cdeps}[/cyan]", "Duration", f"{dur}s")
     table.add_row("", "")
     table.add_row("Findings", f"[bold]{cfinds}[/bold]")
 

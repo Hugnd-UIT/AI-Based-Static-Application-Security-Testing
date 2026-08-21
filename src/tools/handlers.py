@@ -32,8 +32,8 @@ def run_agent(
             )
         
         # Nếu gửi request lỗi thì trả về kết quả cuối cùng
-        except RuntimeError as api_err:
-            return fallback_verdict(error=str(api_err))
+        except RuntimeError as err:
+            return fallback_verdict(error=str(err))
             
         # Nếu nhận response lỗi thì gửi lại request
         if not msg or (not getattr(msg, 'tool_calls', None) and not (getattr(msg, 'content', None) or "").strip()):
@@ -63,67 +63,67 @@ def run_agent(
 
         # Nếu AI trả về JSON hợp lệ
         if msg.tool_calls:
-            verdict_result = None
+            vresult = None
 
-            for tool_call in msg.tool_calls:
-                tool_name = tool_call.function.name
+            for tcall in msg.tool_calls:
+                tname = tcall.function.name
 
                 # Kiểm tra tham số của công cụ
                 try:
-                    tool_args = json.loads(tool_call.function.arguments)
+                    targs = json.loads(tcall.function.arguments)
 
                 except json.JSONDecodeError:
-                    tool_args = {}
+                    targs = {}
 
                 try:
                     from cli.views.logger import console
                     
                     # Nếu AI không gọi công cụ nộp kết quả thì hiển thị hành động
-                    if tool_name != "submit_verdict":
+                    if tname != "submit_verdict":
                         from src.tools.actions import TOOLS
                         
-                        if tool_name in TOOLS:
-                            display_name = tool_name.replace("_", " ").title()
+                        if tname in TOOLS:
+                            dname = tname.replace("_", " ").title()
                         else:
-                            display_name = (tool_name[:60] + "...") if len(tool_name) > 60 else tool_name
-                        console.print(f"  ├─ [yellow]Action:[/yellow] [cyan]{display_name}[/cyan]")
+                            dname = (tname[:60] + "...") if len(tname) > 60 else tname
+                        console.print(f"  ├─ [yellow]Action:[/yellow] [cyan]{dname}[/cyan]")
 
                 except ImportError:
                     pass
 
                 # Nếu AI gọi công cụ nộp kết quả thì ngắt vòng lặp
-                if tool_name == "submit_verdict":
+                if tname == "submit_verdict":
                     history.append({
                         "role": "tool",
-                        "tool_call_id": tool_call.id,
+                        "tool_call_id": tcall.id,
                         "content": json.dumps({"status": "verdict_accepted"}),
                     })
-                    verdict_result = normalise_verdict(tool_args)
+                    vresult = normalise_verdict(targs)
                     continue
 
                 # Nếu AI gọi công cụ thường thì thực thi công cụ
-                result = actions.execute_tool(tool_name, tool_args, directory, module)
+                result = actions.execute_tool(tname, targs, directory, module)
 
                 # Lưu kết quả vào lịch sử
                 history.append({
                     "role": "tool",
-                    "call_id": tool_call.id,
+                    "tool_call_id": tcall.id,
                     "content": str(result) if not isinstance(result, str) else result,
                 })
 
-            if verdict_result is not None:
+            if vresult is not None:
 
-                return verdict_result
+                return vresult
 
         # Nếu AI không trả về JSON hợp lệ
         else:
             text = (msg.content or "").strip()
             logger.debug("[%s] Plain text response on step %d", agent, current)
 
-            json = extract_verdict(text)
+            jval = extract_verdict(text)
 
-            if json:
-                return normalise_verdict(json)
+            if jval:
+                return normalise_verdict(jval)
 
             if current == steps:
                 return fallback_verdict(text=text)
@@ -131,8 +131,8 @@ def run_agent(
     return fallback_verdict(reason="steps exceeded")
 
 # Hàm chuẩn hóa kết quả
-def normalise_verdict(dict: dict) -> dict:
-    final = dict(dict)
+def normalise_verdict(dval: dict) -> dict:
+    final = dict(dval)
     final.setdefault("verdict", "UNKNOWN")
     final.setdefault("confidence", 0)
     final.setdefault("severity", "INFO")

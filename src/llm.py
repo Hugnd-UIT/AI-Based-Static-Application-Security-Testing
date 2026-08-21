@@ -34,7 +34,7 @@ def create_client(api_key: str = None) -> OpenAI:
     return OpenAI(api_key=api_key, base_url=base_url, default_headers=default_headers)
 
 # Hàm gọi đến AI
-def fetch_llm(prompt: str, model: str = None, json: bool = True):
+def fetch_llm(prompt: str, model: str = None, jfmt: bool = True):
     target = model or MODELS[0]
     key = get_key(target)
     client = create_client(key)
@@ -53,7 +53,7 @@ def fetch_llm(prompt: str, model: str = None, json: bool = True):
             }
 
             # Kiểm tra yêu cầu định dạng
-            if json:
+            if jfmt:
                 req["response_format"] = {"type": "json_object"}
 
             # Gửi request đến AI
@@ -61,7 +61,7 @@ def fetch_llm(prompt: str, model: str = None, json: bool = True):
             raw = resp.choices[0].message.content.strip()
             
             # Xử lý json từ AI
-            if json:
+            if jfmt:
 
                 if raw.startswith("```json"):
                     raw = raw[7:]
@@ -121,13 +121,13 @@ def fetch_llm(prompt: str, model: str = None, json: bool = True):
             elif len(errors) > 200:
                 errors = errors[:200] + "..."
 
-            if not json:
+            if not jfmt:
 
                 return f"[!] Error: Call AI failed. Last error: {errors}", "None"
 
             raise RuntimeError(f"[!] Error: Call AI failed. Last error: {errors}")
 
-    if not json:
+    if not jfmt:
 
         return f"[!] Error: Call AI failed. Last error: {errors}", "None"
 

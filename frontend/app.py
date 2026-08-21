@@ -26,25 +26,3 @@ class Req(BaseModel):
 async def show_home(get_req: Request):
 
     return get_tmps.TemplateResponse(request=get_req, name="pages/home.html")
-
-
-@app.post("/api/scan")
-async def api_scan(get_req: Req):
-
-    get_url = get_req.u
-
-    if not get_url.startswith("http"):
-        raise HTTPException(status_code=400, detail="Invalid URL")
-
-    try:
-        from main import run_scan
-
-        get_res = run_scan(get_url)
-
-        if get_res.get("status") == "error":
-            raise HTTPException(status_code=500, detail=get_res.get("message"))
-
-        return get_res
-
-    except Exception as get_err:
-        raise HTTPException(status_code=500, detail=str(get_err))
