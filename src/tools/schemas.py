@@ -167,7 +167,7 @@ VERDICT_SCHEMA = {
                 "hops_traced": {"type": "integer"},
                 "cross_file": {"type": "boolean"},
                 "flow_unbroken": {"type": "boolean"},
-                "use_surrogate": {"type": "boolean"},
+                "surr": {"type": "boolean"},
                 "surrogate_function": {"type": "string"},
                 "poc_type": {"type": "string"},
                 "description": {"type": "string"},

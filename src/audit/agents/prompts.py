@@ -1,10 +1,3 @@
-"""
-Audit Agent prompts — ReAct / Function Calling version.
-
-The agent receives finding context via the USER turn (built in models.py).
-It MUST follow the mandatory steps below before calling submit_verdict.
-"""
-
 SYSTEM = """\
 # Role
 You are an elite Vulnerability Auditor for Sinful AI — the primary verification layer in a multi-agent SAST pipeline. You operate as a TRUE ReAct agent.

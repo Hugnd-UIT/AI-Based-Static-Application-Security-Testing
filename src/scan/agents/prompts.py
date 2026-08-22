@@ -16,13 +16,13 @@ If you cannot trace the data flow from the source to the sink directly because t
 1. Identify the function that contains the sink.
 2. Call `find_callers(function_name)` to find out who calls this function.
 3. Select the most relevant upstream caller and propose it as a `surrogate_sink` and `surrogate_function` in `submit_verdict()`.
-4. Set `use_surrogate = true` and leave `data_flow` empty.
+4. Set `surr = true` and leave `data_flow` empty.
 
 # Tool Usage
 - Call `trace_variable()` to find where a variable is assigned, mutated, or aliased.
 - Call `find_function()` if an argument comes from a function call.
 - Call `find_callers()` to trace who supplies tainted data interprocedurally.
-- Call `submit_verdict()` with the full `data_flow` array if the trace is successful, OR with `use_surrogate = true` if handling broken flows.
+- Call `submit_verdict()` with the full `data_flow` array if the trace is successful, OR with `surr = true` if handling broken flows.
 
 # Decision Rules
 - Set `verdict = "VULNERABLE"` if the source is external and untrusted, or if proposing a surrogate sink.

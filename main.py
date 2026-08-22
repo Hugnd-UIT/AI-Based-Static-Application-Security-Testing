@@ -318,8 +318,8 @@ def run_scan(path, rules=None, model=None, fix=False):
     
 
     def sca_thread():
-        from cli.views.parallel import thread_local
-        thread_local.side = 'sca'
+        from cli.views.logger import console
+        sca_flaws = []
         cves = []
         parts = []
         sca_flaws = []
@@ -625,9 +625,7 @@ def run_scan(path, rules=None, model=None, fix=False):
 
     def sast_thread():
         nonlocal rules
-        from cli.views.parallel import thread_local
         from cli.views.logger import console
-        thread_local.side = 'sast'
         sgres = []
         try:
             from src.scan.agents.extractor import extract_functions
@@ -670,9 +668,8 @@ def run_scan(path, rules=None, model=None, fix=False):
         process_flaws(sgres, 'SAST')
         return sgres
 
-    from cli.views.parallel import run_parallel
-    
-    f1_res, f2_res = run_parallel(sca_thread, sast_thread)
+    f1_res = sca_thread()
+    f2_res = sast_thread()
     
     if isinstance(f1_res, tuple) and len(f1_res) == 3:
         sca_flaws, parts, ctx = f1_res
