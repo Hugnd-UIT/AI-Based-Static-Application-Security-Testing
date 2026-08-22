@@ -1,4 +1,271 @@
 rules:
+- id: dynamic-ai-sinful-taint-javascript
+  mode: taint
+  message: 'Potential vulnerability: tainted data flows from user-controlled source
+    to dangerous sink.'
+  severity: WARNING
+  languages:
+  - javascript
+  - typescript
+  pattern-sources:
+  - pattern: req.query
+  - pattern: req.query.$FIELD
+  - pattern: req.body
+  - pattern: req.body.$FIELD
+  - pattern: req.params
+  - pattern: req.params.$FIELD
+  - pattern: req.headers
+  - pattern: req.headers[$FIELD]
+  - pattern: req.cookies
+  - pattern: req.cookies[$FIELD]
+  - pattern: req.get(...)
+  - pattern: req.file
+  - pattern: req.files
+  - pattern: ctx.query
+  - pattern: ctx.request.body
+  - pattern: ctx.params
+  - pattern: ctx.cookies.get(...)
+  - pattern: ctx.headers
+  - pattern: request.query
+  - pattern: request.body
+  - pattern: request.params
+  - pattern: request.headers
+  - pattern: $CTX.query
+  - pattern: $USE_REQ.query
+  - pattern: searchParams.get(...)
+  - pattern: useSearchParams().get(...)
+  - pattern: document.location.hash
+  - pattern: document.location.search
+  - pattern: window.location.href
+  - pattern: location.search
+  - pattern: location.hash
+  - pattern: document.referrer
+  - pattern: document.URL
+  - pattern: document.cookie
+  - pattern: process.env.$GET_VAR
+  - pattern: process.argv
+  - pattern: login(...)
+  - pattern-inside: "function login(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "login = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: redirect(...)
+  - pattern-inside: "function redirect(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "redirect = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: readFile(...)
+  - pattern-inside: "function readFile(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "readFile = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: pingHost(...)
+  - pattern-inside: "function pingHost(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "pingHost = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: updateConfig(...)
+  - pattern-inside: "function updateConfig(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "updateConfig = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: fetchUrl(...)
+  - pattern-inside: "function fetchUrl(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "fetchUrl = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: getUser(...)
+  - pattern-inside: "function getUser(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "getUser = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: greetUser(...)
+  - pattern-inside: "function greetUser(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "greetUser = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: loadProfile(...)
+  - pattern-inside: "function loadProfile(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "loadProfile = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: findUser(...)
+  - pattern-inside: "function findUser(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "findUser = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: fetchUser(...)
+  - pattern-inside: "function fetchUser(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "fetchUser = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: verify(...)
+  - pattern-inside: "function verify(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "verify = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: get(...)
+  - pattern-inside: "function get(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "get = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  pattern-sinks:
+  - pattern: $USE_DB.query(...)
+  - pattern: $USE_DB.execute(...)
+  - pattern: $POOL.query(...)
+  - pattern: $CLIENT.query(...)
+  - pattern: $KNEX.raw(...)
+  - pattern: $SEQUELIZE.query(...)
+  - pattern: $COLLECTION.find(...)
+  - pattern: $COLLECTION.findOne(...)
+  - pattern: $COLLECTION.updateOne(...)
+  - pattern: $COLLECTION.deleteOne(...)
+  - pattern: $COLLECTION.aggregate(...)
+  - pattern: $GET_MODEL.findOne(...)
+  - pattern: $GET_MODEL.find(...)
+  - pattern: exec(...)
+  - pattern: execSync(...)
+  - pattern: spawn(...)
+  - pattern: spawnSync(...)
+  - pattern: child_process.exec(...)
+  - pattern: child_process.spawn(...)
+  - pattern: child_process.execSync(...)
+  - pattern: child_process.fork(...)
+  - pattern: eval(...)
+  - pattern: new Function(...)
+  - pattern: setTimeout($X, ...)
+  - pattern: setInterval($X, ...)
+  - pattern: vm.runInThisContext(...)
+  - pattern: vm.runInNewContext(...)
+  - pattern: fs.readFile(...)
+  - pattern: fs.readFileSync(...)
+  - pattern: fs.writeFile(...)
+  - pattern: fs.writeFileSync(...)
+  - pattern: fs.unlink(...)
+  - pattern: fs.rmdir(...)
+  - pattern: require(...)
+  - pattern: import(...)
+  - pattern: fetch(...)
+  - pattern: axios.get(...)
+  - pattern: axios.post(...)
+  - pattern: axios.request(...)
+  - pattern: http.get(...)
+  - pattern: https.get(...)
+  - pattern: got(...)
+  - pattern: request(...)
+  - pattern: $EL.innerHTML = ...
+  - pattern: $EL.outerHTML = ...
+  - pattern: $EL.insertAdjacentHTML(...)
+  - pattern: document.write(...)
+  - pattern: document.writeln(...)
+  - pattern: $RES.send(...)
+  - pattern: $RES.write(...)
+  - pattern: $OBJ[$KEY] = ...
+  - pattern: _.merge($OBJ, ...)
+  - pattern: Object.assign($OBJ, ...)
+  - pattern: $RES.redirect(...)
+  - pattern: window.location.href = ...
+  - pattern: window.location.replace(...)
+  - pattern: read(...)
+  - pattern: find(...)
+  - pattern: applyConfig(...)
+  - pattern: load(...)
+  - pattern: runPing(...)
+  pattern-sanitizers:
+  - pattern: $CLIENT.escape(...)
+  - pattern: mysql.escape(...)
+  - pattern: DOMPurify.sanitize(...)
+  - pattern: sanitizeHtml(...)
+  - pattern: escape(...)
+  - pattern: path.basename(...)
+  - pattern: path.resolve(...)
+  - pattern: encodeURIComponent(...)
+  - pattern: encodeURI(...)
+  - pattern: parseInt(...)
+  - pattern: parseFloat(...)
+  - pattern: Number(...)
+- id: dynamic-ai-sinful-taint-scala
+  mode: taint
+  message: 'Potential vulnerability: tainted data flows from user-controlled source
+    to dangerous sink.'
+  severity: WARNING
+  languages:
+  - scala
+  pattern-sources:
+  - pattern: request.getQueryString(...)
+  - pattern: request.body.asFormUrlEncoded
+  - pattern: request.body.asJson
+  - pattern: request.body.asText
+  - pattern: request.body.asXml
+  - pattern: request.headers.get(...)
+  - pattern: request.cookies.get(...)
+  - pattern: request.queryString
+  - pattern: request.path
+  - pattern: request.rawQueryString
+  - pattern: parameter(...)
+  - pattern: parameters(...)
+  - pattern: entity(as[...])
+  - pattern: headerValueByName(...)
+  - pattern: cookie(...)
+  - pattern: req.params.get(...)
+  - pattern: req.headers.get(...)
+  - pattern: sys.env.get(...)
+  - pattern: System.getenv(...)
+  - pattern: args(...)
+  - pattern: handleRequest(...)
+  - pattern-inside: "function handleRequest(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "handleRequest = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  pattern-sinks:
+  - pattern: $USE_DB.withConnection(...)
+  - pattern: $USE_DB.withTransaction(...)
+  - pattern: DB.executeQuery(...)
+  - pattern: java.sql.DriverManager.getConnection(...)
+  - pattern: $STMT.executeQuery(...)
+  - pattern: $STMT.execute(...)
+  - pattern: $STMT.executeUpdate(...)
+  - pattern: sql"..."
+  - pattern: sqlu"..."
+  - pattern: $USE_SESSION.createSQLQuery(...)
+  - pattern: $USE_SESSION.createQuery(...)
+  - pattern: SQL(...)
+  - pattern: scala.sys.process.Process(...)
+  - pattern: Runtime.getRuntime.exec(...)
+  - pattern: ProcessBuilder(...)
+  - pattern: '"!" + ...'
+  - pattern: '"!!" + ...'
+  - pattern: scala.io.Source.fromFile(...)
+  - pattern: java.io.File(...)
+  - pattern: java.io.FileInputStream(...)
+  - pattern: java.nio.file.Files.readAllBytes(...)
+  - pattern: java.nio.file.Paths.get(...)
+  - pattern: new java.net.URL(...).openConnection()
+  - pattern: scala.io.Source.fromURL(...)
+  - pattern: ws.url(...)
+  - pattern: $WS.url(...)
+  - pattern: java.io.ObjectInputStream(...).readObject()
+  - pattern: $OIS.readObject()
+  - pattern: Ok($DATA)
+  - pattern: Results.Ok($DATA)
+  - pattern: Html(...)
+  - pattern: $CTX.search(...)
+  - pattern: InitialDirContext(...).search(...)
+  - pattern: getUser(...)
+  - pattern: loadData(...)
+  - pattern: readFile(...)
+  - pattern: fetchUrl(...)
+  - pattern: ping(...)
+  - pattern: parseXml(...)
+  pattern-sanitizers:
+  - pattern: $USE_CONN.prepareStatement(...)
+  - pattern: play.twirl.api.HtmlFormat.escape(...)
+  - pattern: xml.Utility.escape(...)
+  - pattern: java.net.URLEncoder.encode(...)
+  - pattern: $STR.toInt
+  - pattern: $STR.toLong
+  - pattern: $STR.toDouble
+  - pattern: Integer.parseInt(...)
 - id: dynamic-ai-sinful-taint-csharp
   mode: taint
   message: 'Potential vulnerability: tainted data flows from user-controlled source
@@ -116,16 +383,6 @@ rules:
   - pattern: axum::extract::Path($PARAMS)
   - pattern: std::env::var(...)
   - pattern: std::env::args()
-  - pattern: main(...)
-  - pattern-inside: "function main(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "main = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: fetch(...)
-  - pattern-inside: "function fetch(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "fetch = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
   pattern-sinks:
   - pattern: $USE_DB.execute(...)
   - pattern: $USE_DB.query(...)
@@ -158,9 +415,8 @@ rules:
   - pattern: ciborium::de::from_reader(...)
   - pattern: libc::system(...)
   - pattern: libc::execve(...)
-  - pattern: get_user(...)
-  - pattern: read_file(...)
-  - pattern: fetch_url(...)
+  - pattern: fetch_user(...)
+  - pattern: fetch(...)
   pattern-sanitizers:
   - pattern: sqlx::query(...)
   - pattern: std::path::Path::new(...).file_name()
@@ -168,280 +424,6 @@ rules:
   - pattern: $VAL.parse::<i32>()
   - pattern: $VAL.parse::<u64>()
   - pattern: $VAL.parse::<f64>()
-- id: dynamic-ai-sinful-taint-javascript
-  mode: taint
-  message: 'Potential vulnerability: tainted data flows from user-controlled source
-    to dangerous sink.'
-  severity: WARNING
-  languages:
-  - javascript
-  - typescript
-  pattern-sources:
-  - pattern: req.query
-  - pattern: req.query.$FIELD
-  - pattern: req.body
-  - pattern: req.body.$FIELD
-  - pattern: req.params
-  - pattern: req.params.$FIELD
-  - pattern: req.headers
-  - pattern: req.headers[$FIELD]
-  - pattern: req.cookies
-  - pattern: req.cookies[$FIELD]
-  - pattern: req.get(...)
-  - pattern: req.file
-  - pattern: req.files
-  - pattern: ctx.query
-  - pattern: ctx.request.body
-  - pattern: ctx.params
-  - pattern: ctx.cookies.get(...)
-  - pattern: ctx.headers
-  - pattern: request.query
-  - pattern: request.body
-  - pattern: request.params
-  - pattern: request.headers
-  - pattern: $CTX.query
-  - pattern: $USE_REQ.query
-  - pattern: searchParams.get(...)
-  - pattern: useSearchParams().get(...)
-  - pattern: document.location.hash
-  - pattern: document.location.search
-  - pattern: window.location.href
-  - pattern: location.search
-  - pattern: location.hash
-  - pattern: document.referrer
-  - pattern: document.URL
-  - pattern: document.cookie
-  - pattern: process.env.$GET_VAR
-  - pattern: process.argv
-  - pattern: login(...)
-  - pattern-inside: "function login(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "login = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: redirect(...)
-  - pattern-inside: "function redirect(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "redirect = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: readFile(...)
-  - pattern-inside: "function readFile(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "readFile = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: pingHost(...)
-  - pattern-inside: "function pingHost(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "pingHost = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: updateConfig(...)
-  - pattern-inside: "function updateConfig(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "updateConfig = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: fetchUrl(...)
-  - pattern-inside: "function fetchUrl(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "fetchUrl = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: getUser(...)
-  - pattern-inside: "function getUser(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "getUser = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: greetUser(...)
-  - pattern-inside: "function greetUser(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "greetUser = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: loadProfile(...)
-  - pattern-inside: "function loadProfile(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "loadProfile = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: findUser(...)
-  - pattern-inside: "function findUser(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "findUser = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: fetchUser(...)
-  - pattern-inside: "function fetchUser(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "fetchUser = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: read(...)
-  - pattern-inside: "function read(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "read = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: find(...)
-  - pattern-inside: "function find(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "find = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: get(...)
-  - pattern-inside: "function get(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "get = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  pattern-sinks:
-  - pattern: $USE_DB.query(...)
-  - pattern: $USE_DB.execute(...)
-  - pattern: $POOL.query(...)
-  - pattern: $CLIENT.query(...)
-  - pattern: $KNEX.raw(...)
-  - pattern: $SEQUELIZE.query(...)
-  - pattern: $COLLECTION.find(...)
-  - pattern: $COLLECTION.findOne(...)
-  - pattern: $COLLECTION.updateOne(...)
-  - pattern: $COLLECTION.deleteOne(...)
-  - pattern: $COLLECTION.aggregate(...)
-  - pattern: $GET_MODEL.findOne(...)
-  - pattern: $GET_MODEL.find(...)
-  - pattern: exec(...)
-  - pattern: execSync(...)
-  - pattern: spawn(...)
-  - pattern: spawnSync(...)
-  - pattern: child_process.exec(...)
-  - pattern: child_process.spawn(...)
-  - pattern: child_process.execSync(...)
-  - pattern: child_process.fork(...)
-  - pattern: eval(...)
-  - pattern: new Function(...)
-  - pattern: setTimeout($X, ...)
-  - pattern: setInterval($X, ...)
-  - pattern: vm.runInThisContext(...)
-  - pattern: vm.runInNewContext(...)
-  - pattern: fs.readFile(...)
-  - pattern: fs.readFileSync(...)
-  - pattern: fs.writeFile(...)
-  - pattern: fs.writeFileSync(...)
-  - pattern: fs.unlink(...)
-  - pattern: fs.rmdir(...)
-  - pattern: require(...)
-  - pattern: import(...)
-  - pattern: fetch(...)
-  - pattern: axios.get(...)
-  - pattern: axios.post(...)
-  - pattern: axios.request(...)
-  - pattern: http.get(...)
-  - pattern: https.get(...)
-  - pattern: got(...)
-  - pattern: request(...)
-  - pattern: $EL.innerHTML = ...
-  - pattern: $EL.outerHTML = ...
-  - pattern: $EL.insertAdjacentHTML(...)
-  - pattern: document.write(...)
-  - pattern: document.writeln(...)
-  - pattern: $RES.send(...)
-  - pattern: $RES.write(...)
-  - pattern: $OBJ[$KEY] = ...
-  - pattern: _.merge($OBJ, ...)
-  - pattern: Object.assign($OBJ, ...)
-  - pattern: $RES.redirect(...)
-  - pattern: window.location.href = ...
-  - pattern: window.location.replace(...)
-  - pattern: runPing(...)
-  pattern-sanitizers:
-  - pattern: $CLIENT.escape(...)
-  - pattern: mysql.escape(...)
-  - pattern: DOMPurify.sanitize(...)
-  - pattern: sanitizeHtml(...)
-  - pattern: escape(...)
-  - pattern: path.basename(...)
-  - pattern: path.resolve(...)
-  - pattern: encodeURIComponent(...)
-  - pattern: encodeURI(...)
-  - pattern: parseInt(...)
-  - pattern: parseFloat(...)
-  - pattern: Number(...)
-- id: dynamic-ai-sinful-taint-scala
-  mode: taint
-  message: 'Potential vulnerability: tainted data flows from user-controlled source
-    to dangerous sink.'
-  severity: WARNING
-  languages:
-  - scala
-  pattern-sources:
-  - pattern: request.getQueryString(...)
-  - pattern: request.body.asFormUrlEncoded
-  - pattern: request.body.asJson
-  - pattern: request.body.asText
-  - pattern: request.body.asXml
-  - pattern: request.headers.get(...)
-  - pattern: request.cookies.get(...)
-  - pattern: request.queryString
-  - pattern: request.path
-  - pattern: request.rawQueryString
-  - pattern: parameter(...)
-  - pattern: parameters(...)
-  - pattern: entity(as[...])
-  - pattern: headerValueByName(...)
-  - pattern: cookie(...)
-  - pattern: req.params.get(...)
-  - pattern: req.headers.get(...)
-  - pattern: sys.env.get(...)
-  - pattern: System.getenv(...)
-  - pattern: args(...)
-  - pattern: handleRequest(...)
-  - pattern-inside: "function handleRequest(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "handleRequest = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: readFile(...)
-  - pattern-inside: "function readFile(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "readFile = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  - pattern: fetchUrl(...)
-  - pattern-inside: "function fetchUrl(..., $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "fetchUrl = (..., $REQ, ...) => {\n  ...\n}"
-    pattern: $REQ
-  pattern-sinks:
-  - pattern: $USE_DB.withConnection(...)
-  - pattern: $USE_DB.withTransaction(...)
-  - pattern: DB.executeQuery(...)
-  - pattern: java.sql.DriverManager.getConnection(...)
-  - pattern: $STMT.executeQuery(...)
-  - pattern: $STMT.execute(...)
-  - pattern: $STMT.executeUpdate(...)
-  - pattern: sql"..."
-  - pattern: sqlu"..."
-  - pattern: $USE_SESSION.createSQLQuery(...)
-  - pattern: $USE_SESSION.createQuery(...)
-  - pattern: SQL(...)
-  - pattern: scala.sys.process.Process(...)
-  - pattern: Runtime.getRuntime.exec(...)
-  - pattern: ProcessBuilder(...)
-  - pattern: '"!" + ...'
-  - pattern: '"!!" + ...'
-  - pattern: scala.io.Source.fromFile(...)
-  - pattern: java.io.File(...)
-  - pattern: java.io.FileInputStream(...)
-  - pattern: java.nio.file.Files.readAllBytes(...)
-  - pattern: java.nio.file.Paths.get(...)
-  - pattern: new java.net.URL(...).openConnection()
-  - pattern: scala.io.Source.fromURL(...)
-  - pattern: ws.url(...)
-  - pattern: $WS.url(...)
-  - pattern: java.io.ObjectInputStream(...).readObject()
-  - pattern: $OIS.readObject()
-  - pattern: Ok($DATA)
-  - pattern: Results.Ok($DATA)
-  - pattern: Html(...)
-  - pattern: $CTX.search(...)
-  - pattern: InitialDirContext(...).search(...)
-  - pattern: ping(...)
-  - pattern: parseXml(...)
-  pattern-sanitizers:
-  - pattern: $USE_CONN.prepareStatement(...)
-  - pattern: play.twirl.api.HtmlFormat.escape(...)
-  - pattern: xml.Utility.escape(...)
-  - pattern: java.net.URLEncoder.encode(...)
-  - pattern: $STR.toInt
-  - pattern: $STR.toLong
-  - pattern: $STR.toDouble
-  - pattern: Integer.parseInt(...)
 - id: dynamic-ai-sinful-taint-python
   mode: taint
   message: 'Potential vulnerability: tainted data flows from user-controlled source
@@ -496,6 +478,16 @@ rules:
     pattern: $REQ
   - pattern-inside: "read_route = (..., $REQ, ...) => {\n  ...\n}"
     pattern: $REQ
+  - pattern: template_route(...)
+  - pattern-inside: "function template_route(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "template_route = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: deserialize_route(...)
+  - pattern-inside: "function deserialize_route(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "deserialize_route = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
   - pattern: fetch_route(...)
   - pattern-inside: "function fetch_route(..., $REQ, ...) {\n  ...\n}"
     pattern: $REQ
@@ -510,6 +502,21 @@ rules:
   - pattern-inside: "function profile_route(..., $REQ, ...) {\n  ...\n}"
     pattern: $REQ
   - pattern-inside: "profile_route = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: ping_route(...)
+  - pattern-inside: "function ping_route(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "ping_route = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: yaml_route(...)
+  - pattern-inside: "function yaml_route(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "yaml_route = (..., $REQ, ...) => {\n  ...\n}"
+    pattern: $REQ
+  - pattern: hash_route(...)
+  - pattern-inside: "function hash_route(..., $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "hash_route = (..., $REQ, ...) => {\n  ...\n}"
     pattern: $REQ
   - pattern: read_file(...)
   - pattern-inside: "function read_file(..., $REQ, ...) {\n  ...\n}"
@@ -573,9 +580,6 @@ rules:
   - pattern: minidom.parseString(...)
   - pattern: redirect(...)
   - pattern: flask.redirect(...)
-  - pattern: template_route(...)
-  - pattern: deserialize_route(...)
-  - pattern: yaml_route(...)
   pattern-sanitizers:
   - pattern: $USE_DB.escape_string(...)
   - pattern: $USE_CURSOR.mogrify(...)

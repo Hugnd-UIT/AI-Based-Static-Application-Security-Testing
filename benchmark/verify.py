@@ -220,8 +220,9 @@ def verify():
                     
                     fcwes = extract_cwes(flaw)
                     has_cwe = any(cwe in str(c).upper() for c in fcwes)
+                    fvuln_class = str(flaw.get("vuln_class", "")).upper()
                     
-                    if cwe in fid or cwe in ftitle or cwe in fmsg or vtype.upper() in ftitle or has_cwe:
+                    if cwe in fid or cwe in ftitle or cwe in fmsg or vtype.upper() in ftitle or has_cwe or cwe in fvuln_class or vtype.upper() in fvuln_class:
                         detected = True
                         break
             
