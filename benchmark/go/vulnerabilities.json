@@ -1,0 +1,56 @@
+{
+    "name": "Go Benchmark",
+    "language": "go",
+    "expected": [
+        {
+            "cwe": "CWE-89",
+            "file": "services/db.go",
+            "type": "SQL Injection"
+        },
+        {
+            "cwe": "CWE-78",
+            "file": "utils/exec.go",
+            "type": "Command Injection"
+        },
+        {
+            "cwe": "CWE-22",
+            "file": "utils/file.go",
+            "type": "Path Traversal"
+        },
+        {
+            "cwe": "CWE-918",
+            "file": "services/http.go",
+            "type": "Server-Side Request Forgery"
+        },
+        {
+            "cwe": "CWE-327",
+            "file": "utils/crypto.go",
+            "type": "Broken Crypto Algorithm"
+        },
+        {
+            "cwe": "CWE-321",
+            "file": "utils/crypto.go",
+            "type": "Hardcoded Key"
+        },
+        {
+            "cwe": "CWE-79",
+            "file": "handlers/template.go",
+            "type": "Cross-Site Scripting"
+        },
+        {
+            "cwe": "CWE-601",
+            "file": "handlers/redirect.go",
+            "type": "Open Redirect"
+        },
+        {
+            "cwe": "CWE-502",
+            "file": "services/deserialize.go",
+            "type": "Insecure Deserialization"
+        },
+        {
+            "cwe": "CWE-943",
+            "file": "services/nosql.go",
+            "type": "NoSQL Injection"
+        }
+    ]
+}

@@ -1,0 +1,56 @@
+{
+    "name": "Java Benchmark",
+    "language": "java",
+    "expected": [
+        {
+            "cwe": "CWE-89",
+            "file": "src/main/java/com/benchmark/services/DatabaseService.java",
+            "type": "SQL Injection"
+        },
+        {
+            "cwe": "CWE-78",
+            "file": "src/main/java/com/benchmark/services/SystemService.java",
+            "type": "Command Injection"
+        },
+        {
+            "cwe": "CWE-22",
+            "file": "src/main/java/com/benchmark/services/FileService.java",
+            "type": "Path Traversal"
+        },
+        {
+            "cwe": "CWE-611",
+            "file": "src/main/java/com/benchmark/services/XmlService.java",
+            "type": "XML External Entity"
+        },
+        {
+            "cwe": "CWE-502",
+            "file": "src/main/java/com/benchmark/services/DeserializationService.java",
+            "type": "Insecure Deserialization"
+        },
+        {
+            "cwe": "CWE-327",
+            "file": "src/main/java/com/benchmark/services/CryptoService.java",
+            "type": "Broken Crypto Algorithm"
+        },
+        {
+            "cwe": "CWE-321",
+            "file": "src/main/java/com/benchmark/services/CryptoService.java",
+            "type": "Hardcoded Key"
+        },
+        {
+            "cwe": "CWE-918",
+            "file": "src/main/java/com/benchmark/services/HttpService.java",
+            "type": "Server-Side Request Forgery"
+        },
+        {
+            "cwe": "CWE-90",
+            "file": "src/main/java/com/benchmark/services/LdapService.java",
+            "type": "LDAP Injection"
+        },
+        {
+            "cwe": "CWE-601",
+            "file": "src/main/java/com/benchmark/controllers/MainController.java",
+            "type": "Open Redirect"
+        }
+    ]
+}

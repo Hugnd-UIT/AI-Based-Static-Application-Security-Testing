@@ -1,0 +1,56 @@
+{
+    "name": "PHP Benchmark",
+    "language": "php",
+    "expected": [
+        {
+            "cwe": "CWE-89",
+            "file": "models/User.php",
+            "type": "SQL Injection"
+        },
+        {
+            "cwe": "CWE-98",
+            "file": "utils/Helper.php",
+            "type": "Local File Inclusion"
+        },
+        {
+            "cwe": "CWE-78",
+            "file": "utils/Helper.php",
+            "type": "Command Injection"
+        },
+        {
+            "cwe": "CWE-502",
+            "file": "index.php",
+            "type": "Insecure Deserialization"
+        },
+        {
+            "cwe": "CWE-79",
+            "file": "index.php",
+            "type": "Cross-Site Scripting"
+        },
+        {
+            "cwe": "CWE-601",
+            "file": "index.php",
+            "type": "Open Redirect"
+        },
+        {
+            "cwe": "CWE-840",
+            "file": "controllers/OrderController.php",
+            "type": "Business Logic Flaw"
+        },
+        {
+            "cwe": "CWE-284",
+            "file": "controllers/OrderController.php",
+            "type": "Improper Access Control"
+        },
+        {
+            "cwe": "CWE-697",
+            "file": "controllers/UserController.php",
+            "type": "Incorrect Comparison"
+        },
+        {
+            "cwe": "CWE-807",
+            "file": "controllers/UserController.php",
+            "type": "Reliance on Untrusted Inputs"
+        }
+    ]
+}

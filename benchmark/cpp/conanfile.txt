@@ -1,0 +1,12 @@
+[requires]
+# Vulnerable Dependency: OpenSSL 1.0.2u (Multiple CVEs, unsupported)
+openssl/1.0.2u
+
+# Vulnerable Dependency: Zlib 1.2.11 (CVE-2018-25032)
+zlib/1.2.11
+
+# Vulnerable Dependency: Poco 1.9.4
+poco/1.9.4
+
+[generators]
+cmake

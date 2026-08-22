@@ -1,0 +1,9 @@
+{
+    "name": "PHP Benchmark",
+    "description": "A PHP benchmark containing both classic security vulnerabilities and complex business logic flaws.",
+    "require": {
+        "php": ">=7.0.0",
+        "guzzlehttp/guzzle": "6.2.0",
+        "monolog/monolog": "1.12.0"
+    }
+}

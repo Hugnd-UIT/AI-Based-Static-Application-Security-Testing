@@ -1,0 +1,18 @@
+<Project Sdk="Microsoft.NET.Sdk.Web">
+
+  <PropertyGroup>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <!-- Vulnerable Dependency: Newtonsoft.Json 12.0.1 (Known issues with deserialization) -->
+    <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
+    
+    <!-- Vulnerable Dependency: log4net 2.0.8 -->
+    <PackageReference Include="log4net" Version="2.0.8" />
+    
+    <!-- Vulnerable Dependency: System.Data.SqlClient 4.6.0 -->
+    <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
+  </ItemGroup>
+
+</Project>
