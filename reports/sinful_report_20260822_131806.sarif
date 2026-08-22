@@ -1,0 +1,1442 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Sinful",
+          "version": "1.0.0"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "csharp.lang.security.sqli.csharp-sqli.csharp-sqli",
+          "level": "error",
+          "message": {
+            "text": "Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements instead. You can obtain a PreparedStatement using 'SqlCommand' and 'SqlParameter'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/DatabaseService.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 13,
+                  "endLine": 13
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "csharp.lang.security.insecure-deserialization.binary-formatter.insecure-binaryformatter-deserialization",
+          "level": "error",
+          "message": {
+            "text": "The BinaryFormatter type is dangerous and is not recommended for data processing. Applications should stop using BinaryFormatter as soon as possible, even if they believe the data they're processing to be trustworthy. BinaryFormatter is insecure and can't be made secure"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/DeserializationService.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 11,
+                  "endLine": 11
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-502: Deserialization of Untrusted Data"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-go",
+          "level": "error",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 12,
+                  "endLine": 12
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-go",
+          "level": "error",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 18,
+                  "endLine": 18
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-go",
+          "level": "error",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 24,
+                  "endLine": 24
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-go",
+          "level": "error",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 30,
+                  "endLine": 30
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-go",
+          "level": "error",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 36,
+                  "endLine": 36
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-go",
+          "level": "error",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/extra.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 17,
+                  "endLine": 17
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "CRITICAL",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "go.lang.security.audit.dangerous-exec-command.dangerous-exec-command",
+          "level": "error",
+          "message": {
+            "text": "Detected non-static command inside Command. Audit the input to 'exec.Command'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/utils/exec.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 10,
+                  "endLine": 10
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "java.lang.security.audit.formatted-sql-string.formatted-sql-string",
+          "level": "error",
+          "message": {
+            "text": "Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements (java.sql.PreparedStatement) instead. You can obtain a PreparedStatement using 'connection.prepareStatement'."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/DatabaseService.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 14,
+                  "endLine": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "javascript.express.security.audit.express-check-csurf-middleware-usage.express-check-csurf-middleware-usage",
+          "level": "error",
+          "message": {
+            "text": "A CSRF middleware was not detected in your express application. Ensure you are either using one such as `csurf` or `csrf` (see rule references) and/or you are properly doing CSRF validation in your routes with a token or cookies."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/app.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 4,
+                  "endLine": 4
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-352: Cross-Site Request Forgery (CSRF)"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-javascript",
+          "level": "error",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/services/db.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 13,
+                  "endLine": 13
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "javascript.lang.security.detect-child-process.detect-child-process",
+          "level": "error",
+          "message": {
+            "text": "Detected calls to child_process from a function argument `host`. This could lead to a command injection if the input is user controllable. Try to avoid calls to child_process, and if it is needed ensure user input is correctly sanitized or sandboxed. "
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/exec.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 6,
+                  "endLine": 6
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "php.lang.security.unserialize-use.unserialize-use",
+          "level": "error",
+          "message": {
+            "text": "Calling `unserialize()` with user input in the pattern can lead to arbitrary code execution. Consider using JSON or structured data approaches (e.g. Google Protocol Buffers)."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/php/index.php",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 46,
+                  "endLine": 46
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-502: Deserialization of Untrusted Data"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "python.lang.security.deserialization.pickle.avoid-pickle",
+          "level": "error",
+          "message": {
+            "text": "Avoid using `pickle`, which is known to lead to code execution vulnerabilities. When unpickling, the serialized data could be manipulated to run arbitrary code. Instead, consider serializing the relevant data as JSON or a similar text-based serialization format."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/deserialize_service.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 5,
+                  "endLine": 5
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-502: Deserialization of Untrusted Data"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "python.flask.security.audit.render-template-string.render-template-string",
+          "level": "error",
+          "message": {
+            "text": "Found a template created with string formatting. This is susceptible to server-side template injection and cross-site scripting attacks."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/template_service.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 6,
+                  "endLine": 6
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-96: Improper Neutralization of Directives in Statically Saved Code ('Static Code Injection')"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "python.lang.security.deserialization.avoid-pyyaml-load.avoid-pyyaml-load",
+          "level": "error",
+          "message": {
+            "text": "Detected a possible YAML deserialization vulnerability. `yaml.unsafe_load`, `yaml.Loader`, `yaml.CLoader`, and `yaml.UnsafeLoader` are all known to be unsafe methods of deserializing YAML. An attacker with control over the YAML input could create special YAML input that allows the attacker to run arbitrary Python code. This would allow the attacker to steal files, download and install malware, or otherwise take over the machine. Use `yaml.safe_load` or `yaml.SafeLoader` instead."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/utils/yaml_util.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 5,
+                  "endLine": 5
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-502: Deserialization of Untrusted Data"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "ruby.lang.security.dangerous-subshell.dangerous-subshell",
+          "level": "error",
+          "message": {
+            "text": "Detected non-static command inside `...`. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/ruby/utils/system_util.rb",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 4,
+                  "endLine": 4
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-rust",
+          "level": "error",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/rust/src/routes.rs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 39,
+                  "endLine": 39
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "scala.lang.security.audit.tainted-sql-string.tainted-sql-string",
+          "level": "error",
+          "message": {
+            "text": "User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`connection.PreparedStatement`) or a safe library."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/scala/src/main/scala/services/DbService.scala",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 6,
+                  "endLine": 6
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "scala.lang.security.audit.scala-dangerous-process-run.scala-dangerous-process-run",
+          "level": "error",
+          "message": {
+            "text": "Found dynamic content used for the external process. This is dangerous if arbitrary data can reach this function call because it allows a malicious actor to execute commands. Use `Seq(...)` for dynamically generated commands."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/scala/src/main/scala/services/SystemService.scala",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 8,
+                  "endLine": 8
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "java.lang.security.audit.xxe.documentbuilderfactory-disallow-doctype-decl-missing.documentbuilderfactory-disallow-doctype-decl-missing",
+          "level": "error",
+          "message": {
+            "text": "DOCTYPE declarations are enabled for this DocumentBuilderFactory. This is vulnerable to XML external entity attacks. Disable this by setting the feature \"http://apache.org/xml/features/disallow-doctype-decl\" to true. Alternatively, allow DOCTYPE declarations and only prohibit external entities declarations. This can be done by setting the features \"http://xml.org/sax/features/external-general-entities\" and \"http://xml.org/sax/features/external-parameter-entities\" to false."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/XmlService.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 14,
+                  "endLine": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-611: Improper Restriction of XML External Entity Reference"
+            ],
+            "severity": "CRITICAL",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "go.lang.security.audit.database.string-formatted-query.string-formatted-query",
+          "level": "error",
+          "message": {
+            "text": "String-formatted SQL query detected. This could lead to SQL injection if the string is not sanitized properly. Audit this call to ensure the SQL is not manipulable by external data."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/services/db.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 13,
+                  "endLine": 13
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+            ],
+            "severity": "HIGH",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "go.lang.security.audit.sqli.gosql-sqli.gosql-sqli",
+          "level": "error",
+          "message": {
+            "text": "Detected string concatenation with a non-literal variable in a \"database/sql\" Go SQL statement. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries or prepared statements instead. You can use prepared statements with the 'Prepare' and 'PrepareContext' calls."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/services/db.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 14,
+                  "endLine": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+            ],
+            "severity": "HIGH",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "problem-based-packs.insecure-transport.js-node.using-http-server.using-http-server",
+          "level": "error",
+          "message": {
+            "text": "Checks for any usage of http servers instead of https servers. Encourages the usage of https protocol instead of http, which does not have TLS and is therefore unencrypted. Using http can lead to man-in-the-middle attacks in which the attacker is able to read sensitive information."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/http.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 5,
+                  "endLine": 5
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": "CWE-319: Cleartext Transmission of Sensitive Information",
+            "severity": "HIGH",
+            "confidence": "90"
+          }
+        },
+        {
+          "ruleId": "python.lang.security.audit.formatted-sql-query.formatted-sql-query",
+          "level": "error",
+          "message": {
+            "text": "Detected possible formatted SQL query. Use parameterized queries instead."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/db_service.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 8,
+                  "endLine": 8
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+            ],
+            "severity": "HIGH",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-rust",
+          "level": "error",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/rust/src/services/http.rs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 3,
+                  "endLine": 3
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "HIGH",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "scala.lang.security.audit.io-source-ssrf.io-source-ssrf",
+          "level": "error",
+          "message": {
+            "text": "A parameter being passed directly into `fromURL` most likely lead to SSRF. This could allow an attacker to send data to their own server, potentially exposing sensitive data sent with this request. They could also probe internal servers or other resources that the server running this code can access. Do not allow arbitrary hosts. Instead, create an allowlist for approved hosts, or hardcode the correct host."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/scala/src/main/scala/services/HttpService.scala",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 7,
+                  "endLine": 7
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-918: Server-Side Request Forgery (SSRF)"
+            ],
+            "severity": "HIGH",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "java.lang.security.audit.object-deserialization.object-deserialization",
+          "level": "error",
+          "message": {
+            "text": "Found object deserialization using ObjectInputStream. Deserializing entire Java objects is dangerous because malicious actors can create Java object streams with unintended consequences. Ensure that the objects being deserialized are not user-controlled. If this must be done, consider using HMACs to sign the data stream to make sure it is not tampered with, or consider only transmitting object fields and populating a new object."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/DeserializationService.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 11,
+                  "endLine": 11
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-502: Deserialization of Untrusted Data"
+            ],
+            "severity": "HIGH",
+            "confidence": "75"
+          }
+        },
+        {
+          "ruleId": "php.lang.security.exec-use.exec-use",
+          "level": "error",
+          "message": {
+            "text": "Executing non-constant commands. This can lead to command injection."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/php/utils/Helper.php",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 11,
+                  "endLine": 11
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-94: Improper Control of Generation of Code ('Code Injection')"
+            ],
+            "severity": "HIGH",
+            "confidence": "92"
+          }
+        },
+        {
+          "ruleId": "csharp.lang.security.filesystem.unsafe-path-combine.unsafe-path-combine",
+          "level": "error",
+          "message": {
+            "text": "String argument filename is used to read or write data from a file via Path.Combine without direct sanitization via Path.GetFileName. If the path is user-supplied data this can lead to path traversal."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/FileService.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 11,
+                  "endLine": 11
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+            ],
+            "severity": "HIGH",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "csharp.dotnet.security.audit.ldap-injection.ldap-injection",
+          "level": "error",
+          "message": {
+            "text": "LDAP queries are constructed dynamically on user-controlled input. This vulnerability in code could lead to an arbitrary LDAP query execution."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/LdapService.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 13,
+                  "endLine": 13
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')"
+            ],
+            "severity": "HIGH",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "csharp.lang.security.xxe.xmlreadersettings-unsafe-parser-override.xmlreadersettings-unsafe-parser-override",
+          "level": "error",
+          "message": {
+            "text": "XmlReaderSettings found with DtdProcessing.Parse on an XmlReader handling a string argument from a public method. Enabling Document Type Definition (DTD) parsing may cause XML External Entity (XXE) injection if supplied with user-controllable data."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/XmlService.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 14,
+                  "endLine": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-611: Improper Restriction of XML External Entity Reference"
+            ],
+            "severity": "HIGH",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "java.lang.security.audit.crypto.use-of-default-aes.use-of-default-aes",
+          "level": "error",
+          "message": {
+            "text": "Use of AES with no settings detected. By default, java.crypto.Cipher uses ECB mode. ECB doesn't  provide message confidentiality and is not semantically secure so should not be used. Instead, use a strong, secure cipher: java.crypto.Cipher.getInstance(\"AES/CBC/PKCS7PADDING\"). See https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions for more information."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/CryptoService.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 23,
+                  "endLine": 23
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+            ],
+            "severity": "HIGH",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal",
+          "level": "error",
+          "message": {
+            "text": "Detected possible user input going into a `path.join` or `path.resolve` function. This could possibly lead to a path traversal vulnerability,  where the attacker can access arbitrary files stored in the file system. Instead, be sure to sanitize or validate user input first."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/services/fs.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 6,
+                  "endLine": 6
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')"
+            ],
+            "severity": "HIGH",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-javascript",
+          "level": "warning",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/user.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 27,
+                  "endLine": 27
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "MEDIUM",
+            "confidence": "90"
+          }
+        },
+        {
+          "ruleId": "go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter",
+          "level": "error",
+          "message": {
+            "text": "Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 26,
+                  "endLine": 26
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+            ],
+            "severity": "HIGH",
+            "confidence": "92"
+          }
+        },
+        {
+          "ruleId": "go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter",
+          "level": "warning",
+          "message": {
+            "text": "Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 32,
+                  "endLine": 32
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+            ],
+            "severity": "MEDIUM",
+            "confidence": "85"
+          }
+        },
+        {
+          "ruleId": "go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter",
+          "level": "warning",
+          "message": {
+            "text": "Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 39,
+                  "endLine": 39
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+            ],
+            "severity": "MEDIUM",
+            "confidence": "90"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-go",
+          "level": "warning",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/redirect.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 8,
+                  "endLine": 8
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "MEDIUM",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-go",
+          "level": "warning",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/redirect.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 10,
+                  "endLine": 10
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "MEDIUM",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-go",
+          "level": "error",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/template.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 9,
+                  "endLine": 9
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "HIGH",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter",
+          "level": "error",
+          "message": {
+            "text": "Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/template.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 12,
+                  "endLine": 12
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+            ],
+            "severity": "HIGH",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "javascript.express.security.audit.possible-user-input-redirect.unknown-value-in-redirect",
+          "level": "warning",
+          "message": {
+            "text": "It looks like 'target' is read from user input and it is used to as a redirect. Ensure 'target' is not externally controlled, otherwise this is an open redirect."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/auth.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 16,
+                  "endLine": 16
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-601: URL Redirection to Untrusted Site ('Open Redirect')"
+            ],
+            "severity": "MEDIUM",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "php.lang.security.injection.echoed-request.echoed-request",
+          "level": "error",
+          "message": {
+            "text": "`Echo`ing user input risks cross-site scripting vulnerability. You should use `htmlentities()` when showing data to users."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/php/index.php",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 53,
+                  "endLine": 53
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')"
+            ],
+            "severity": "HIGH",
+            "confidence": "98"
+          }
+        },
+        {
+          "ruleId": "go.lang.security.audit.net.use-tls.use-tls",
+          "level": "warning",
+          "message": {
+            "text": "Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See https://golang.org/pkg/net/http/#ListenAndServeTLS for more information."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/main.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 22,
+                  "endLine": 22
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-319: Cleartext Transmission of Sensitive Information"
+            ],
+            "severity": "MEDIUM",
+            "confidence": "85"
+          }
+        },
+        {
+          "ruleId": "go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5",
+          "level": "warning",
+          "message": {
+            "text": "Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/utils/crypto.go",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 10,
+                  "endLine": 10
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-328: Use of Weak Hash"
+            ],
+            "severity": "MEDIUM",
+            "confidence": "90"
+          }
+        },
+        {
+          "ruleId": "java.lang.security.audit.crypto.use-of-md5.use-of-md5",
+          "level": "warning",
+          "message": {
+            "text": "Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use HMAC instead."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/CryptoService.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 11,
+                  "endLine": 11
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-328: Use of Weak Hash"
+            ],
+            "severity": "MEDIUM",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "python.lang.security.insecure-hash-algorithms-md5.insecure-hash-algorithm-md5",
+          "level": "warning",
+          "message": {
+            "text": "Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/utils/crypto_util.py",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 5,
+                  "endLine": 5
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-327: Use of a Broken or Risky Cryptographic Algorithm"
+            ],
+            "severity": "MEDIUM",
+            "confidence": "92"
+          }
+        },
+        {
+          "ruleId": "ruby.lang.security.weak-hashes-md5.weak-hashes-md5",
+          "level": "warning",
+          "message": {
+            "text": "Should not use md5 to generate hashes. md5 is proven to be vulnerable through the use of brute-force attacks. Could also result in collisions, leading to potential collision attacks. Use SHA256 or other hashing functions instead."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/ruby/services/crypto_service.rb",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 6,
+                  "endLine": 6
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-328: Use of Weak Hash"
+            ],
+            "severity": "MEDIUM",
+            "confidence": "95"
+          }
+        },
+        {
+          "ruleId": "java.lang.security.audit.ldap-injection.ldap-injection",
+          "level": "note",
+          "message": {
+            "text": "Detected non-constant data passed into an LDAP query. If this data can be controlled by an external user, this is an LDAP injection. Ensure data passed to an LDAP query is not controllable; or properly sanitize the data."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/LdapService.java",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 9,
+                  "endLine": 20
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [
+              "CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')"
+            ],
+            "severity": "WARNING",
+            "confidence": "LOW"
+          }
+        },
+        {
+          "ruleId": "src.scan.rules.sinful-taint-javascript",
+          "level": "note",
+          "message": {
+            "text": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "/mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/user.js",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 16,
+                  "endLine": 16
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "WARNING",
+            "confidence": ""
+          }
+        }
+      ]
+    }
+  ]
+}

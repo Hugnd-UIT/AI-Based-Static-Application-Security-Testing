@@ -280,6 +280,8 @@ def run_scan(path, rules=None, model=None, fix=False):
         logger.section("SAST")
 
         for idx, rsum in enumerate(rags):
+            if rsum.get("ccve") in ["None", "Unknown", None]:
+                continue
 
             try:
                 brief = {

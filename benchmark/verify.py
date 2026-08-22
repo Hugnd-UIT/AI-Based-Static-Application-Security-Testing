@@ -15,7 +15,6 @@ try:
     from rich.panel import Panel
     from rich.text import Text
     from rich import box
-    from rich.group import Group
 except ImportError as e:
     print(f"Error: Unable to import required libraries. {e}")
     sys.exit(1)
@@ -23,10 +22,8 @@ except ImportError as e:
 console = Console()
 
 def render_header():
-    title = Text("SINFUL AI", justify="center", style="bold cyan")
-    subtitle = Text("Benchmark Verification Suite", justify="center", style="dim")
-    group = Group(title, subtitle)
-    console.print(Panel(group, box=box.ROUNDED, expand=False, padding=(1, 4)))
+    content = "[bold cyan]SINFUL[/bold cyan]\n[dim]Benchmark Verification Suite[/dim]"
+    console.print(Panel(content, box=box.ROUNDED, expand=False, padding=(1, 4)), justify="center")
     console.print()
 
 def render_summary(projs, expected, found, no_report):
@@ -148,6 +145,19 @@ def verify():
     stats = []
     projects = []
     
+    global_findings = []
+    root_reports = root.parent / "reports"
+    if root_reports.exists():
+        gfiles = glob.glob(str(root_reports / "sinful_report_*.json"))
+        if gfiles:
+            glatest = max(gfiles, key=os.path.getmtime)
+            try:
+                with open(glatest, "r", encoding="utf-8") as f:
+                    gscan = json.load(f)
+                    global_findings = gscan.get("data", {}).get("findings", []) if "data" in gscan else gscan.get("findings", [])
+            except Exception:
+                pass
+    
     for proj in root.iterdir():
         if not proj.is_dir():
             continue
@@ -169,29 +179,27 @@ def verify():
         total_exp += exp_count
         
         rdir = proj / "reports"
-        if not rdir.exists():
+        rfiles = glob.glob(str(rdir / "sinful_report_*.json")) if rdir.exists() else []
+        
+        findings = []
+        if rfiles:
+            latest = max(rfiles, key=os.path.getmtime)
+            try:
+                with open(latest, "r", encoding="utf-8") as f:
+                    lscan = json.load(f)
+                    findings = lscan.get("data", {}).get("findings", []) if "data" in lscan else lscan.get("findings", [])
+            except Exception:
+                stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "detected": 0, "status": "INVALID REPORT"})
+                projects.append({"name": proj.name, "details": [], "status": "INVALID REPORT"})
+                continue
+        elif global_findings:
+            proj_marker = f"/benchmark/{proj.name}/"
+            findings = [f for f in global_findings if proj_marker in str(f.get("path", "")).replace("\\", "/")]
+        else:
             stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "detected": 0, "status": "NO REPORT"})
             projects.append({"name": proj.name, "details": [], "status": "NO REPORT"})
             missing_count += 1
             continue
-            
-        rfiles = glob.glob(str(rdir / "sinful_report_*.json"))
-        if not rfiles:
-            stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "detected": 0, "status": "NO REPORT"})
-            projects.append({"name": proj.name, "details": [], "status": "NO REPORT"})
-            missing_count += 1
-            continue
-            
-        latest = max(rfiles, key=os.path.getmtime)
-        try:
-            with open(latest, "r", encoding="utf-8") as f:
-                scan = json.load(f)
-        except Exception:
-            stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "detected": 0, "status": "INVALID REPORT"})
-            projects.append({"name": proj.name, "details": [], "status": "INVALID REPORT"})
-            continue
-            
-        findings = scan.get("findings", [])
         
         det_count = 0
         details = []

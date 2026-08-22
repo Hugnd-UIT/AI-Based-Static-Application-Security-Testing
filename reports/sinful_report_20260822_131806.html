@@ -1,0 +1,317 @@
+<html>
+<head>
+<title>Sinful Report</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+h1 { color: #2c3e50; }
+.finding { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.critical, .high { border-left: 5px solid #e74c3c; }
+.medium { border-left: 5px solid #f39c12; }
+.low, .info { border-left: 5px solid #3498db; }
+h3 { margin-top: 0; }
+pre { background: #272822; color: #f8f8f2; padding: 10px; border-radius: 3px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Sinful Report</h1>
+<p><strong>Target:</strong> benchmark</p>
+<p><strong>Total Findings:</strong> 52</p>
+<div class='finding critical'>
+<h3>csharp.lang.security.sqli.csharp-sqli.csharp-sqli (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/DatabaseService.cs (Line: 13)</p>
+<p><strong>Message:</strong> Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements instead. You can obtain a PreparedStatement using 'SqlCommand' and 'SqlParameter'.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+</div>
+<div class='finding critical'>
+<h3>csharp.lang.security.insecure-deserialization.binary-formatter.insecure-binaryformatter-deserialization (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/DeserializationService.cs (Line: 11)</p>
+<p><strong>Message:</strong> The BinaryFormatter type is dangerous and is not recommended for data processing. Applications should stop using BinaryFormatter as soon as possible, even if they believe the data they're processing to be trustworthy. BinaryFormatter is insecure and can't be made secure</p>
+<p><strong>CWE:</strong> CWE-502: Deserialization of Untrusted Data</p>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-go (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 12)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-go (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 18)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-go (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 24)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-go (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 30)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-go (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 36)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-go (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/extra.go (Line: 17)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding critical'>
+<h3>go.lang.security.audit.dangerous-exec-command.dangerous-exec-command (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/utils/exec.go (Line: 10)</p>
+<p><strong>Message:</strong> Detected non-static command inside Command. Audit the input to 'exec.Command'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.</p>
+<p><strong>CWE:</strong> CWE-94: Improper Control of Generation of Code ('Code Injection')</p>
+</div>
+<div class='finding critical'>
+<h3>java.lang.security.audit.formatted-sql-string.formatted-sql-string (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/DatabaseService.java (Line: 14)</p>
+<p><strong>Message:</strong> Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements (java.sql.PreparedStatement) instead. You can obtain a PreparedStatement using 'connection.prepareStatement'.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+</div>
+<div class='finding critical'>
+<h3>javascript.express.security.audit.express-check-csurf-middleware-usage.express-check-csurf-middleware-usage (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/app.js (Line: 4)</p>
+<p><strong>Message:</strong> A CSRF middleware was not detected in your express application. Ensure you are either using one such as `csurf` or `csrf` (see rule references) and/or you are properly doing CSRF validation in your routes with a token or cookies.</p>
+<p><strong>CWE:</strong> CWE-352: Cross-Site Request Forgery (CSRF)</p>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/services/db.js (Line: 13)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding critical'>
+<h3>javascript.lang.security.detect-child-process.detect-child-process (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/exec.js (Line: 6)</p>
+<p><strong>Message:</strong> Detected calls to child_process from a function argument `host`. This could lead to a command injection if the input is user controllable. Try to avoid calls to child_process, and if it is needed ensure user input is correctly sanitized or sandboxed. </p>
+<p><strong>CWE:</strong> CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')</p>
+</div>
+<div class='finding critical'>
+<h3>php.lang.security.unserialize-use.unserialize-use (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/php/index.php (Line: 46)</p>
+<p><strong>Message:</strong> Calling `unserialize()` with user input in the pattern can lead to arbitrary code execution. Consider using JSON or structured data approaches (e.g. Google Protocol Buffers).</p>
+<p><strong>CWE:</strong> CWE-502: Deserialization of Untrusted Data</p>
+</div>
+<div class='finding critical'>
+<h3>python.lang.security.deserialization.pickle.avoid-pickle (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/deserialize_service.py (Line: 5)</p>
+<p><strong>Message:</strong> Avoid using `pickle`, which is known to lead to code execution vulnerabilities. When unpickling, the serialized data could be manipulated to run arbitrary code. Instead, consider serializing the relevant data as JSON or a similar text-based serialization format.</p>
+<p><strong>CWE:</strong> CWE-502: Deserialization of Untrusted Data</p>
+</div>
+<div class='finding critical'>
+<h3>python.flask.security.audit.render-template-string.render-template-string (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/template_service.py (Line: 6)</p>
+<p><strong>Message:</strong> Found a template created with string formatting. This is susceptible to server-side template injection and cross-site scripting attacks.</p>
+<p><strong>CWE:</strong> CWE-96: Improper Neutralization of Directives in Statically Saved Code ('Static Code Injection')</p>
+</div>
+<div class='finding critical'>
+<h3>python.lang.security.deserialization.avoid-pyyaml-load.avoid-pyyaml-load (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/utils/yaml_util.py (Line: 5)</p>
+<p><strong>Message:</strong> Detected a possible YAML deserialization vulnerability. `yaml.unsafe_load`, `yaml.Loader`, `yaml.CLoader`, and `yaml.UnsafeLoader` are all known to be unsafe methods of deserializing YAML. An attacker with control over the YAML input could create special YAML input that allows the attacker to run arbitrary Python code. This would allow the attacker to steal files, download and install malware, or otherwise take over the machine. Use `yaml.safe_load` or `yaml.SafeLoader` instead.</p>
+<p><strong>CWE:</strong> CWE-502: Deserialization of Untrusted Data</p>
+</div>
+<div class='finding critical'>
+<h3>ruby.lang.security.dangerous-subshell.dangerous-subshell (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/ruby/utils/system_util.rb (Line: 4)</p>
+<p><strong>Message:</strong> Detected non-static command inside `...`. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.</p>
+<p><strong>CWE:</strong> CWE-94: Improper Control of Generation of Code ('Code Injection')</p>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-rust (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/rust/src/routes.rs (Line: 39)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding critical'>
+<h3>scala.lang.security.audit.tainted-sql-string.tainted-sql-string (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/scala/src/main/scala/services/DbService.scala (Line: 6)</p>
+<p><strong>Message:</strong> User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`connection.PreparedStatement`) or a safe library.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+</div>
+<div class='finding critical'>
+<h3>scala.lang.security.audit.scala-dangerous-process-run.scala-dangerous-process-run (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/scala/src/main/scala/services/SystemService.scala (Line: 8)</p>
+<p><strong>Message:</strong> Found dynamic content used for the external process. This is dangerous if arbitrary data can reach this function call because it allows a malicious actor to execute commands. Use `Seq(...)` for dynamically generated commands.</p>
+<p><strong>CWE:</strong> CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')</p>
+</div>
+<div class='finding critical'>
+<h3>java.lang.security.audit.xxe.documentbuilderfactory-disallow-doctype-decl-missing.documentbuilderfactory-disallow-doctype-decl-missing (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/XmlService.java (Line: 14)</p>
+<p><strong>Message:</strong> DOCTYPE declarations are enabled for this DocumentBuilderFactory. This is vulnerable to XML external entity attacks. Disable this by setting the feature "http://apache.org/xml/features/disallow-doctype-decl" to true. Alternatively, allow DOCTYPE declarations and only prohibit external entities declarations. This can be done by setting the features "http://xml.org/sax/features/external-general-entities" and "http://xml.org/sax/features/external-parameter-entities" to false.</p>
+<p><strong>CWE:</strong> CWE-611: Improper Restriction of XML External Entity Reference</p>
+</div>
+<div class='finding high'>
+<h3>go.lang.security.audit.database.string-formatted-query.string-formatted-query (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/services/db.go (Line: 13)</p>
+<p><strong>Message:</strong> String-formatted SQL query detected. This could lead to SQL injection if the string is not sanitized properly. Audit this call to ensure the SQL is not manipulable by external data.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+</div>
+<div class='finding high'>
+<h3>go.lang.security.audit.sqli.gosql-sqli.gosql-sqli (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/services/db.go (Line: 14)</p>
+<p><strong>Message:</strong> Detected string concatenation with a non-literal variable in a "database/sql" Go SQL statement. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries or prepared statements instead. You can use prepared statements with the 'Prepare' and 'PrepareContext' calls.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+</div>
+<div class='finding high'>
+<h3>problem-based-packs.insecure-transport.js-node.using-http-server.using-http-server (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/http.js (Line: 5)</p>
+<p><strong>Message:</strong> Checks for any usage of http servers instead of https servers. Encourages the usage of https protocol instead of http, which does not have TLS and is therefore unencrypted. Using http can lead to man-in-the-middle attacks in which the attacker is able to read sensitive information.</p>
+<p><strong>CWE:</strong> C, W, E, -, 3, 1, 9, :,  , C, l, e, a, r, t, e, x, t,  , T, r, a, n, s, m, i, s, s, i, o, n,  , o, f,  , S, e, n, s, i, t, i, v, e,  , I, n, f, o, r, m, a, t, i, o, n</p>
+</div>
+<div class='finding high'>
+<h3>python.lang.security.audit.formatted-sql-query.formatted-sql-query (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/db_service.py (Line: 8)</p>
+<p><strong>Message:</strong> Detected possible formatted SQL query. Use parameterized queries instead.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+</div>
+<div class='finding high'>
+<h3>src.scan.rules.sinful-taint-rust (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/rust/src/services/http.rs (Line: 3)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding high'>
+<h3>scala.lang.security.audit.io-source-ssrf.io-source-ssrf (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/scala/src/main/scala/services/HttpService.scala (Line: 7)</p>
+<p><strong>Message:</strong> A parameter being passed directly into `fromURL` most likely lead to SSRF. This could allow an attacker to send data to their own server, potentially exposing sensitive data sent with this request. They could also probe internal servers or other resources that the server running this code can access. Do not allow arbitrary hosts. Instead, create an allowlist for approved hosts, or hardcode the correct host.</p>
+<p><strong>CWE:</strong> CWE-918: Server-Side Request Forgery (SSRF)</p>
+</div>
+<div class='finding high'>
+<h3>java.lang.security.audit.object-deserialization.object-deserialization (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/DeserializationService.java (Line: 11)</p>
+<p><strong>Message:</strong> Found object deserialization using ObjectInputStream. Deserializing entire Java objects is dangerous because malicious actors can create Java object streams with unintended consequences. Ensure that the objects being deserialized are not user-controlled. If this must be done, consider using HMACs to sign the data stream to make sure it is not tampered with, or consider only transmitting object fields and populating a new object.</p>
+<p><strong>CWE:</strong> CWE-502: Deserialization of Untrusted Data</p>
+</div>
+<div class='finding high'>
+<h3>php.lang.security.exec-use.exec-use (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/php/utils/Helper.php (Line: 11)</p>
+<p><strong>Message:</strong> Executing non-constant commands. This can lead to command injection.</p>
+<p><strong>CWE:</strong> CWE-94: Improper Control of Generation of Code ('Code Injection')</p>
+</div>
+<div class='finding high'>
+<h3>csharp.lang.security.filesystem.unsafe-path-combine.unsafe-path-combine (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/FileService.cs (Line: 11)</p>
+<p><strong>Message:</strong> String argument filename is used to read or write data from a file via Path.Combine without direct sanitization via Path.GetFileName. If the path is user-supplied data this can lead to path traversal.</p>
+<p><strong>CWE:</strong> CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')</p>
+</div>
+<div class='finding high'>
+<h3>csharp.dotnet.security.audit.ldap-injection.ldap-injection (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/LdapService.cs (Line: 13)</p>
+<p><strong>Message:</strong> LDAP queries are constructed dynamically on user-controlled input. This vulnerability in code could lead to an arbitrary LDAP query execution.</p>
+<p><strong>CWE:</strong> CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')</p>
+</div>
+<div class='finding high'>
+<h3>csharp.lang.security.xxe.xmlreadersettings-unsafe-parser-override.xmlreadersettings-unsafe-parser-override (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/XmlService.cs (Line: 14)</p>
+<p><strong>Message:</strong> XmlReaderSettings found with DtdProcessing.Parse on an XmlReader handling a string argument from a public method. Enabling Document Type Definition (DTD) parsing may cause XML External Entity (XXE) injection if supplied with user-controllable data.</p>
+<p><strong>CWE:</strong> CWE-611: Improper Restriction of XML External Entity Reference</p>
+</div>
+<div class='finding high'>
+<h3>java.lang.security.audit.crypto.use-of-default-aes.use-of-default-aes (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/CryptoService.java (Line: 23)</p>
+<p><strong>Message:</strong> Use of AES with no settings detected. By default, java.crypto.Cipher uses ECB mode. ECB doesn't  provide message confidentiality and is not semantically secure so should not be used. Instead, use a strong, secure cipher: java.crypto.Cipher.getInstance("AES/CBC/PKCS7PADDING"). See https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions for more information.</p>
+<p><strong>CWE:</strong> CWE-327: Use of a Broken or Risky Cryptographic Algorithm</p>
+</div>
+<div class='finding high'>
+<h3>javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/services/fs.js (Line: 6)</p>
+<p><strong>Message:</strong> Detected possible user input going into a `path.join` or `path.resolve` function. This could possibly lead to a path traversal vulnerability,  where the attacker can access arbitrary files stored in the file system. Instead, be sure to sanitize or validate user input first.</p>
+<p><strong>CWE:</strong> CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')</p>
+</div>
+<div class='finding medium'>
+<h3>src.scan.rules.sinful-taint-javascript (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/user.js (Line: 27)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding high'>
+<h3>go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 26)</p>
+<p><strong>Message:</strong> Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.</p>
+<p><strong>CWE:</strong> CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')</p>
+</div>
+<div class='finding medium'>
+<h3>go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 32)</p>
+<p><strong>Message:</strong> Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.</p>
+<p><strong>CWE:</strong> CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')</p>
+</div>
+<div class='finding medium'>
+<h3>go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 39)</p>
+<p><strong>Message:</strong> Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.</p>
+<p><strong>CWE:</strong> CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')</p>
+</div>
+<div class='finding medium'>
+<h3>src.scan.rules.sinful-taint-go (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/redirect.go (Line: 8)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding medium'>
+<h3>src.scan.rules.sinful-taint-go (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/redirect.go (Line: 10)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding high'>
+<h3>src.scan.rules.sinful-taint-go (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/template.go (Line: 9)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding high'>
+<h3>go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/template.go (Line: 12)</p>
+<p><strong>Message:</strong> Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.</p>
+<p><strong>CWE:</strong> CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')</p>
+</div>
+<div class='finding medium'>
+<h3>javascript.express.security.audit.possible-user-input-redirect.unknown-value-in-redirect (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/auth.js (Line: 16)</p>
+<p><strong>Message:</strong> It looks like 'target' is read from user input and it is used to as a redirect. Ensure 'target' is not externally controlled, otherwise this is an open redirect.</p>
+<p><strong>CWE:</strong> CWE-601: URL Redirection to Untrusted Site ('Open Redirect')</p>
+</div>
+<div class='finding high'>
+<h3>php.lang.security.injection.echoed-request.echoed-request (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/php/index.php (Line: 53)</p>
+<p><strong>Message:</strong> `Echo`ing user input risks cross-site scripting vulnerability. You should use `htmlentities()` when showing data to users.</p>
+<p><strong>CWE:</strong> CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')</p>
+</div>
+<div class='finding medium'>
+<h3>go.lang.security.audit.net.use-tls.use-tls (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/main.go (Line: 22)</p>
+<p><strong>Message:</strong> Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.</p>
+<p><strong>CWE:</strong> CWE-319: Cleartext Transmission of Sensitive Information</p>
+</div>
+<div class='finding medium'>
+<h3>go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5 (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/utils/crypto.go (Line: 10)</p>
+<p><strong>Message:</strong> Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.</p>
+<p><strong>CWE:</strong> CWE-328: Use of Weak Hash</p>
+</div>
+<div class='finding medium'>
+<h3>java.lang.security.audit.crypto.use-of-md5.use-of-md5 (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/CryptoService.java (Line: 11)</p>
+<p><strong>Message:</strong> Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use HMAC instead.</p>
+<p><strong>CWE:</strong> CWE-328: Use of Weak Hash</p>
+</div>
+<div class='finding medium'>
+<h3>python.lang.security.insecure-hash-algorithms-md5.insecure-hash-algorithm-md5 (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/utils/crypto_util.py (Line: 5)</p>
+<p><strong>Message:</strong> Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.</p>
+<p><strong>CWE:</strong> CWE-327: Use of a Broken or Risky Cryptographic Algorithm</p>
+</div>
+<div class='finding medium'>
+<h3>ruby.lang.security.weak-hashes-md5.weak-hashes-md5 (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/ruby/services/crypto_service.rb (Line: 6)</p>
+<p><strong>Message:</strong> Should not use md5 to generate hashes. md5 is proven to be vulnerable through the use of brute-force attacks. Could also result in collisions, leading to potential collision attacks. Use SHA256 or other hashing functions instead.</p>
+<p><strong>CWE:</strong> CWE-328: Use of Weak Hash</p>
+</div>
+<div class='finding warning'>
+<h3>java.lang.security.audit.ldap-injection.ldap-injection (WARNING)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/LdapService.java (Line: 9)</p>
+<p><strong>Message:</strong> Detected non-constant data passed into an LDAP query. If this data can be controlled by an external user, this is an LDAP injection. Ensure data passed to an LDAP query is not controllable; or properly sanitize the data.</p>
+<p><strong>CWE:</strong> CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')</p>
+</div>
+<div class='finding warning'>
+<h3>src.scan.rules.sinful-taint-javascript (WARNING)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/user.js (Line: 16)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+</body></html>
