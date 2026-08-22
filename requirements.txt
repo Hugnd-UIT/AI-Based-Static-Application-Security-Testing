@@ -16,3 +16,4 @@ rich
 prompt_toolkit
 openai
 python-dotenv
+pyyaml
