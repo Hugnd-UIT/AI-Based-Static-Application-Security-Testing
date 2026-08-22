@@ -11,10 +11,9 @@ def execute_scan(path: str, fix: bool = False):
     logger.log_info(f"Starting Sinful on {path}...")
     logger.blank_line()
 
-    # Hàm thực thi quét
     def do_scan():
         model = os.environ.get("MODELS")
-        return run_scan(path, use_model=model, do_fix=fix)
+        return run_scan(path, model=model, fix=fix)
 
     from cli.views.spinner import show_spinner
     res = show_spinner("Analyzing source code", do_scan)

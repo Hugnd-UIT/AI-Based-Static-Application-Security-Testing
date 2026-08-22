@@ -1,0 +1,16 @@
+{
+    "name": "Scala Benchmark",
+    "language": "scala",
+    "expected": [
+        { "cwe": "CWE-89", "file": "src/main/scala/services/DbService.scala", "type": "SQL Injection" },
+        { "cwe": "CWE-78", "file": "src/main/scala/services/SystemService.scala", "type": "Command Injection" },
+        { "cwe": "CWE-22", "file": "src/main/scala/services/FileService.scala", "type": "Path Traversal" },
+        { "cwe": "CWE-918", "file": "src/main/scala/services/HttpService.scala", "type": "Server-Side Request Forgery" },
+        { "cwe": "CWE-327", "file": "src/main/scala/services/CryptoService.scala", "type": "Broken Crypto Algorithm" },
+        { "cwe": "CWE-321", "file": "src/main/scala/services/CryptoService.scala", "type": "Hardcoded Key" },
+        { "cwe": "CWE-611", "file": "src/main/scala/services/XmlService.scala", "type": "XML External Entity" },
+        { "cwe": "CWE-840", "file": "src/main/scala/services/LogicService.scala", "type": "Business Logic Flaw" },
+        { "cwe": "CWE-284", "file": "src/main/scala/services/LogicService.scala", "type": "Improper Access Control" },
+        { "cwe": "CWE-502", "file": "src/main/scala/services/DeserializeService.scala", "type": "Insecure Deserialization" }
+    ]
+}

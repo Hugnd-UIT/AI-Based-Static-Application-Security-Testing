@@ -1,0 +1,56 @@
+{
+    "name": "Ruby Benchmark",
+    "language": "ruby",
+    "expected": [
+        {
+            "cwe": "CWE-89",
+            "file": "services/db_service.rb",
+            "type": "SQL Injection"
+        },
+        {
+            "cwe": "CWE-78",
+            "file": "utils/system_util.rb",
+            "type": "Command Injection"
+        },
+        {
+            "cwe": "CWE-22",
+            "file": "services/file_service.rb",
+            "type": "Path Traversal"
+        },
+        {
+            "cwe": "CWE-611",
+            "file": "services/xml_service.rb",
+            "type": "XML External Entity"
+        },
+        {
+            "cwe": "CWE-502",
+            "file": "services/deserialize_service.rb",
+            "type": "Insecure Deserialization"
+        },
+        {
+            "cwe": "CWE-918",
+            "file": "services/http_service.rb",
+            "type": "Server-Side Request Forgery"
+        },
+        {
+            "cwe": "CWE-327",
+            "file": "services/crypto_service.rb",
+            "type": "Broken Crypto Algorithm"
+        },
+        {
+            "cwe": "CWE-840",
+            "file": "services/logic_service.rb",
+            "type": "Business Logic Flaw"
+        },
+        {
+            "cwe": "CWE-284",
+            "file": "services/logic_service.rb",
+            "type": "Improper Access Control"
+        },
+        {
+            "cwe": "CWE-915",
+            "file": "services/logic_service.rb",
+            "type": "Mass Assignment"
+        }
+    ]
+}

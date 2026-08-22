@@ -1,0 +1,56 @@
+{
+    "name": "Python Benchmark",
+    "language": "python",
+    "expected": [
+        {
+            "cwe": "CWE-89",
+            "file": "services/db_service.py",
+            "type": "SQL Injection"
+        },
+        {
+            "cwe": "CWE-78",
+            "file": "utils/system_util.py",
+            "type": "Command Injection"
+        },
+        {
+            "cwe": "CWE-22",
+            "file": "services/file_service.py",
+            "type": "Path Traversal"
+        },
+        {
+            "cwe": "CWE-94",
+            "file": "services/template_service.py",
+            "type": "Server-Side Template Injection"
+        },
+        {
+            "cwe": "CWE-502",
+            "file": "services/deserialize_service.py",
+            "type": "Insecure Deserialization (Pickle)"
+        },
+        {
+            "cwe": "CWE-502",
+            "file": "utils/yaml_util.py",
+            "type": "Insecure Deserialization (YAML)"
+        },
+        {
+            "cwe": "CWE-327",
+            "file": "utils/crypto_util.py",
+            "type": "Broken Crypto Algorithm"
+        },
+        {
+            "cwe": "CWE-918",
+            "file": "services/http_service.py",
+            "type": "Server-Side Request Forgery"
+        },
+        {
+            "cwe": "CWE-840",
+            "file": "services/logic_service.py",
+            "type": "Business Logic Flaw"
+        },
+        {
+            "cwe": "CWE-284",
+            "file": "services/logic_service.py",
+            "type": "Improper Access Control"
+        }
+    ]
+}

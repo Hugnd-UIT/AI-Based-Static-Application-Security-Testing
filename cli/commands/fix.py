@@ -34,7 +34,7 @@ def process_command(cmd: str) -> bool:
     if low.startswith("/scan"):
         path = raw[5:].strip()
         if path:
-            execute_scan(path, auto_fix=False)
+            execute_scan(path, fix=False)
         else:
             console.print("  [bold yellow]s Please provide a target path[/bold yellow] Example: [cyan]/scan <path-to-code>[/cyan]")
         return True
@@ -43,7 +43,7 @@ def process_command(cmd: str) -> bool:
     if low.startswith("/auto-fix"):
         path = raw[9:].strip()
         if path:
-            execute_scan(path, auto_fix=True)
+            execute_scan(path, fix=True)
         else:
             console.print("  [bold yellow]s Please provide a target path[/bold yellow] Example: [cyan]/auto-fix <path-to-code>[/cyan]")
         return True

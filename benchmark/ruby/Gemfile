@@ -1,0 +1,10 @@
+source 'https://rubygems.org'
+
+# Vulnerable Dependency: Rails 5.2.0
+gem 'rails', '5.2.0'
+
+# Vulnerable Dependency: Nokogiri 1.8.1 
+gem 'nokogiri', '1.8.1'
+
+# Vulnerable Dependency: Sinatra 1.4.7
+gem 'sinatra', '1.4.7'

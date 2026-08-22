@@ -1,0 +1,16 @@
+{
+    "name": "Rust Benchmark",
+    "language": "rust",
+    "expected": [
+        { "cwe": "CWE-89", "file": "src/services/db.rs", "type": "SQL Injection" },
+        { "cwe": "CWE-78", "file": "src/services/system.rs", "type": "Command Injection" },
+        { "cwe": "CWE-22", "file": "src/services/file.rs", "type": "Path Traversal" },
+        { "cwe": "CWE-918", "file": "src/services/http.rs", "type": "Server-Side Request Forgery" },
+        { "cwe": "CWE-327", "file": "src/services/crypto.rs", "type": "Broken Crypto Algorithm" },
+        { "cwe": "CWE-321", "file": "src/services/crypto.rs", "type": "Hardcoded Key" },
+        { "cwe": "CWE-119", "file": "src/services/unsafe_mem.rs", "type": "Memory Corruption" },
+        { "cwe": "CWE-840", "file": "src/services/logic.rs", "type": "Business Logic Flaw" },
+        { "cwe": "CWE-284", "file": "src/services/logic.rs", "type": "Improper Access Control" },
+        { "cwe": "CWE-502", "file": "src/services/deserialize.rs", "type": "Insecure Deserialization" }
+    ]
+}

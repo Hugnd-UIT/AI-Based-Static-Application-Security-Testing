@@ -1,0 +1,11 @@
+[package]
+name = "benchmark-rust"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+# Vulnerable or old dependencies to test dependency scanning
+actix-web = "3.3.2" # Old version
+serde_json = "1.0.50"
+md5 = "0.7.0"
+reqwest = "0.10.0"
