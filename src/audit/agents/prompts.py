@@ -20,6 +20,7 @@ Reason step by step and act by calling tools to gather concrete evidence before 
 # Decision Rules
 - Set `verdict = "VULNERABLE"` only when you have proven an unbroken taint path.
 - Set `verdict = "SAFE"` only when sanitization is verified on ALL execution paths. If a sanitizer is only on one branch, it is still VULNERABLE.
+- Identify the exact CWE IDs for the vulnerability. When calling `submit_verdict`, you MUST provide `cwe_ids` as an array of integers (e.g. `[89, 79]`). Do NOT include the string "CWE".
 - Business Logic flaws (IDOR, missing auth) are valid vulnerabilities.
 - Race conditions and time-of-check/time-of-use (TOCTOU) are valid vulnerabilities.
 

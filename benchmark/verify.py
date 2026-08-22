@@ -219,7 +219,9 @@ def verify():
                     fmsg = str(flaw.get("message", "")).upper()
                     
                     fcwes = extract_cwes(flaw)
-                    has_cwe = any(cwe in str(c).upper() for c in fcwes)
+                    cwe_ids = flaw.get("cwe_ids", [])
+                    cwe_id_match = any(cwe == f"CWE-{c_id}" for c_id in cwe_ids) if isinstance(cwe_ids, list) else False
+                    has_cwe = cwe_id_match or any(cwe in str(c).upper() for c in fcwes)
                     fvuln_class = str(flaw.get("vuln_class", "")).upper()
                     
                     if cwe in fid or cwe in ftitle or cwe in fmsg or vtype.upper() in ftitle or has_cwe or cwe in fvuln_class or vtype.upper() in fvuln_class:

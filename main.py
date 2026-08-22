@@ -259,6 +259,10 @@ def run_scan(path, rules=None, model=None, fix=False):
                     console.print(
                         f"  ├─ [dim][Confidence: {verdict.get('confidence', 'N/A')}%][/dim]"
                     )
+                    if "cwe_ids" in verdict:
+                        console.print(
+                            f"  ├─ [dim][CWEs: {verdict.get('cwe_ids', [])}][/dim]"
+                        )
                     console.print(
                         f"  └─ [dim][Class: {verdict.get('vuln_class', 'N/A')}][/dim]"
                     )

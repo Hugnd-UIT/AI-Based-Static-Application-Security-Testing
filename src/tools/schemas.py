@@ -138,7 +138,12 @@ VERDICT_SCHEMA = {
                 },
                 "vuln_class": {
                     "type": "string",
-                    "description": "CWE/vulnerability class",
+                    "description": "Vulnerability name/class (e.g., 'SQL Injection')",
+                },
+                "cwe_ids": {
+                    "type": "array",
+                    "items": {"type": "integer"},
+                    "description": "An array of only integer CWE IDs (e.g. [89, 79]). NEVER include the string 'CWE'.",
                 },
                 "reasoning": {
                     "type": "string",
