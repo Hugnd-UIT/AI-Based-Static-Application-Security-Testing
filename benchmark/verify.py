@@ -21,14 +21,42 @@ except ImportError as e:
 
 console = Console()
 
+import sys
+project_root = str(Path(__file__).resolve().parent.parent)
+if project_root not in sys.path:
+    sys.path.append(project_root)
+
+def ai_judge(expected_cwe, expected_type, ai_title, ai_msg, ai_class, ai_cwes):
+    try:
+        from src.llm import fetch_llm
+        prompt = f"""
+            You are a vulnerability verification judge. 
+            The benchmark EXPECTED this vulnerability: CWE: {expected_cwe}, Type: {expected_type}
+            The AI scanner FOUND this vulnerability on the exact same file:
+            - Title: {ai_title}
+            - Message: {ai_msg}
+            - Class: {ai_class}
+            - Extracted CWEs: {ai_cwes}
+
+            Determine if the AI's finding correctly describes or is a variant of the expected vulnerability.
+            Return a JSON object with exactly one boolean field "match".
+            Example: {{"match": true}} or {{"match": false}}
+        """
+        res = fetch_llm(prompt=prompt, model=None, jfmt=True)
+        return res.get("match", False)
+    except Exception as e:
+        return False
+
 def render_header():
     content = "[bold cyan]SINFUL[/bold cyan]\n[dim]Benchmark Verification Suite[/dim]"
     console.print(Panel(content, box=box.ROUNDED, expand=False, padding=(1, 4)), justify="center")
     console.print()
 
-def render_summary(projs, expected, found, no_report):
-    missed = expected - found
-    rate = (found / expected * 100) if expected > 0 else 0
+def render_summary(projs, expected, found_rule, found_ai, no_report):
+    missed_rule = expected - found_rule
+    rate_rule = (found_rule / expected * 100) if expected > 0 else 0
+    missed_ai = expected - found_ai
+    rate_ai = (found_ai / expected * 100) if expected > 0 else 0
     
     table = Table(box=box.SIMPLE_HEAVY, show_header=False)
     table.add_column("Metric", style="bold")
@@ -38,9 +66,12 @@ def render_summary(projs, expected, found, no_report):
     if no_report > 0:
         table.add_row("Missing Reports", f"[yellow]{no_report}[/yellow]")
     table.add_row("Expected Findings", str(expected))
-    table.add_row("Detected Findings", f"[green]{found}[/green]")
-    table.add_row("Missed Findings", f"[red]{missed}[/red]")
-    table.add_row("Detection Rate", f"{rate:.1f}%")
+    table.add_row("Detected (Script Match)", f"[green]{found_rule}[/green]")
+    table.add_row("Missed (Script Match)", f"[red]{missed_rule}[/red]")
+    table.add_row("Detection Rate (Script Match)", f"{rate_rule:.1f}%")
+    table.add_row("Detected (AI Match)", f"[green]{found_ai}[/green]")
+    table.add_row("Missed (AI Match)", f"[red]{missed_ai}[/red]")
+    table.add_row("Detection Rate (AI Match)", f"{rate_ai:.1f}%")
     
     console.print(Text("BENCHMARK SUMMARY", style="bold cyan"))
     console.print(table)
@@ -59,24 +90,29 @@ def render_overview(stats):
     table.add_column("Project")
     table.add_column("Language")
     table.add_column("Expected", justify="right")
-    table.add_column("Detected", justify="right")
-    table.add_column("Rate", justify="right")
+    table.add_column("Det(Script)", justify="right")
+    table.add_column("Det(AI)", justify="right")
+    table.add_column("Rate(Script)", justify="right")
+    table.add_column("Rate(AI)", justify="right")
     table.add_column("Status")
     
     for stat in stats:
         name = stat["name"]
         lang = stat["lang"]
         exp = stat["expected"]
-        det = stat["detected"]
+        det_rule = stat["det_rule"]
+        det_ai = stat["det_ai"]
         status = stat["status"]
         
         if status == "NO REPORT":
-            table.add_row(name, lang, str(exp), "-", "-", "[dim]NO REPORT[/dim]")
+            table.add_row(name, lang, str(exp), "-", "-", "-", "-", "[dim]NO REPORT[/dim]")
         elif status == "INVALID REPORT":
-            table.add_row(name, lang, str(exp), "-", "-", "[dim red]INVALID[/dim red]")
+            table.add_row(name, lang, str(exp), "-", "-", "-", "-", "[dim red]INVALID[/dim red]")
         else:
-            rate = (det / exp * 100) if exp > 0 else 0
-            table.add_row(name, lang, str(exp), f"{det}/{exp}", f"{rate:.1f}%", get_status_style(rate))
+            rate_rule = (det_rule / exp * 100) if exp > 0 else 0
+            rate_ai = (det_ai / exp * 100) if exp > 0 else 0
+            final_status = get_status_style(rate_rule)
+            table.add_row(name, lang, str(exp), f"{det_rule}/{exp}", f"{det_ai}/{exp}", f"{rate_rule:.1f}%", f"{rate_ai:.1f}%", final_status)
             
     console.print(table)
     console.print()
@@ -96,23 +132,28 @@ def render_details(name, details, status):
     table.add_column("CWE")
     table.add_column("Target File", overflow="fold")
     table.add_column("Vulnerability Type")
-    table.add_column("Result")
+    table.add_column("Script Match")
+    table.add_column("AI Match")
     
     for d in details:
-        res = "[green]✓ DETECTED[/green]" if d["detected"] else "[red]✗ MISSED[/red]"
-        table.add_row(d["cwe"], d["file"], d["type"], res)
+        res_rule = "[green]✓[/green]" if d["det_rule"] else "[red]✗[/red]"
+        res_ai = "[green]✓[/green]" if d["det_ai"] else "[red]✗[/red]"
+        table.add_row(d["cwe"], d["file"], d["type"], res_rule, res_ai)
         
     console.print(table)
     console.print()
 
-def render_verdict(expected, found):
+def render_verdict(expected, found_rule, found_ai):
     console.print(Text("FINAL EVALUATION", style="bold cyan"))
-    rate = (found / expected * 100) if expected > 0 else 0
-    status = get_status_style(rate)
+    rate_rule = (found_rule / expected * 100) if expected > 0 else 0
+    rate_ai = (found_ai / expected * 100) if expected > 0 else 0
     
-    content = f"[bold]Ground-Truth Detection Rate:[/bold] {rate:.1f}%\n"
-    content += f"Detected {found} out of {expected} expected vulnerabilities.\n\n"
-    content += f"[bold]Overall Status:[/bold] {status}"
+    content = f"[bold]Script Match Detection Rate:[/bold] {rate_rule:.1f}%\n"
+    content += f"Detected {found_rule} out of {expected} expected vulnerabilities.\n\n"
+    content += f"[bold]AI Match Detection Rate:[/bold] {rate_ai:.1f}%\n"
+    content += f"Detected {found_ai} out of {expected} expected vulnerabilities.\n\n"
+    content += f"[bold]Script Match Status:[/bold] {get_status_style(rate_rule)}\n"
+    content += f"[bold]AI Match Status:[/bold] {get_status_style(rate_ai)}"
     
     console.print(Panel(content, box=box.ROUNDED, expand=False, border_style="cyan"))
 
@@ -138,7 +179,8 @@ def verify():
     render_header()
     
     total_exp = 0
-    total_det = 0
+    total_det_rule = 0
+    total_det_ai = 0
     total_proj = 0
     missing_count = 0
     
@@ -201,7 +243,8 @@ def verify():
             missing_count += 1
             continue
         
-        det_count = 0
+        det_count_rule = 0
+        det_count_ai = 0
         details = []
         
         for v in vulns:
@@ -209,7 +252,8 @@ def verify():
             target = v.get("file", "")
             vtype = v.get("type", "")
             
-            detected = False
+            det_rule = False
+            det_ai = False
             for flaw in findings:
                 fpath = str(flaw.get("path", "")).replace("\\", "/")
                 
@@ -224,25 +268,36 @@ def verify():
                     has_cwe = cwe_id_match or any(cwe in str(c).upper() for c in fcwes)
                     fvuln_class = str(flaw.get("vuln_class", "")).upper()
                     
-                    if cwe in fid or cwe in ftitle or cwe in fmsg or vtype.upper() in ftitle or has_cwe or cwe in fvuln_class or vtype.upper() in fvuln_class:
-                        detected = True
+                    if not det_rule and (cwe in fid or cwe in ftitle or cwe in fmsg or vtype.upper() in ftitle or has_cwe or cwe in fvuln_class or vtype.upper() in fvuln_class):
+                        det_rule = True
+                        
+                    if not det_ai:
+                        ai_result = ai_judge(cwe, vtype, ftitle, fmsg, fvuln_class, cwe_ids)
+                        if ai_result:
+                            det_ai = True
+                            
+                    if det_rule and det_ai:
                         break
             
-            if detected:
-                det_count += 1
+            if det_rule:
+                det_count_rule += 1
+            if det_ai:
+                det_count_ai += 1
                 
             details.append({
                 "cwe": cwe,
                 "file": target,
                 "type": vtype,
-                "detected": detected
+                "det_rule": det_rule,
+                "det_ai": det_ai
             })
             
-        total_det += det_count
-        stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "detected": det_count, "status": "OK"})
+        total_det_rule += det_count_rule
+        total_det_ai += det_count_ai
+        stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "det_rule": det_count_rule, "det_ai": det_count_ai, "status": "OK"})
         projects.append({"name": proj.name, "details": details, "status": "OK"})
         
-    render_summary(total_proj, total_exp, total_det, missing_count)
+    render_summary(total_proj, total_exp, total_det_rule, total_det_ai, missing_count)
     
     if stats:
         render_overview(stats)
@@ -250,7 +305,7 @@ def verify():
     for pd in projects:
         render_details(pd["name"], pd["details"], pd["status"])
         
-    render_verdict(total_exp, total_det)
+    render_verdict(total_exp, total_det_rule, total_det_ai)
 
 if __name__ == "__main__":
     verify()

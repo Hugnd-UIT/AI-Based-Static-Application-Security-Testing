@@ -20,7 +20,7 @@ Reason step by step and act by calling tools to gather concrete evidence before 
 # Decision Rules
 - Set `verdict = "VULNERABLE"` only when you have proven an unbroken taint path.
 - Set `verdict = "SAFE"` only when sanitization is verified on ALL execution paths. If a sanitizer is only on one branch, it is still VULNERABLE.
-- Identify the exact CWE IDs for the vulnerability. When calling `submit_verdict`, you MUST provide `cwe_ids` as an array of integers (e.g. `[89, 79]`). Do NOT include the string "CWE".
+- Identify the exact, most specific CWE IDs for the vulnerability. When calling `submit_verdict`, you MUST provide `cwe_ids` as an array of integers (e.g. `[89, 79]`). Do NOT include the string "CWE". If you are unsure of the exact CWE ID, do NOT guess or use a generic parent CWE. Instead, use your tools (like `search_pattern`) to gather more context and determine the precise CWE before submitting.
 - Business Logic flaws (IDOR, missing auth) are valid vulnerabilities.
 - Race conditions and time-of-check/time-of-use (TOCTOU) are valid vulnerabilities.
 
@@ -59,6 +59,23 @@ Reason step by step and act by calling tools to gather concrete evidence before 
 ## C#
 - SQLi: Track `Request.QueryString` -> `SqlCommand` with string concat.
 - SSRF: Track `Request.Url` -> `WebClient` / `HttpClient` fetch.
+
+## Python
+- RCE: Track `request.args` / `request.form` -> `exec` / `eval` / `subprocess.Popen`.
+- SQLi: Track user input -> `sqlite3.execute` without parameterized queries.
+- Deserialization: Track user input -> `pickle.loads` / `yaml.load`.
+
+## C/C++
+- Buffer Overflow (CWE-119): Track `argv` / `getenv` / `recv` -> `strcpy` / `memcpy` / `sprintf`.
+- Command Injection: Track user input -> `system` / `execve` / `popen`.
+
+## Rust
+- Command Injection: Track `env::args` / HTTP query -> `Command::new()`.
+- Memory Corruption: Track user input into `unsafe { ... }` blocks.
+
+## Scala
+- RCE: Track `request.getQueryString` -> `Runtime.getRuntime.exec`.
+- SQLi: Track user input -> `java.sql.Statement.execute`.
 """
 
 USER = """\
