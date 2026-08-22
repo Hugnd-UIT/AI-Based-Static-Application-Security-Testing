@@ -97,12 +97,12 @@ def run_scan(path, rules=None, model=None, fix=False):
         return {"status": "error", "message": f"Failed to load modules: {e}"}
 
     langs = detector.detect_langs(str(sdir))
-    vers = detector.vers(langs)
+    vers = detector.get_versions(langs)
     res["languages"] = langs
     res["language_versions"] = vers
     detector.report_langs(langs, vers)
 
-    deps = dep_parser.deps(str(sdir))
+    deps = dep_parser.parse_deps(str(sdir))
     res["dependencies"] = deps
     dep_parser.report_deps(deps)
 
@@ -163,6 +163,7 @@ def run_scan(path, rules=None, model=None, fix=False):
         cves = [cve for cve in cves if cve.get("reachable", True)]
 
         res["cves"] = cves
+        logger.section("SCA")
         osv.report_osv(cves)
 
         scves = set()
@@ -222,7 +223,6 @@ def run_scan(path, rules=None, model=None, fix=False):
     
     if res["nvd"] or res["cves"]:
         from cli.views.logger import console
-        logger.section("SCA")
         import textwrap
 
         pcves = []
@@ -276,6 +276,7 @@ def run_scan(path, rules=None, model=None, fix=False):
                 console.print(f"  └─ [bold red]✖ RAG failed: {e}[/bold red]")
 
         # SAST
+        console.print()
         logger.section("SAST")
 
         for idx, rsum in enumerate(rags):

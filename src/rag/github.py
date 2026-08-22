@@ -37,7 +37,7 @@ def search_github(word: str) -> dict:
                 
                 Respond in JSON format: {{"score": 100}}
                 """
-                res = fetch_llm(prompt, is_json=True)
+                res = fetch_llm(prompt, jfmt=True)
                 score = res.get("score", 0)
 
                 if isinstance(score, (int, float)) and score < 70:

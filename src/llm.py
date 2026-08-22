@@ -82,7 +82,7 @@ def fetch_llm(prompt: str, model: str = None, jfmt: bool = True):
             errors = str(api_err)
 
             # Kiểm tra mã lỗi từ server
-            if any(code in errors for code in ("500", "502", "503", "504", "429")) or "connection" in errors.lower() or "timeout" in errors.lower():
+            if any(code in errors for code in ("403", "500", "502", "503", "504", "429")) or "<html" in errors.lower() or "<!doctype" in errors.lower() or "connection" in errors.lower() or "timeout" in errors.lower():
             
                 # Nếu lỗi thử lại sau 1s, 2s, 4s
                 if attempt < retries - 1:
@@ -170,7 +170,7 @@ def fetch_tools(
             errors = str(api_err)
 
             # Kiểm tra mã lỗi từ server
-            if any(code in errors for code in ("500", "502", "503", "504", "429")) or "connection" in errors.lower() or "timeout" in errors.lower():
+            if any(code in errors for code in ("403", "500", "502", "503", "504", "429")) or "<html" in errors.lower() or "<!doctype" in errors.lower() or "connection" in errors.lower() or "timeout" in errors.lower():
             
                 # Nếu lỗi thử lại sau 1s, 2s, 4s
                 if attempt < retries - 1:

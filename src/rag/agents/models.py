@@ -6,4 +6,4 @@ def start_rag(context: str, model: str = None) -> dict:
 
     prompt = RAG.replace("{context}", context)
 
-    return fetch_llm(prompt, model_name=model, is_json=True)
+    return fetch_llm(prompt, model=model, jfmt=True)

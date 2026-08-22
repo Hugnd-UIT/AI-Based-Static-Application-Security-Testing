@@ -4,7 +4,7 @@ from pathlib import Path
 from tree_sitter import Parser, Language
 from src.audit.ast.rule.langs import LANG
 from src.audit.ast.rule.sources import SOURCES
-from src.audit.ast.rule.sinks import SINKS, SINKS_PATTERNS
+from src.audit.ast.rule.sinks import SINKS
 from src.audit.ast.core.utils import *
 
 # Hàm tìm nguồn gọi

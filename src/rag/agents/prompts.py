@@ -14,7 +14,7 @@ Analyze raw vulnerability reports (CVEs, NVD data, OSV, GitHub Issues, and Firec
 1. Grounding & Identification:
    - Identify the CVE ID, Dependency Name, and Severity explicitly mentioned in the text.
    - If no CVEs are explicitly mentioned, analyze the `runtimes` (language versions) provided. Use your internal knowledge to identify any highly critical known CVEs for those specific language versions.
-   - If you find no known vulnerabilities, output "None" for `check_cve`, `dependency`, `attack_vector`, and `mitigation`.
+   - If you find no known vulnerabilities, output "None" for `ccve`, `dependency`, `attack_vector`, and `mitigation`.
 2. Attack Vector Extraction:
    - Locate how the vulnerability is exploited (e.g., via a specific URL parameter, malicious JSON payload).
    - List the required conditions. If the conditions are not stated, output "None".
@@ -29,7 +29,7 @@ Analyze raw vulnerability reports (CVEs, NVD data, OSV, GitHub Issues, and Firec
 ## Expected JSON
 ```json
 {
-    "check_cve": "The CVE identifier, e.g., CVE-2024-1234, etc...",
+    "ccve": "The CVE identifier, e.g., CVE-2024-1234, etc...",
     "dependency": "The name of the vulnerable package.",
     "severity": "Severity level, e.g., CRITICAL, HIGH, MEDIUM, etc...",
     "attack_vector": "How the attack is performed.",
