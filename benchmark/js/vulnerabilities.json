@@ -1,0 +1,56 @@
+{
+    "name": "JS benchmark",
+    "language": "javascript",
+    "expected": [
+        {
+            "cwe": "CWE-89",
+            "file": "services/db.js",
+            "type": "SQL Injection"
+        },
+        {
+            "cwe": "CWE-78",
+            "file": "utils/exec.js",
+            "type": "Command Injection"
+        },
+        {
+            "cwe": "CWE-1321",
+            "file": "utils/config.js",
+            "type": "Prototype Pollution"
+        },
+        {
+            "cwe": "CWE-79",
+            "file": "controllers/user.js",
+            "type": "Cross-Site Scripting"
+        },
+        {
+            "cwe": "CWE-22",
+            "file": "services/fs.js",
+            "type": "Path Traversal"
+        },
+        {
+            "cwe": "CWE-918",
+            "file": "utils/http.js",
+            "type": "Server-Side Request Forgery"
+        },
+        {
+            "cwe": "CWE-502",
+            "file": "utils/deserialize.js",
+            "type": "Deserialization of Untrusted Data"
+        },
+        {
+            "cwe": "CWE-943",
+            "file": "services/nosql.js",
+            "type": "NoSQL Injection"
+        },
+        {
+            "cwe": "CWE-601",
+            "file": "controllers/auth.js",
+            "type": "Open Redirect"
+        },
+        {
+            "cwe": "CWE-798",
+            "file": "utils/auth.js",
+            "type": "Hardcoded Secret"
+        }
+    ]
+}

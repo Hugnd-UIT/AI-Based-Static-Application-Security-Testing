@@ -1,0 +1,56 @@
+{
+    "name": "C++ Benchmark",
+    "language": "cpp",
+    "expected": [
+        {
+            "cwe": "CWE-89",
+            "file": "src/db.cpp",
+            "type": "SQL Injection"
+        },
+        {
+            "cwe": "CWE-78",
+            "file": "src/system.cpp",
+            "type": "Command Injection"
+        },
+        {
+            "cwe": "CWE-120",
+            "file": "src/memory.cpp",
+            "type": "Buffer Overflow"
+        },
+        {
+            "cwe": "CWE-134",
+            "file": "src/memory.cpp",
+            "type": "Format String Vulnerability"
+        },
+        {
+            "cwe": "CWE-22",
+            "file": "src/file.cpp",
+            "type": "Path Traversal"
+        },
+        {
+            "cwe": "CWE-416",
+            "file": "src/memory.cpp",
+            "type": "Use After Free"
+        },
+        {
+            "cwe": "CWE-415",
+            "file": "src/memory.cpp",
+            "type": "Double Free"
+        },
+        {
+            "cwe": "CWE-190",
+            "file": "src/memory.cpp",
+            "type": "Integer Overflow"
+        },
+        {
+            "cwe": "CWE-476",
+            "file": "src/system.cpp",
+            "type": "Null Pointer Dereference"
+        },
+        {
+            "cwe": "CWE-321",
+            "file": "src/crypto.cpp",
+            "type": "Hardcoded Cryptographic Key"
+        }
+    ]
+}

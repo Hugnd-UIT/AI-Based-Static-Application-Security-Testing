@@ -1,0 +1,56 @@
+{
+    "name": "C# Benchmark",
+    "language": "csharp",
+    "expected": [
+        {
+            "cwe": "CWE-89",
+            "file": "Services/DatabaseService.cs",
+            "type": "SQL Injection"
+        },
+        {
+            "cwe": "CWE-78",
+            "file": "Services/SystemUtils.cs",
+            "type": "Command Injection"
+        },
+        {
+            "cwe": "CWE-22",
+            "file": "Services/FileService.cs",
+            "type": "Path Traversal"
+        },
+        {
+            "cwe": "CWE-611",
+            "file": "Services/XmlService.cs",
+            "type": "XML External Entity"
+        },
+        {
+            "cwe": "CWE-502",
+            "file": "Services/DeserializationService.cs",
+            "type": "Insecure Deserialization"
+        },
+        {
+            "cwe": "CWE-327",
+            "file": "Services/CryptoService.cs",
+            "type": "Broken Crypto Algorithm"
+        },
+        {
+            "cwe": "CWE-321",
+            "file": "Services/CryptoService.cs",
+            "type": "Hardcoded Key"
+        },
+        {
+            "cwe": "CWE-601",
+            "file": "Controllers/AuthController.cs",
+            "type": "Open Redirect"
+        },
+        {
+            "cwe": "CWE-918",
+            "file": "Services/HttpService.cs",
+            "type": "Server-Side Request Forgery"
+        },
+        {
+            "cwe": "CWE-90",
+            "file": "Services/LdapService.cs",
+            "type": "LDAP Injection"
+        }
+    ]
+}
