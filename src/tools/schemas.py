@@ -201,7 +201,7 @@ VERDICT_SCHEMA = {
                     },
                 },
             },
-            "required": ["verdict"],
+            "required": ["verdict", "confidence", "reasoning"],
         },
     },
 }

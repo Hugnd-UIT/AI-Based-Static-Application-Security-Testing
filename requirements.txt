@@ -17,3 +17,4 @@ prompt_toolkit
 openai
 python-dotenv
 pyyaml
+textual

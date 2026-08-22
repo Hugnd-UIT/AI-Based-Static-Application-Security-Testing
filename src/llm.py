@@ -3,29 +3,30 @@ import json
 from openai import OpenAI
 from main import MODELS
 
-# Hàm lấy API key
-def get_key(model_name: str = None) -> str:
+_KEY_IDX = 0
+import threading
+_KEY_LOCK = threading.Lock()
+
+# Hàm lấy API key tiếp theo
+def get_next_key() -> str:
+    global _KEY_IDX
     # Đọc và tách mảng key từ env
     env = os.environ.get("AI_API_KEY", "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy")
     keys = [k.strip() for k in env.split(",") if k.strip()]
 
     if not keys:
-        return "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
+        keys = ["pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"]
 
-    if model_name:
-        try:
-            # Chọn key theo model
-            idx = MODELS.index(model_name)
-            return keys[idx % len(keys)]
-        except ValueError:
-            return keys[0]
-
-    return keys[0]
+    with _KEY_LOCK:
+        key = keys[_KEY_IDX % len(keys)]
+        _KEY_IDX += 1
+    
+    return key
 
 # Hàm tạo kết nối đến server
 def create_client(api_key: str = None) -> OpenAI:
     if not api_key:
-        api_key = get_key()
+        api_key = get_next_key()
 
     # Cấu hình url và headers
     base_url = "https://ai-based-static-application-security.onrender.com/v1"
@@ -36,8 +37,7 @@ def create_client(api_key: str = None) -> OpenAI:
 # Hàm gọi đến AI
 def fetch_llm(prompt: str, model: str = None, jfmt: bool = True):
     target = model or MODELS[0]
-    key = get_key(target)
-    client = create_client(key)
+    actual_model = target.split(" ")[0]
 
     import time
 
@@ -45,10 +45,12 @@ def fetch_llm(prompt: str, model: str = None, jfmt: bool = True):
     errors = ""
     
     for attempt in range(retries):
-
+        
         try:
+            client = create_client()
+
             req = {
-                "model": target,
+                "model": actual_model,
                 "messages": [{"role": "system", "content": prompt}],
             }
 
@@ -141,9 +143,7 @@ def fetch_tools(
     tool: str = "auto",
 ):
     target = model or MODELS[0]
-    key = get_key(target)
-    client = create_client(key)
-
+    
     import time
     
     retries = 3
@@ -152,6 +152,9 @@ def fetch_tools(
     for attempt in range(retries):
 
         try:
+            key = get_next_key()
+            client = create_client(key)
+            
             # Gửi request đến AI
             resp = client.chat.completions.create(
                 model=target,

@@ -22,11 +22,7 @@ load_dotenv()
 from cli.views import logger
 
 MODELS = [
-    "deepseek/deepseek-v4-pro",
-    "mistralai/codestral-2508",
-    "minimax/minimax-m2.7",
-    "xiaomi/mimo-v2.5-pro",
-    "mistralai/mistral-large-2512"
+    "deepseek/deepseek-v4-pro"
 ]
 
 # Khởi tạo công cụ phân tích cú pháp Tree-sitter
@@ -154,9 +150,6 @@ def run_scan(path, rules=None, model=None, fix=False):
         if not flaws:
             return
         from cli.views.logger import console
-        from src.scan.agents.verify import start_verify
-        from src.scan.agents.audit import audit_flaw
-        from src.scan.agents.fixer import fix_flaw
         from rich.panel import Panel
         import textwrap
         for idx, item in enumerate(flaws):
@@ -186,13 +179,13 @@ def run_scan(path, rules=None, model=None, fix=False):
                 rcount = 0
                 trace = {}
                 
-                scan = MODELS[4]
+                scan = MODELS[0]
                 console.print(f"  [bold magenta]● SCANNING AGENT[/bold magenta] [[cyan]{scan}[/cyan]]")
                 
                 while rcount <= retries:
                     trace = scan_agents.start_scan(
                         item, ast,
-                        model=MODELS[4], # Scanning Agent Role
+                        model=MODELS[0], # Scanning Agent Role
                         target=str(sdir),
                         module=use_module,
                     )
@@ -235,17 +228,18 @@ def run_scan(path, rules=None, model=None, fix=False):
             try:
                 import textwrap
                 logger.blank()
-                audit = MODELS[3]
+                audit = MODELS[0]
                 console.print(f"  [bold magenta]● AUDITING AGENT[/bold magenta] [[cyan]{audit}[/cyan]]")
     
                 verdict = audit_agents.start_audit(
                     item, ast, ctx,
-                    model=MODELS[3], # Auditing Agent Role
+                    model=MODELS[0], # Auditing Agent Role
                     target=str(sdir),
                     module=use_module,
                 )
     
-                vuln = verdict.get("verdict", "").upper() == "VULNERABLE"
+                verdict_str = verdict.get("verdict", "UNKNOWN").upper()
+                vuln = verdict_str == "VULNERABLE"
                 reason = verdict.get("reasoning", "")
     
                 if reason:
@@ -254,6 +248,7 @@ def run_scan(path, rules=None, model=None, fix=False):
                     for line in textwrap.wrap(reason, width=width):
                         console.print(f"  │  [dim]{line}[/dim]")
     
+                conf = verdict.get("confidence", 0)
                 if vuln:
                     console.print(
                         f"  ├─ [bold red]✖ VULNERABLE[/bold red]"
@@ -271,10 +266,13 @@ def run_scan(path, rules=None, model=None, fix=False):
                     vuln = True
                     item.update(verdict)
     
+                elif verdict_str == "SAFE":
+                    console.print(
+                        f"  └─ [bold green]✓ SAFE[/bold green] [dim][Confidence: {conf}%][/dim]"
+                    )
                 else:
                     console.print(
-                        f"  └─ [bold green]✓ SAFE[/bold green] "
-                        f"[dim][Confidence: {verdict.get('confidence', 'N/A')}%][/dim]"
+                        f"  └─ [bold yellow]⚠ UNKNOWN[/bold yellow]"
                     )
     
             except Exception as e:
@@ -338,7 +336,6 @@ def run_scan(path, rules=None, model=None, fix=False):
             cves = [cve for cve in cves if cve.get("reachable", True)]
     
             res["cves"] = cves
-            logger.section("SCA")
             osv.report_osv(cves)
     
             scves = set()
@@ -452,7 +449,6 @@ def run_scan(path, rules=None, model=None, fix=False):
     
             # SAST
             console.print()
-            logger.section("SAST")
     
             for idx, rsum in enumerate(rags):
                 if rsum.get("ccve") in ["None", "Unknown", None]:
@@ -469,7 +465,7 @@ def run_scan(path, rules=None, model=None, fix=False):
                     parts.append(cjson)
                     ctx = cjson
                     
-                    role = MODELS[1] # Codestral for Verifier
+                    role = MODELS[0]
                     tstr = rsum.get("ccve", "Unknown CVE")
                     console.print(f"\n  [bold magenta]● VERIFYING AGENT[/bold magenta] [[cyan]{role}[/cyan]]")
                     console.print(f"  ├─ [cyan]◆ Target: {tstr}[/cyan]")
@@ -528,7 +524,7 @@ def run_scan(path, rules=None, model=None, fix=False):
                                 for line in lines[1:]:
                                     console.print(f"  │  [dim]{line}[/dim]")
                         
-                        expand = MODELS[2] # MiniMax M2.5 for Expander
+                        expand = MODELS[0]
                         console.print(f"\n  [bold magenta]● EXPANDING AGENT[/bold magenta] [[cyan]{expand}[/cyan]]")
                         console.print(f"  ├─ [cyan]◆ Target: {tstr}[/cyan]")
                         from src.rag.agents import expander
@@ -668,30 +664,25 @@ def run_scan(path, rules=None, model=None, fix=False):
             console.print(f"  └─ [bold red]✖ Generator failed: {e}[/bold red]")
     
         sgres = semgrep.scan_code(str(sdir), rules)
-        console.print('  [bold magenta]● SCANNING AGENT[/bold magenta]')
-        console.print('  ├─ [cyan]◆ Running Semgrep Engine...[/cyan]')
-        sgres = semgrep.scan_code(str(sdir), rules)
+
         console.print(f'  └─ [bold green]✔ Scan completed: {len(sgres)} vulnerabilities[/bold green]')
         semgrep.report_scan(sgres)
         process_flaws(sgres, 'SAST')
         return sgres
 
-    # Parallel UI and Threads
-    from cli.views.parallel import parallel
-    import concurrent.futures
-    ui = parallel()
-    ui.start()
-
-    with concurrent.futures.ThreadPoolExecutor(max_workers=2) as executor:
-        f1 = executor.submit(sca_thread)
-        f2 = executor.submit(sast_thread)
-        f1_res = f1.result()
-        if isinstance(f1_res, tuple) and len(f1_res) == 3:
-            sca_flaws, parts, ctx = f1_res
-        else:
-            sca_flaws = []
-        sgres = f2.result()
-    ui.stop()
+    from cli.views.parallel import run_parallel
+    
+    f1_res, f2_res = run_parallel(sca_thread, sast_thread)
+    
+    if isinstance(f1_res, tuple) and len(f1_res) == 3:
+        sca_flaws, parts, ctx = f1_res
+    else:
+        sca_flaws = []
+        
+    if isinstance(f2_res, list):
+        sgres = f2_res
+    else:
+        sgres = []
 
     flaws = sca_flaws + sgres
     res['findings'] = flaws

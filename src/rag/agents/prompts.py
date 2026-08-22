@@ -25,6 +25,7 @@ Analyze raw vulnerability reports (CVEs, NVD data, OSV, GitHub Issues, and Firec
    - Synthesize your findings into the exact Expected JSON Format.
 
 # Output Contract
+You MUST output all responses strictly in English, regardless of the input language.
 
 ## Expected JSON
 ```json
