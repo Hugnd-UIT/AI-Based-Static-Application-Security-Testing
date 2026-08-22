@@ -2,10 +2,10 @@ import os
 import re
 from pathlib import Path
 from tree_sitter import Parser, Language
-from src.audit.ast.rule.langs import LANG
-from src.audit.ast.rule.sources import SOURCES
-from src.audit.ast.rule.sinks import SINKS
-from src.audit.ast.core.utils import *
+from src.ast.rule.langs import LANG
+from src.ast.rule.sources import SOURCES
+from src.ast.rule.sinks import SINKS
+from src.ast.core.utils import *
 
 # Hàm tìm nguồn gọi
 def find_callers(root, name: str, code: bytes):

@@ -1,7 +1,7 @@
 import os
 from pathlib import Path
 from tree_sitter import Parser, Language
-from src.audit.ast.rule.langs import LANG
+from src.ast.rule.langs import LANG
 
 # Hàm trích xuất code
 def extract_code(code: bytes, node) -> str:

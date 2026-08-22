@@ -31,7 +31,7 @@ MODELS = [
 
 # Khởi tạo công cụ phân tích cú pháp Tree-sitter
 def init_sitter():
-    set_path = Path("src/audit/ast/tree-sitter.py").resolve()
+    set_path = Path("src/ast/tree-sitter.py").resolve()
     load_spec = importlib.util.spec_from_file_location("ts_module", set_path)
     use_module = importlib.util.module_from_spec(load_spec)
     load_spec.loader.exec_module(use_module)
@@ -447,6 +447,40 @@ def run_scan(path, rules=None, model=None, fix=False):
         console.print("  └─ [dim]No vulnerabilities found! Skip![/dim]")
 
     ctx = "\n\n---\n\n".join(parts) if parts else "No relevant supply chain vulnerabilities found in project dependencies."
+
+    try:
+        from src.scan.agents.extractor import extract_functions
+        from src.scan.agents.classifier import classify
+        from src.scan.agents.generator import generate
+        import os
+
+        console.print(f"  [bold magenta]● GENERATING AGENT[/bold magenta]")
+        
+        console.print("  ├─ [cyan]◆ Extracting codebase...[/cyan]")
+        apis = extract_functions(str(sdir))
+        
+        if apis:
+            console.print(f"  ├─ [cyan]◆ Classifying {len(apis)}...[/cyan]")
+            vuln_scope = "Any potential security vulnerability, including zero-days, injection flaws, logic defects, and dangerous data flows"
+            classifications = classify(apis, vuln_scope)
+                    
+            console.print("  ├─ [cyan]◆ Generating rules...[/cyan]")
+            dynamic_rule_path = generate(classifications, output=str(sdir))
+            
+            if dynamic_rule_path and os.path.exists(dynamic_rule_path):
+                console.print(f"  └─ [bold green]✔ Generate completed: {os.path.basename(dynamic_rule_path)}[/bold green]")
+                if rules is None:
+                    from src.scan.semgrep import RULES as default_rules
+                    rules = default_rules.copy()
+                elif isinstance(rules, str):
+                    rules = [rules]
+                rules.append(dynamic_rule_path)
+            else:
+                console.print("  └─ [dim]No rules generated[/dim]")
+        else:
+            console.print("  └─ [dim]No APIs extracted.[/dim]")
+    except Exception as e:
+        console.print(f"  └─ [bold red]✖ Generator failed: {e}[/bold red]")
 
     sgres = semgrep.scan_code(str(sdir), rules)
     flaws.extend(sgres)

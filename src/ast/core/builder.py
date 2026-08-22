@@ -1,9 +1,9 @@
 import os
 from pathlib import Path
 from tree_sitter import Parser, Language
-from src.audit.ast.rule.langs import LANG
-from src.audit.ast.core.utils import *
-from src.audit.ast.core.analyzer import *
+from src.ast.rule.langs import LANG
+from src.ast.core.utils import *
+from src.ast.core.analyzer import *
 
 from src.audit.frameworks import extract_events
 
