@@ -1,0 +1,1304 @@
+<html>
+<head>
+<title>Sinful Report</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+h1 { color: #2c3e50; }
+.finding { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.critical, .high { border-left: 5px solid #e74c3c; }
+.medium { border-left: 5px solid #f39c12; }
+.low, .info { border-left: 5px solid #3498db; }
+h3 { margin-top: 0; }
+pre { background: #272822; color: #f8f8f2; padding: 10px; border-radius: 3px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Sinful Report</h1>
+<p><strong>Target:</strong> benchmark</p>
+<p><strong>Total Findings:</strong> 103</p>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-csharp (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/DatabaseService.cs (Line: 16)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'id', 'operation': 'function parameter (external/untrusted source)', 'line': 8}</li>
+<li>{'step': 2, 'variable': 'query', 'operation': 'string concatenation with id', 'line': 14}</li>
+<li>{'step': 3, 'variable': 'command', 'operation': 'new SqlCommand(query, connection)', 'line': 15}</li>
+<li>{'step': 4, 'variable': 'command', 'operation': 'command.ExecuteReader() executes tainted query', 'line': 18}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>csharp.lang.security.insecure-deserialization.binary-formatter.insecure-binaryformatter-deserialization (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/DeserializationService.cs (Line: 11)</p>
+<p><strong>Message:</strong> The BinaryFormatter type is dangerous and is not recommended for data processing. Applications should stop using BinaryFormatter as soon as possible, even if they believe the data they're processing to be trustworthy. BinaryFormatter is insecure and can't be made secure</p>
+<p><strong>CWE:</strong> CWE-502: Deserialization of Untrusted Data</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'base64', 'operation': 'Read user-controlled query string', 'line': 21}</li>
+<li>{'step': 2, 'variable': 'data', 'operation': 'Convert.FromBase64String(base64)', 'line': 22}</li>
+<li>{'step': 3, 'variable': 'data', 'operation': 'passed as argument to DeserializeData(byte[] data)', 'line': 23}</li>
+<li>{'step': 4, 'variable': 'data', 'operation': 'method parameter (untrusted byte array)', 'line': 9}</li>
+<li>{'step': 5, 'variable': 'ms', 'operation': 'new MemoryStream(data)', 'line': 12}</li>
+<li>{'step': 6, 'variable': 'ms', 'operation': 'formatter.Deserialize(ms)', 'line': 14}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-go (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 18)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'ip', 'operation': 'ip := r.URL.Query().Get("ip")', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'ip', 'operation': 'utils.RunPing(ip)', 'line': 19}</li>
+<li>{'step': 3, 'variable': 'ipAddress', 'operation': 'cmd := "ping -c 4 " + ipAddress', 'line': 9}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'exec.Command("sh", "-c", cmd).Run()', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-go (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 24)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'ip', 'operation': 'ip := r.URL.Query().Get("ip")', 'line': 17}</li>
+<li>{'step': 2, 'variable': 'ip', 'operation': 'utils.RunPing(ip) — tainted value passed as argument', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'ipAddress', 'operation': 'function parameter receives caller value from PingHost', 'line': 6}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'cmd := "ping -c 4 " + ipAddress', 'line': 7}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'exec.Command("sh", "-c", cmd).Run()', 'line': 8}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-go (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 30)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'ip', 'operation': 'source assignment: ip := r.URL.Query().Get("ip")', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'ip', 'operation': 'passed as argument: utils.RunPing(ip)', 'line': 19}</li>
+<li>{'step': 3, 'variable': 'ipAddress', 'operation': 'parameter binding in utils.RunPing(ipAddress string)', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'string concatenation: cmd := "ping -c 4 " + ipAddress', 'line': 9}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'sink: exec.Command("sh", "-c", cmd).Run()', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>src.scan.rules.sinful-taint-go (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 36)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'ip', 'operation': 'r.URL.Query().Get("ip")', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'ip', 'operation': 'passed as argument to utils.RunPing', 'line': 19}</li>
+<li>{'step': 3, 'variable': 'ipAddress', 'operation': 'concatenated into cmd: "ping -c 4 " + ipAddress', 'line': 3}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'passed to exec.Command("sh", "-c", cmd).Run()', 'line': 4}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>go.lang.security.audit.database.string-formatted-query.string-formatted-query (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/services/db.go (Line: 13)</p>
+<p><strong>Message:</strong> String-formatted SQL query detected. This could lead to SQL injection if the string is not sanitized properly. Audit this call to ensure the SQL is not manipulable by external data.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'id', 'operation': 'function parameter (untrusted input boundary)', 'line': 8}</li>
+<li>{'step': 2, 'variable': 'query', 'operation': 'fmt.Sprintf formats id into SQL string', 'line': 13}</li>
+<li>{'step': 3, 'variable': 'query', 'operation': 'passed to db.Query', 'line': 14}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>go.lang.security.audit.dangerous-exec-command.dangerous-exec-command (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/utils/exec.go (Line: 10)</p>
+<p><strong>Message:</strong> Detected non-static command inside Command. Audit the input to 'exec.Command'. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.</p>
+<p><strong>CWE:</strong> CWE-94: Improper Control of Generation of Code ('Code Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'ipAddress', 'operation': 'function parameter (untrusted external input)', 'line': 5}</li>
+<li>{'step': 2, 'variable': 'cmd', 'operation': 'binary expression: "ping -c 4 " + ipAddress', 'line': 8}</li>
+<li>{'step': 3, 'variable': 'cmd', 'operation': 'passed to exec.Command("sh", "-c", cmd).Run()', 'line': 9}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>java.lang.security.audit.formatted-sql-string.formatted-sql-string (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/DatabaseService.java (Line: 14)</p>
+<p><strong>Message:</strong> Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements (java.sql.PreparedStatement) instead. You can obtain a PreparedStatement using 'connection.prepareStatement'.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'id', 'operation': 'Declared as method parameter of getUserById(String id); untrusted external input source', 'line': 8}</li>
+<li>{'step': 2, 'variable': 'query', 'operation': 'Assigned by string concatenation: "SELECT * FROM users WHERE id = \'" + id + "\'"', 'line': 13}</li>
+<li>{'step': 3, 'variable': 'query', 'operation': 'Passed as argument to stmt.executeQuery(query)', 'line': 14}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>java.lang.security.audit.object-deserialization.object-deserialization (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/DeserializationService.java (Line: 11)</p>
+<p><strong>Message:</strong> Found object deserialization using ObjectInputStream. Deserializing entire Java objects is dangerous because malicious actors can create Java object streams with unintended consequences. Ensure that the objects being deserialized are not user-controlled. If this must be done, consider using HMACs to sign the data stream to make sure it is not tampered with, or consider only transmitting object fields and populating a new object.</p>
+<p><strong>CWE:</strong> CWE-502: Deserialization of Untrusted Data</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'data', 'operation': 'HTTP request body bound to @RequestBody byte[] data', 'line': 45}</li>
+<li>{'step': 2, 'variable': 'data', 'operation': 'passed to desService.deserializeObject(data)', 'line': 46}</li>
+<li>{'step': 3, 'variable': 'bais', 'operation': 'new ByteArrayInputStream(data)', 'line': 9}</li>
+<li>{'step': 4, 'variable': 'ois', 'operation': 'new ObjectInputStream(bais)', 'line': 11}</li>
+<li>{'step': 5, 'variable': 'obj', 'operation': 'ois.readObject() deserializes attacker-controlled bytes', 'line': 12}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/app.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'source: user-controlled HTTP query parameter', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assignment: const target = req.query.target', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'call: execUtil.runPing(target, callback)', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'host', 'operation': 'parameter passing into runPing', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'host', 'operation': 'interpolation into shell command and sink: exec(`ping -c 1 ${host}`, callback)', 'line': 4}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/app.js (Line: 2)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'external untrusted input from HTTP query string', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assignment: const target = req.query.target', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'host', 'operation': 'passed as argument to runPing(host, callback)', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'string concatenation: "ping -c 4 " + host', 'line': 5}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'passed to child_process.exec(cmd, callback)', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/system.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'source: Express query parameter', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assigned from req.query.target', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'passed as argument to runPing', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'target', 'operation': 'function parameter of runPing', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'template literal interpolation: `ping -c 4 ${target}`', 'line': 4}</li>
+<li>{'step': 6, 'variable': 'cmd', 'operation': 'passed to child_process.exec sink', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/system.js (Line: 2)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'source: Express query parameter', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assigned from req.query.target', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'passed as argument to runPing', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'target', 'operation': 'function parameter of runPing', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'template literal interpolation: `ping -c 4 ${target}`', 'line': 4}</li>
+<li>{'step': 6, 'variable': 'cmd', 'operation': 'passed to child_process.exec sink', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/system.js (Line: 3)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'source: Express query parameter', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assigned from req.query.target', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'passed as argument to runPing', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'target', 'operation': 'function parameter of runPing', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'template literal interpolation: `ping -c 4 ${target}`', 'line': 4}</li>
+<li>{'step': 6, 'variable': 'cmd', 'operation': 'passed to child_process.exec sink', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/system.js (Line: 8)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'source: Express query parameter', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assigned from req.query.target', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'passed as argument to runPing', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'target', 'operation': 'function parameter of runPing', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'template literal interpolation: `ping -c 4 ${target}`', 'line': 4}</li>
+<li>{'step': 6, 'variable': 'cmd', 'operation': 'passed to child_process.exec sink', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/system.js (Line: 9)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'source: Express query parameter', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assigned from req.query.target', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'passed as argument to runPing', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'target', 'operation': 'function parameter of runPing', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'template literal interpolation: `ping -c 4 ${target}`', 'line': 4}</li>
+<li>{'step': 6, 'variable': 'cmd', 'operation': 'passed to child_process.exec sink', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/system.js (Line: 22)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'source', 'line': 7}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assignment', 'line': 7}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'function_argument_to_runPing', 'line': 8}</li>
+<li>{'step': 4, 'variable': 'target', 'operation': 'function_parameter', 'line': 5}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'template_literal', 'line': 6}</li>
+<li>{'step': 6, 'variable': 'cmd', 'operation': 'sink_argument_to_exec', 'line': 7}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/user.js (Line: 2)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.id', 'operation': 'untrusted source: HTTP GET query parameter', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'assignment from req.query.id', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'id', 'operation': 'passed as argument to db.fetchUser(id)', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'id', 'operation': 'cross-file: becomes first parameter of db.fetchUser', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'query', 'operation': 'concatenated into raw SQL query string', 'line': 4}</li>
+<li>{'step': 6, 'variable': 'query', 'operation': 'dangerous sink: executed by connection.query(query, callback)', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/user.js (Line: 8)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.id', 'operation': 'const id = req.query.id', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'db.fetchUser(id, callback)', 'line': 8}</li>
+<li>{'step': 3, 'variable': 'req.query.name', 'operation': 'const name = req.query.name', 'line': 13}</li>
+<li>{'step': 4, 'variable': 'name', 'operation': "res.send('<html>...' + name + '...')", 'line': 15}</li>
+<li>{'step': 5, 'variable': 'req.body.data', 'operation': 'const payload = req.body.data', 'line': 20}</li>
+<li>{'step': 6, 'variable': 'payload', 'operation': 'deserialize.load(payload)', 'line': 21}</li>
+<li>{'step': 7, 'variable': 'req.body.query', 'operation': 'const query = req.body.query', 'line': 25}</li>
+<li>{'step': 8, 'variable': 'query', 'operation': 'nosql.find(query)', 'line': 26}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/user.js (Line: 16)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.id', 'operation': 'const id = req.query.id', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'db.fetchUser(id, callback)', 'line': 8}</li>
+<li>{'step': 3, 'variable': 'req.query.name', 'operation': 'const name = req.query.name', 'line': 13}</li>
+<li>{'step': 4, 'variable': 'name', 'operation': "res.send('<html>...' + name + '...')", 'line': 15}</li>
+<li>{'step': 5, 'variable': 'req.body.data', 'operation': 'const payload = req.body.data', 'line': 20}</li>
+<li>{'step': 6, 'variable': 'payload', 'operation': 'deserialize.load(payload)', 'line': 21}</li>
+<li>{'step': 7, 'variable': 'req.body.query', 'operation': 'const query = req.body.query', 'line': 25}</li>
+<li>{'step': 8, 'variable': 'query', 'operation': 'nosql.find(query)', 'line': 26}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/user.js (Line: 27)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.id', 'operation': 'const id = req.query.id', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'db.fetchUser(id, callback)', 'line': 8}</li>
+<li>{'step': 3, 'variable': 'req.query.name', 'operation': 'const name = req.query.name', 'line': 13}</li>
+<li>{'step': 4, 'variable': 'name', 'operation': "res.send('<html>...' + name + '...')", 'line': 15}</li>
+<li>{'step': 5, 'variable': 'req.body.data', 'operation': 'const payload = req.body.data', 'line': 20}</li>
+<li>{'step': 6, 'variable': 'payload', 'operation': 'deserialize.load(payload)', 'line': 21}</li>
+<li>{'step': 7, 'variable': 'req.body.query', 'operation': 'const query = req.body.query', 'line': 25}</li>
+<li>{'step': 8, 'variable': 'query', 'operation': 'nosql.find(query)', 'line': 26}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/routes/api.js (Line: 2)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'term', 'operation': 'assignment from req.query.term (attacker-controlled query string)', 'line': 32}</li>
+<li>{'step': 2, 'variable': 'sql', 'operation': 'template literal interpolation of tainted term into raw SQL string', 'line': 33}</li>
+<li>{'step': 3, 'variable': 'sql', 'operation': 'passed as first argument to db.query(sql, callback)', 'line': 34}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/routes/api.js (Line: 3)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.host', 'operation': 'attacker-controlled query parameter source', 'line': 11}</li>
+<li>{'step': 2, 'variable': 'host', 'operation': 'assignment from req.query.host', 'line': 11}</li>
+<li>{'step': 3, 'variable': 'cmd', 'operation': 'string concatenation into shell command', 'line': 12}</li>
+<li>{'step': 4, 'variable': 'cp.exec', 'operation': 'dangerous sink executes constructed shell command', 'line': 13}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/routes/api.js (Line: 4)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req', 'operation': 'Express HTTP request object enters route handler system.pingHost via GET /ping', 'line': 16}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'const target = req.query.target; attacker-controlled query parameter extracted without sanitization', 'line': 5}</li>
+<li>{'step': 3, 'variable': 'host', 'operation': 'runPing(host, cb) receives target as host parameter', 'line': 6}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'const cmd = "ping -c 1 " + host; host concatenated into shell command string', 'line': 5}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'exec(cmd, cb); tainted command string executed by child_process.exec', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/routes/api.js (Line: 5)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'untrusted HTTP query parameter read', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'passed as host argument to execUtil.runPing', 'line': 7}</li>
+<li>{'step': 3, 'variable': 'host', 'operation': 'concatenated into shell command template', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'passed to exec() as shell command', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/services/db.js (Line: 13)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.id', 'operation': 'User-controlled HTTP query parameter read in getUser handler', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'Passed as first argument to db.fetchUser', 'line': 7}</li>
+<li>{'step': 3, 'variable': 'id', 'operation': 'Received as fetchUser function parameter', 'line': 9}</li>
+<li>{'step': 4, 'variable': 'query', 'operation': 'String concatenation builds SQL query with unsanitized id', 'line': 11}</li>
+<li>{'step': 5, 'variable': 'query', 'operation': 'Executed as SQL by mysql connection.query sink', 'line': 12}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/config.js (Line: 10)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.body', 'operation': 'User-controlled HTTP request body parsed by express.json()', 'line': 4}</li>
+<li>{'step': 2, 'variable': 'data', 'operation': 'Alias assignment: const data = req.body', 'line': 4}</li>
+<li>{'step': 3, 'variable': 'data', 'operation': 'Passed as argument: configUtil.applyConfig(data)', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'newSettings', 'operation': 'Formal parameter receives tainted data in applyConfig(newSettings)', 'line': 8}</li>
+<li>{'step': 5, 'variable': 'newSettings', 'operation': 'Dangerous sink: _.merge(globalConfig, newSettings)', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/deserialize.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.body.data', 'operation': 'source: user-controlled HTTP request body property', 'line': 19}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'assignment: const payload = req.body.data', 'line': 19}</li>
+<li>{'step': 3, 'variable': 'payload', 'operation': 'function call argument: deserialize.load(payload)', 'line': 20}</li>
+<li>{'step': 4, 'variable': 'payload', 'operation': 'function parameter: exports.load = (payload) =>', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'payload', 'operation': 'sink call argument: serialize.unserialize(payload)', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/exec.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'untrusted source: HTTP query parameter read from Express request', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assignment: const target = req.query.target', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'host', 'operation': 'interprocedural call: execUtil.runPing(target, ...) binds target to parameter host', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'string concatenation: "ping -c 4 " + host', 'line': 5}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'sink argument: exec(cmd, callback)', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/exec.js (Line: 6)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.target', 'operation': 'untrusted source: HTTP query parameter read from Express request', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assignment: const target = req.query.target', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'host', 'operation': 'interprocedural call: execUtil.runPing(target, ...) binds target to parameter host', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'string concatenation: "ping -c 4 " + host', 'line': 5}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'sink argument: exec(cmd, callback)', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/controllers/routes.py (Line: 57)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'ip', 'operation': "assignment from request.args.get('ip')", 'line': 58}</li>
+<li>{'step': 2, 'variable': 'ip', 'operation': 'passed as argument to run_ping(ip)', 'line': 59}</li>
+<li>{'step': 3, 'variable': 'ip_address', 'operation': 'parameter binding from run_ping(ip)', 'line': 3}</li>
+<li>{'step': 4, 'variable': 'command', 'operation': "concatenation of 'ping -c 4 ' + ip_address", 'line': 5}</li>
+<li>{'step': 5, 'variable': 'command', 'operation': 'passed to os.system(command)', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/deserialize_service.py (Line: 5)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'request.data', 'operation': 'untrusted raw HTTP request body', 'line': 31}</li>
+<li>{'step': 2, 'variable': 'data', 'operation': 'assignment: data = request.data', 'line': 31}</li>
+<li>{'step': 3, 'variable': 'serialized_data', 'operation': 'passed as argument to load_data(data)', 'line': 32}</li>
+<li>{'step': 4, 'variable': 'serialized_data', 'operation': 'reaches sink pickle.loads(serialized_data)', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/template_service.py (Line: 6)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'name', 'operation': "name = request.args.get('name') [benchmark/python/app.py]", 'line': 158}</li>
+<li>{'step': 2, 'variable': 'name', 'operation': 'return render_user(name) [benchmark/python/app.py]', 'line': 159}</li>
+<li>{'step': 3, 'variable': 'template', 'operation': 'template = "<h1>Welcome, " + name + "</h1>" [benchmark/python/services/template_service.py]', 'line': 3}</li>
+<li>{'step': 4, 'variable': 'template', 'operation': 'return render_template_string(template) [benchmark/python/services/template_service.py]', 'line': 4}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/utils/yaml_util.py (Line: 5)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'request.data', 'operation': 'source: untrusted data from HTTP request body', 'line': 62}</li>
+<li>{'step': 2, 'variable': 'config', 'operation': 'assignment: config = request.data', 'line': 62}</li>
+<li>{'step': 3, 'variable': 'config', 'operation': 'passed to parse_config(config)', 'line': 63}</li>
+<li>{'step': 4, 'variable': 'yaml_string', 'operation': 'parameter receives tainted config value', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'yaml_string', 'operation': 'sink: yaml.load(yaml_string, Loader=yaml.Loader)', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-rust (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/rust/src/routes.rs (Line: 39)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req', 'operation': 'Actix web::Query<HashMap<String,String>> populated from HTTP query string', 'line': 25}</li>
+<li>{'step': 2, 'variable': 'ip', 'operation': 'let ip = req.get("ip").unwrap();', 'line': 26}</li>
+<li>{'step': 3, 'variable': 'cmd', 'operation': 'let cmd = format!("ping -c 4 {}", ip);', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'Command::new("sh").arg("-c").arg(cmd).output().unwrap();', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>benchmark.dynamic-ai-sinful-taint-rust (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/rust/src/services/system.rs (Line: 6)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'ip', 'operation': "request.args.get('ip') returns user-controlled query parameter", 'line': 13}</li>
+<li>{'step': 2, 'variable': 'ip', 'operation': 'passed to run_ping(ip)', 'line': 14}</li>
+<li>{'step': 3, 'variable': 'ip', 'operation': 'received as function parameter ip: &str in run_ping', 'line': 3}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'let cmd = format!("ping -c 4 {}", ip)', 'line': 5}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'Command::new("sh").arg("-c").arg(cmd).output() executes the attacker-influenced shell command', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding critical'>
+<h3>scala.lang.security.audit.scala-dangerous-process-run.scala-dangerous-process-run (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/scala/src/main/scala/services/SystemService.scala (Line: 8)</p>
+<p><strong>Message:</strong> Found dynamic content used for the external process. This is dangerous if arbitrary data can reach this function call because it allows a malicious actor to execute commands. Use `Seq(...)` for dynamically generated commands.</p>
+<p><strong>CWE:</strong> CWE-78: Improper Neutralization of Special Elements used in an OS Command ('OS Command Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'args(0)', 'operation': 'Read untrusted CLI argument', 'line': 8}</li>
+<li>{'step': 2, 'variable': 'userInput', 'operation': 'Assigned from args(0)', 'line': 8}</li>
+<li>{'step': 3, 'variable': 'input', 'operation': 'Passed as argument to controller.handle', 'line': 9}</li>
+<li>{'step': 4, 'variable': 'input', 'operation': 'Passed to SystemService.ping', 'line': 8}</li>
+<li>{'step': 5, 'variable': 'ip', 'operation': 'Function parameter receives untrusted input', 'line': 5}</li>
+<li>{'step': 6, 'variable': 'cmd', 'operation': 'String interpolation embeds ip into shell command', 'line': 7}</li>
+<li>{'step': 7, 'variable': 'cmd', 'operation': 'Executed via sys.process string-to-process implicit .!', 'line': 8}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-csharp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/SystemUtils.cs (Line: 11)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'ip', 'operation': 'ASP.NET model binding from query string to action parameter', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'ipAddress', 'operation': 'passed as method argument from Ping to PingTarget', 'line': 7}</li>
+<li>{'step': 3, 'variable': 'command', 'operation': 'string concatenation: "ping -c 4 " + ipAddress', 'line': 10}</li>
+<li>{'step': 4, 'variable': 'command', 'operation': 'embedded in cmd.exe /c argument to Process.Start', 'line': 11}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>javascript.express.security.audit.express-check-csurf-middleware-usage.express-check-csurf-middleware-usage (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/app.js (Line: 4)</p>
+<p><strong>Message:</strong> A CSRF middleware was not detected in your express application. Ensure you are either using one such as `csurf` or `csrf` (see rule references) and/or you are properly doing CSRF validation in your routes with a token or cookies.</p>
+<p><strong>CWE:</strong> CWE-352: Cross-Site Request Forgery (CSRF)</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'external HTTP request', 'operation': 'arrives at Express application (app.js)', 'line': 1}</li>
+<li>{'step': 2, 'variable': 'app', 'operation': "app.use(express.json()) and app.use('/api', apiRoutes) with no CSRF middleware registered", 'line': 6}</li>
+<li>{'step': 3, 'variable': 'apiRoutes', 'operation': 'mounted as /api router and defines POST /config, /profile, /find', 'line': 9}</li>
+<li>{'step': 4, 'variable': 'req.body', 'operation': 'state-changing handlers read request data with no CSRF token/cookie validation', 'line': 13}</li>
+<li>{'step': 5, 'variable': 'req.body.config / req.body.name / req.body.email', 'operation': 'used to execute database UPDATE/SELECT statements and send responses without CSRF protection', 'line': 17}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/user.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'id', 'operation': 'assign from req.query.id', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'call_arg_to_db.fetchUser', 'line': 7}</li>
+<li>{'step': 3, 'variable': 'query', 'operation': 'string_concat_SQL', 'line': 10}</li>
+<li>{'step': 4, 'variable': 'query', 'operation': 'sink_call_connection.query', 'line': 11}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/user.js (Line: 3)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.id', 'operation': 'Untrusted HTTP query parameter source', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'Assigned to const id in getUser', 'line': 6}</li>
+<li>{'step': 3, 'variable': 'id', 'operation': 'Passed as first argument to db.fetchUser(id, callback)', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'id', 'operation': 'Received as fetchUser parameter (tainted)', 'line': 8}</li>
+<li>{'step': 5, 'variable': 'sql', 'operation': 'String concatenation: "SELECT * FROM users WHERE id = \'" + id + "\'"', 'line': 9}</li>
+<li>{'step': 6, 'variable': 'sql', 'operation': 'Passed to pool.query(sql, callback) SQL sink', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/services/db.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'id', 'operation': 'External HTTP input req.query.id assigned to local const id', 'line': 5}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'Tainted id passed as argument to db.fetchUser', 'line': 7}</li>
+<li>{'step': 3, 'variable': 'id', 'operation': 'Function parameter id receives tainted value inside exports.fetchUser', 'line': 10}</li>
+<li>{'step': 4, 'variable': 'query', 'operation': 'String concatenation embeds tainted id into SQL query', 'line': 12}</li>
+<li>{'step': 5, 'variable': 'query', 'operation': 'Tainted query passed to connection.query sink', 'line': 13}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>php.lang.security.exec-use.exec-use (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/php/utils/Helper.php (Line: 11)</p>
+<p><strong>Message:</strong> Executing non-constant commands. This can lead to command injection.</p>
+<p><strong>CWE:</strong> CWE-94: Improper Control of Generation of Code ('Code Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'ip', 'operation': 'function parameter entry', 'line': 9}</li>
+<li>{'step': 2, 'variable': 'cmd', 'operation': 'string concatenation with parameter', 'line': 10}</li>
+<li>{'step': 3, 'variable': 'cmd', 'operation': 'passed to system()', 'line': 11}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>ruby.lang.security.dangerous-subshell.dangerous-subshell (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/ruby/utils/system_util.rb (Line: 4)</p>
+<p><strong>Message:</strong> Detected non-static command inside `...`. If unverified user data can reach this call site, this is a code injection vulnerability. A malicious actor can inject a malicious script to execute arbitrary code.</p>
+<p><strong>CWE:</strong> CWE-94: Improper Control of Generation of Code ('Code Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'params[:ip]', 'operation': 'Untrusted HTTP request parameter from Sinatra params', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'ip', 'operation': 'Passed as argument to SystemUtil.run_ping', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'ip_address', 'operation': 'Parameter of SystemUtil.run_ping accepts untrusted value', 'line': 2}</li>
+<li>{'step': 4, 'variable': 'ip_address', 'operation': 'Interpolated into backtick shell command sink', 'line': 4}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>scala.lang.security.audit.tainted-sql-string.tainted-sql-string (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/scala/src/main/scala/services/DbService.scala (Line: 6)</p>
+<p><strong>Message:</strong> User data flows into this manually-constructed SQL string. User data can be safely inserted into SQL strings using prepared statements or an object-relational mapper (ORM). Manually-constructed SQL strings is a possible indicator of SQL injection, which could let an attacker steal or manipulate data from the database. Instead, use prepared statements (`connection.PreparedStatement`) or a safe library.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'id', 'operation': 'Function parameter (external untrusted input)', 'line': 4}</li>
+<li>{'step': 2, 'variable': 'query', 'operation': 'String interpolation into SQL query', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>csharp.lang.security.sqli.csharp-sqli.csharp-sqli (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/DatabaseService.cs (Line: 13)</p>
+<p><strong>Message:</strong> Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements instead. You can obtain a PreparedStatement using 'SqlCommand' and 'SqlParameter'.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'id', 'operation': 'function parameter (external untrusted input)', 'line': 8}</li>
+<li>{'step': 2, 'variable': 'query', 'operation': 'string concatenation: "SELECT * FROM Users WHERE Id = \'" + id + "\'"', 'line': 11}</li>
+<li>{'step': 3, 'variable': 'command', 'operation': 'new SqlCommand(query, connection)', 'line': 12}</li>
+<li>{'step': 4, 'variable': 'command', 'operation': 'command.ExecuteReader() executes the injected SQL', 'line': 15}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-csharp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/HttpService.cs (Line: 13)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'url', 'operation': 'ASP.NET Core action parameter via model binding (user-controlled source)', 'line': 19}</li>
+<li>{'step': 2, 'variable': 'url', 'operation': 'passed as argument to _httpService.FetchResource', 'line': 27}</li>
+<li>{'step': 3, 'variable': 'url', 'operation': 'received as FetchResource method parameter', 'line': 10}</li>
+<li>{'step': 4, 'variable': 'url', 'operation': 'dangerous sink: client.GetAsync(url)', 'line': 13}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>src.scan.rules.sinful-taint-go (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 12)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'id', 'operation': 'id := r.URL.Query().Get("id")', 'line': 10}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'services.FetchUserById(id)', 'line': 11}</li>
+<li>{'step': 3, 'variable': 'id', 'operation': 'Function parameter id of FetchUserById', 'line': 9}</li>
+<li>{'step': 4, 'variable': 'query', 'operation': 'query := fmt.Sprintf("SELECT * FROM users WHERE id = \'%s\'", id)', 'line': 10}</li>
+<li>{'step': 5, 'variable': 'query', 'operation': 'db.Query(query)', 'line': 16}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>go.lang.security.audit.sqli.gosql-sqli.gosql-sqli (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/services/db.go (Line: 14)</p>
+<p><strong>Message:</strong> Detected string concatenation with a non-literal variable in a "database/sql" Go SQL statement. This could lead to SQL injection if the variable is user-controlled and not properly sanitized. In order to prevent SQL injection, use parameterized queries or prepared statements instead. You can use prepared statements with the 'Prepare' and 'PrepareContext' calls.</p>
+<p><strong>CWE:</strong> CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'id', 'operation': 'assignment from r.URL.Query().Get("id")', 'line': 13}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'passed as argument to services.FetchUserById', 'line': 13}</li>
+<li>{'step': 3, 'variable': 'id', 'operation': 'function parameter FetchUserById(id string)', 'line': 8}</li>
+<li>{'step': 4, 'variable': 'query', 'operation': 'fmt.Sprintf("SELECT * FROM users WHERE id = \'%s\'", id)', 'line': 12}</li>
+<li>{'step': 5, 'variable': 'query', 'operation': 'passed to db.Query(query)', 'line': 13}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/system.js (Line: 16)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'target', 'operation': 'Assigned from req.query.target', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'host', 'operation': 'Passed as runPing parameter to execUtil.runPing(target, callback)', 'line': 7}</li>
+<li>{'step': 3, 'variable': 'cmd', 'operation': 'String concatenation: "ping -c 4 " + host', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'Passed to child_process.exec(cmd, callback)', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/routes/api.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.id', 'operation': 'source (untrusted HTTP query parameter)', 'line': 4}</li>
+<li>{'step': 2, 'variable': 'id', 'operation': 'assignment from req.query.id', 'line': 4}</li>
+<li>{'step': 3, 'variable': 'id', 'operation': 'argument passed to db.fetchUser', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'query', 'operation': 'string concatenation into SQL statement', 'line': 8}</li>
+<li>{'step': 5, 'variable': 'query', 'operation': 'sink call connection.query(query, callback)', 'line': 9}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/http.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.url', 'operation': 'user-controlled source', 'line': 20}</li>
+<li>{'step': 2, 'variable': 'url', 'operation': 'assignment from req.query.url', 'line': 20}</li>
+<li>{'step': 3, 'variable': 'url', 'operation': 'passed to httpUtil.get', 'line': 21}</li>
+<li>{'step': 4, 'variable': 'url', 'operation': 'function parameter in exports.get', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'url', 'operation': 'passed to http.get sink', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>problem-based-packs.insecure-transport.js-node.using-http-server.using-http-server (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/http.js (Line: 5)</p>
+<p><strong>Message:</strong> Checks for any usage of http servers instead of https servers. Encourages the usage of https protocol instead of http, which does not have TLS and is therefore unencrypted. Using http can lead to man-in-the-middle attacks in which the attacker is able to read sensitive information.</p>
+<p><strong>CWE:</strong> C, W, E, -, 3, 1, 9, :,  , C, l, e, a, r, t, e, x, t,  , T, r, a, n, s, m, i, s, s, i, o, n,  , o, f,  , S, e, n, s, i, t, i, v, e,  , I, n, f, o, r, m, a, t, i, o, n</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.url', 'operation': 'assign from Express query parameter', 'line': 6}</li>
+<li>{'step': 2, 'variable': 'url', 'operation': 'passed to utils.get(url, callback)', 'line': 8}</li>
+<li>{'step': 3, 'variable': 'url', 'operation': 'passed to http.get(url, callback)', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/db_service.py (Line: 8)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'user_id', 'operation': "source: request.args.get('id')", 'line': 14}</li>
+<li>{'step': 2, 'variable': 'user_id', 'operation': 'passed as argument to get_user()', 'line': 15}</li>
+<li>{'step': 3, 'variable': 'user_id', 'operation': 'function parameter in get_user()', 'line': 3}</li>
+<li>{'step': 4, 'variable': 'query', 'operation': 'f-string interpolation of user_id into SQL query', 'line': 6}</li>
+<li>{'step': 5, 'variable': 'query', 'operation': 'sink: cursor.execute(query)', 'line': 7}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/http_service.py (Line: 5)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'url', 'operation': "url = request.args.get('url')", 'line': 38}</li>
+<li>{'step': 2, 'variable': 'url', 'operation': 'fetch_url(url)', 'line': 39}</li>
+<li>{'step': 3, 'variable': 'url', 'operation': 'def fetch_url(url) parameter receives tainted value', 'line': 3}</li>
+<li>{'step': 4, 'variable': 'url', 'operation': 'requests.get(url)', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/utils/system_util.py (Line: 6)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'ip', 'operation': "ip = request.args.get('ip')", 'line': 56}</li>
+<li>{'step': 2, 'variable': 'ip', 'operation': 'run_ping(ip)', 'line': 57}</li>
+<li>{'step': 3, 'variable': 'ip_address', 'operation': 'function parameter binding in run_ping', 'line': 3}</li>
+<li>{'step': 4, 'variable': 'command', 'operation': 'command = "ping -c 4 " + ip_address', 'line': 5}</li>
+<li>{'step': 5, 'variable': 'command', 'operation': 'os.system(command)', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-rust (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/rust/src/services/http.rs (Line: 3)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'url', 'operation': 'function parameter (external untrusted input)', 'line': 1}</li>
+<li>{'step': 2, 'variable': 'url', 'operation': 'passed directly to reqwest::get sink', 'line': 3}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>scala.lang.security.audit.io-source-ssrf.io-source-ssrf (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/scala/src/main/scala/services/HttpService.scala (Line: 7)</p>
+<p><strong>Message:</strong> A parameter being passed directly into `fromURL` most likely lead to SSRF. This could allow an attacker to send data to their own server, potentially exposing sensitive data sent with this request. They could also probe internal servers or other resources that the server running this code can access. Do not allow arbitrary hosts. Instead, create an allowlist for approved hosts, or hardcode the correct host.</p>
+<p><strong>CWE:</strong> CWE-918: Server-Side Request Forgery (SSRF)</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'url', 'operation': 'Function parameter passed directly into Source.fromURL(url)', 'line': 7}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>java.lang.security.audit.ldap-injection.ldap-injection (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/LdapService.java (Line: 9)</p>
+<p><strong>Message:</strong> Detected non-constant data passed into an LDAP query. If this data can be controlled by an external user, this is an LDAP injection. Ensure data passed to an LDAP query is not controllable; or properly sanitize the data.</p>
+<p><strong>CWE:</strong> CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'username', 'operation': 'method parameter (external untrusted input)', 'line': 9}</li>
+<li>{'step': 2, 'variable': 'filter', 'operation': 'String concatenation: "(uid=" + username + ")"', 'line': 15}</li>
+<li>{'step': 3, 'variable': 'results', 'operation': 'ctx.search("ou=users,dc=example,dc=com", filter, controls)', 'line': 16}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/utils/config.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.body', 'operation': 'external user-controlled HTTP request body', 'line': 13}</li>
+<li>{'step': 2, 'variable': 'data', 'operation': 'assignment: const data = req.body', 'line': 13}</li>
+<li>{'step': 3, 'variable': 'data', 'operation': 'argument passed to configUtil.applyConfig(data)', 'line': 14}</li>
+<li>{'step': 4, 'variable': 'newSettings', 'operation': 'function parameter receives data', 'line': 8}</li>
+<li>{'step': 5, 'variable': 'newSettings', 'operation': 'second argument to _.merge(globalConfig, newSettings)', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>php.lang.security.unserialize-use.unserialize-use (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/php/index.php (Line: 46)</p>
+<p><strong>Message:</strong> Calling `unserialize()` with user input in the pattern can lead to arbitrary code execution. Consider using JSON or structured data approaches (e.g. Google Protocol Buffers).</p>
+<p><strong>CWE:</strong> CWE-502: Deserialization of Untrusted Data</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': "$_COOKIE['user_session']", 'operation': 'External untrusted input read directly from the HTTP Cookie header by the PHP runtime', 'line': 46}</li>
+<li>{'step': 2, 'variable': '$data', 'operation': "Assignment receives the return value of unserialize($_COOKIE['user_session']); the untrusted cookie value is passed directly into the dangerous deserialization sink", 'line': 46}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-csharp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/FileService.cs (Line: 10)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'filename', 'operation': 'Method parameter of ReadUserFile(string filename); untrusted user-controlled input', 'line': 7}</li>
+<li>{'step': 2, 'variable': 'path', 'operation': 'string path = Path.Combine(@"C:\\app\\uploads\\", filename);', 'line': 10}</li>
+<li>{'step': 3, 'variable': 'path', 'operation': 'return File.ReadAllText(path); dangerous sink', 'line': 11}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-csharp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/FileService.cs (Line: 11)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'filename', 'operation': 'Method parameter ReadUserFile(string filename) - untrusted external source', 'line': 7}</li>
+<li>{'step': 2, 'variable': 'path', 'operation': 'Assigned from Path.Combine(base uploads directory, filename)', 'line': 10}</li>
+<li>{'step': 3, 'variable': 'path', 'operation': 'Passed to File.ReadAllText - dangerous sink', 'line': 11}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>csharp.dotnet.security.audit.ldap-injection.ldap-injection (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/LdapService.cs (Line: 13)</p>
+<p><strong>Message:</strong> LDAP queries are constructed dynamically on user-controlled input. This vulnerability in code could lead to an arbitrary LDAP query execution.</p>
+<p><strong>CWE:</strong> CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'username', 'operation': 'Method parameter of public method FindUser — external untrusted input boundary', 'line': 6}</li>
+<li>{'step': 2, 'variable': '(sAMAccountName=" + username + ")', 'operation': 'String concatenation builds LDAP filter with raw username', 'line': 13}</li>
+<li>{'step': 3, 'variable': 'searcher.Filter', 'operation': 'Concatenated string assigned to DirectorySearcher.Filter (LDAP injection sink)', 'line': 13}</li>
+<li>{'step': 4, 'variable': 'searcher.FindOne()', 'operation': 'Executes LDAP search using attacker-influenced filter', 'line': 14}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>csharp.lang.security.xxe.xmlreadersettings-unsafe-parser-override.xmlreadersettings-unsafe-parser-override (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Services/XmlService.cs (Line: 14)</p>
+<p><strong>Message:</strong> XmlReaderSettings found with DtdProcessing.Parse on an XmlReader handling a string argument from a public method. Enabling Document Type Definition (DTD) parsing may cause XML External Entity (XXE) injection if supplied with user-controllable data.</p>
+<p><strong>CWE:</strong> CWE-611: Improper Restriction of XML External Entity Reference</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'xmlInput', 'operation': 'Public method parameter (external/untrusted source)', 'line': 7}</li>
+<li>{'step': 2, 'variable': 'sr', 'operation': 'new StringReader(xmlInput)', 'line': 13}</li>
+<li>{'step': 3, 'variable': 'settings', 'operation': 'settings.DtdProcessing = DtdProcessing.Parse', 'line': 11}</li>
+<li>{'step': 4, 'variable': 'reader', 'operation': 'XmlReader.Create(sr, settings)', 'line': 14}</li>
+<li>{'step': 5, 'variable': 'doc', 'operation': 'doc.Load(reader)', 'line': 17}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 32)</p>
+<p><strong>Message:</strong> Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.</p>
+<p><strong>CWE:</strong> CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'filename', 'operation': 'r.URL.Query().Get("file")', 'line': 24}</li>
+<li>{'step': 2, 'variable': 'filename', 'operation': 'utils.ReadUserFile(filename)', 'line': 25}</li>
+<li>{'step': 3, 'variable': 'path', 'operation': '"/tmp/app/uploads/" + filename', 'line': 9}</li>
+<li>{'step': 4, 'variable': 'content', 'operation': 'os.ReadFile(path)', 'line': 10}</li>
+<li>{'step': 5, 'variable': 'data', 'operation': 'return string(content)', 'line': 14}</li>
+<li>{'step': 6, 'variable': 'data', 'operation': 'fmt.Fprint(w, data)', 'line': 26}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>src.scan.rules.sinful-taint-go (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/extra.go (Line: 17)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'query', 'operation': 'assignment from user-controlled source r.URL.Query().Get("query")', 'line': 17}</li>
+<li>{'step': 2, 'variable': 'query', 'operation': 'passed as argument to services.ExecuteNoSQL(query)', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'query', 'operation': 'received as function parameter in ExecuteNoSQL', 'line': 7}</li>
+<li>{'step': 4, 'variable': 'query', 'operation': 'interpolated unescaped into NoSQL $where clause via fmt.Sprintf %s', 'line': 8}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>java.lang.security.audit.crypto.use-of-md5.use-of-md5 (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/CryptoService.java (Line: 11)</p>
+<p><strong>Message:</strong> Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use HMAC instead.</p>
+<p><strong>CWE:</strong> CWE-328: Use of Weak Hash</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'user', 'operation': '@RequestBody binds HTTP request body to User', 'line': 11}</li>
+<li>{'step': 2, 'variable': 'password', 'operation': 'user.getPassword() passed to hashPassword', 'line': 12}</li>
+<li>{'step': 3, 'variable': 'password.getBytes()', 'operation': 'bytes passed to md5.update', 'line': 12}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>java.lang.security.audit.crypto.use-of-default-aes.use-of-default-aes (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/CryptoService.java (Line: 23)</p>
+<p><strong>Message:</strong> Use of AES with no settings detected. By default, java.crypto.Cipher uses ECB mode. ECB doesn't  provide message confidentiality and is not semantically secure so should not be used. Instead, use a strong, secure cipher: java.crypto.Cipher.getInstance("AES/CBC/PKCS7PADDING"). See https://owasp.org/www-community/Using_the_Java_Cryptographic_Extensions for more information.</p>
+<p><strong>CWE:</strong> CWE-327: Use of a Broken or Risky Cryptographic Algorithm</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': '"AES"', 'operation': 'Literal constant passed directly to Cipher.getInstance', 'line': 23}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>java.lang.security.audit.xxe.documentbuilderfactory-disallow-doctype-decl-missing.documentbuilderfactory-disallow-doctype-decl-missing (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/java/src/main/java/com/benchmark/services/XmlService.java (Line: 14)</p>
+<p><strong>Message:</strong> DOCTYPE declarations are enabled for this DocumentBuilderFactory. This is vulnerable to XML external entity attacks. Disable this by setting the feature "http://apache.org/xml/features/disallow-doctype-decl" to true. Alternatively, allow DOCTYPE declarations and only prohibit external entities declarations. This can be done by setting the features "http://xml.org/sax/features/external-general-entities" and "http://xml.org/sax/features/external-parameter-entities" to false.</p>
+<p><strong>CWE:</strong> CWE-611: Improper Restriction of XML External Entity Reference</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'xmlData', 'operation': 'Method parameter (untrusted XML string)', 'line': 9}</li>
+<li>{'step': 2, 'variable': 'xmlData.getBytes()', 'operation': 'String.getBytes() byte-array conversion', 'line': 15}</li>
+<li>{'step': 3, 'variable': 'ByteArrayInputStream', 'operation': 'new ByteArrayInputStream(...) wraps untrusted bytes as input stream', 'line': 15}</li>
+<li>{'step': 4, 'variable': 'doc', 'operation': 'builder.parse(new ByteArrayInputStream(xmlData.getBytes())) - XML parsing with DOCTYPE enabled', 'line': 15}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/file.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'filename', 'operation': 'assignment from req.query.file', 'line': 3}</li>
+<li>{'step': 2, 'variable': 'filename', 'operation': 'argument to fs.read', 'line': 5}</li>
+<li>{'step': 3, 'variable': 'filename', 'operation': 'service read parameter forwarded to path.join', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'fullPath', 'operation': 'assignment from path.join result', 'line': 5}</li>
+<li>{'step': 5, 'variable': 'fullPath', 'operation': 'argument to fs.readFile sink', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/file.js (Line: 6)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'filename', 'operation': 'assignment from req.query.file', 'line': 3}</li>
+<li>{'step': 2, 'variable': 'filename', 'operation': 'argument to fs.read', 'line': 5}</li>
+<li>{'step': 3, 'variable': 'filename', 'operation': 'service read parameter forwarded to path.join', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'fullPath', 'operation': 'assignment from path.join result', 'line': 5}</li>
+<li>{'step': 5, 'variable': 'fullPath', 'operation': 'argument to fs.readFile sink', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/file.js (Line: 7)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'filename', 'operation': 'assignment from req.query.file', 'line': 3}</li>
+<li>{'step': 2, 'variable': 'filename', 'operation': 'argument to fs.read', 'line': 5}</li>
+<li>{'step': 3, 'variable': 'filename', 'operation': 'service read parameter forwarded to path.join', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'fullPath', 'operation': 'assignment from path.join result', 'line': 5}</li>
+<li>{'step': 5, 'variable': 'fullPath', 'operation': 'argument to fs.readFile sink', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/services/fs.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'filename', 'operation': 'const filename = req.query.file;', 'line': 4}</li>
+<li>{'step': 2, 'variable': 'filename', 'operation': 'fs.read(filename, (err, data) => { ... });', 'line': 5}</li>
+<li>{'step': 3, 'variable': 'filename', 'operation': 'exports.read = (filename, callback) => {', 'line': 4}</li>
+<li>{'step': 4, 'variable': 'fullPath', 'operation': "const fullPath = path.join(__dirname, '../../public/files/', filename);", 'line': 6}</li>
+<li>{'step': 5, 'variable': 'fullPath', 'operation': "fs.readFile(fullPath, 'utf8', callback);", 'line': 7}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/services/fs.js (Line: 2)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.file', 'operation': 'user-controlled HTTP query parameter (source)', 'line': 4}</li>
+<li>{'step': 2, 'variable': 'filename', 'operation': 'const filename = req.query.file', 'line': 4}</li>
+<li>{'step': 3, 'variable': 'filename', 'operation': 'passed as argument to fs.read(filename, callback)', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'filename', 'operation': 'function parameter exports.read = (filename, callback)', 'line': 3}</li>
+<li>{'step': 5, 'variable': 'fullPath', 'operation': "const fullPath = path.join(__dirname, '../../public/files/', filename)", 'line': 4}</li>
+<li>{'step': 6, 'variable': 'fullPath', 'operation': "passed to fs.readFile(fullPath, 'utf8', callback) (sink)", 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>javascript.lang.security.audit.path-traversal.path-join-resolve-traversal.path-join-resolve-traversal (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/services/fs.js (Line: 6)</p>
+<p><strong>Message:</strong> Detected possible user input going into a `path.join` or `path.resolve` function. This could possibly lead to a path traversal vulnerability,  where the attacker can access arbitrary files stored in the file system. Instead, be sure to sanitize or validate user input first.</p>
+<p><strong>CWE:</strong> CWE-22: Improper Limitation of a Pathname to a Restricted Directory ('Path Traversal')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.params.filename', 'operation': 'HTTP request parameter from Express route /files/:filename', 'line': 8}</li>
+<li>{'step': 2, 'variable': 'filename', 'operation': 'const filename = req.params.filename', 'line': 8}</li>
+<li>{'step': 3, 'variable': 'filename', 'operation': 'fsService.read(filename, (err, data) => {...})', 'line': 9}</li>
+<li>{'step': 4, 'variable': 'filename', 'operation': 'function parameter of exports.read', 'line': 4}</li>
+<li>{'step': 5, 'variable': 'fullPath', 'operation': "const fullPath = path.join(__dirname, '../../public/files/', filename)", 'line': 6}</li>
+<li>{'step': 6, 'variable': 'fullPath', 'operation': "fs.readFile(fullPath, 'utf8', callback)", 'line': 7}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/services/fs.js (Line: 7)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'filename', 'operation': 'assignment from untrusted source', 'line': 4}</li>
+<li>{'step': 2, 'variable': 'filename', 'operation': 'argument to fs.read', 'line': 5}</li>
+<li>{'step': 3, 'variable': 'filename', 'operation': 'function parameter received', 'line': 4}</li>
+<li>{'step': 4, 'variable': 'fullPath', 'operation': 'path.join with filename', 'line': 6}</li>
+<li>{'step': 5, 'variable': 'fullPath', 'operation': 'fs.readFile sink', 'line': 7}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/services/file_service.py (Line: 4)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding high'>
+<h3>benchmark.dynamic-ai-sinful-taint-rust (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/rust/src/services/file.rs (Line: 6)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'file', 'operation': 'Extracted from HTTP query parameter `file` into handler variable', 'line': 27}</li>
+<li>{'step': 2, 'variable': 'file', 'operation': 'Passed to file::read as filename argument', 'line': 28}</li>
+<li>{'step': 3, 'variable': 'filename', 'operation': 'Interpolated into path with format!', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'path', 'operation': 'Passed to fs::read_to_string', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>dynamic-sink-res\.redirect\s*\( (MEDIUM)</h3>
+<p><strong>File:</strong> js/controllers/auth.js (Line: 16)</p>
+<p><strong>Message:</strong> Dynamically expanded sink from CVE: Express response redirect() call. User-controlled URLs passed here are encoded with encodeurl and may bypass allow-list checks, leading to an open redirect (CVE-2024-29041).</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.url', 'operation': "Untrusted external input from HTTP query parameter 'url'", 'line': 14}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'Assignment: const target = req.query.url', 'line': 14}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'Passed as argument to dangerous sink res.redirect(target)', 'line': 16}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>benchmark.dynamic-ai-sinful-taint-csharp (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/csharp/Controllers/AuthController.cs (Line: 13)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'returnUrl', 'operation': 'Parameter bound from HTTP request via ASP.NET Core model binding (user-controlled source)', 'line': 11}</li>
+<li>{'step': 2, 'variable': 'returnUrl', 'operation': 'Passed directly to Redirect() sink without transformation', 'line': 13}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 26)</p>
+<p><strong>Message:</strong> Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.</p>
+<p><strong>CWE:</strong> CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'r', 'operation': 'HTTP request object containing query parameters', 'line': 30}</li>
+<li>{'step': 2, 'variable': 'url', 'operation': 'url := r.URL.Query().Get("url") - external untrusted input', 'line': 30}</li>
+<li>{'step': 3, 'variable': 'data', 'operation': 'data := services.FetchHttp(url) - remote HTTP response body returned as string', 'line': 31}</li>
+<li>{'step': 4, 'variable': 'data', 'operation': 'fmt.Fprint(w, data) - writes unescaped untrusted data to ResponseWriter', 'line': 32}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/api.go (Line: 39)</p>
+<p><strong>Message:</strong> Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.</p>
+<p><strong>CWE:</strong> CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'url', 'operation': 'r.URL.Query().Get("url") - external HTTP query parameter (attacker-controlled)', 'line': 30}</li>
+<li>{'step': 2, 'variable': 'data', 'operation': 'services.FetchHttp(url) - fetches URL and returns raw HTTP response body string', 'line': 31}</li>
+<li>{'step': 3, 'variable': 'data', 'operation': 'fmt.Fprint(w, data) - raw body written to http.ResponseWriter without HTML escaping', 'line': 32}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>src.scan.rules.sinful-taint-go (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/redirect.go (Line: 8)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'r', 'operation': 'HTTP request object received from client', 'line': 8}</li>
+<li>{'step': 2, 'variable': 'url', 'operation': 'url := r.URL.Query().Get("url") extracts user-controlled query parameter', 'line': 8}</li>
+<li>{'step': 3, 'variable': 'url', 'operation': 'http.Redirect(w, r, url, http.StatusFound) uses url as redirect Location header', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>src.scan.rules.sinful-taint-go (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/redirect.go (Line: 10)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'r', 'operation': 'function parameter holding the incoming HTTP request', 'line': 7}</li>
+<li>{'step': 2, 'variable': 'url', 'operation': 'url := r.URL.Query().Get("url")', 'line': 8}</li>
+<li>{'step': 3, 'variable': 'url', 'operation': 'http.Redirect(w, r, url, http.StatusFound)', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>src.scan.rules.sinful-taint-go (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/template.go (Line: 9)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'r', 'operation': 'function parameter carrying the incoming HTTP request', 'line': 8}</li>
+<li>{'step': 2, 'variable': 'name', 'operation': 'assigned from r.URL.Query().Get("name")', 'line': 9}</li>
+<li>{'step': 3, 'variable': 'name', 'operation': 'passed as formatting argument to fmt.Fprintf writing HTML to the response', 'line': 12}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>go.lang.security.audit.xss.no-fprintf-to-responsewriter.no-fprintf-to-responsewriter (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/handlers/template.go (Line: 12)</p>
+<p><strong>Message:</strong> Detected 'Fprintf' or similar writing to 'http.ResponseWriter'. This bypasses HTML escaping that prevents cross-site scripting vulnerabilities. Instead, use the 'html/template' package to render data to users.</p>
+<p><strong>CWE:</strong> CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'r', 'operation': 'parameter of GreetUser of type *http.Request', 'line': 8}</li>
+<li>{'step': 2, 'variable': 'name', 'operation': 'name := r.URL.Query().Get("name")', 'line': 9}</li>
+<li>{'step': 3, 'variable': 'name', 'operation': 'passed to fmt.Fprintf as formatting argument', 'line': 12}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/auth.js (Line: 1)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.url', 'operation': 'source - user-controlled URL query parameter', 'line': 14}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assignment: const target = req.query.url', 'line': 14}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'sink argument: res.redirect(target)', 'line': 16}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/auth.js (Line: 16)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.url', 'operation': 'external untrusted user input from HTTP query string', 'line': 14}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assignment from req.query.url', 'line': 14}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'passed as argument to dangerous sink res.redirect', 'line': 16}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>php.lang.security.injection.echoed-request.echoed-request (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/php/index.php (Line: 53)</p>
+<p><strong>Message:</strong> `Echo`ing user input risks cross-site scripting vulnerability. You should use `htmlentities()` when showing data to users.</p>
+<p><strong>CWE:</strong> CWE-79: Improper Neutralization of Input During Web Page Generation ('Cross-site Scripting')</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': "$_GET['name']", 'operation': "untrusted external input from HTTP GET parameter 'name'", 'line': 52}</li>
+<li>{'step': 2, 'variable': '$name', 'operation': "assignment from $_GET['name'] with fallback 'Guest'", 'line': 52}</li>
+<li>{'step': 3, 'variable': '$name', 'operation': 'concatenated into string and passed to echo (HTML output sink)', 'line': 53}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>go.lang.security.audit.net.use-tls.use-tls (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/main.go (Line: 22)</p>
+<p><strong>Message:</strong> Found an HTTP server without TLS. Use 'http.ListenAndServeTLS' instead. See https://golang.org/pkg/net/http/#ListenAndServeTLS for more information.</p>
+<p><strong>CWE:</strong> CWE-319: Cleartext Transmission of Sensitive Information</p>
+</div>
+<div class='finding medium'>
+<h3>go.lang.security.audit.crypto.use_of_weak_crypto.use-of-md5 (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/go/utils/crypto.go (Line: 10)</p>
+<p><strong>Message:</strong> Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.</p>
+<p><strong>CWE:</strong> CWE-328: Use of Weak Hash</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'data', 'operation': 'function parameter', 'line': 8}</li>
+<li>{'step': 2, 'variable': 'data', 'operation': 'converted to []byte and passed to hasher.Write', 'line': 11}</li>
+<li>{'step': 3, 'variable': 'hasher.Sum(nil)', 'operation': 'MD5 digest computed and returned as hex', 'line': 12}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/verify.py (Line: 177)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'lscan', 'operation': 'json.load(f) from externally read report file', 'line': 231}</li>
+<li>{'step': 2, 'variable': 'findings', 'operation': "lscan.get('data', {}).get('findings', []) or lscan.get('findings', [])", 'line': 232}</li>
+<li>{'step': 3, 'variable': 'flaw', 'operation': 'for flaw in findings', 'line': 256}</li>
+<li>{'step': 4, 'variable': 'ftitle', 'operation': "str(flaw.get('title', '')).upper()", 'line': 262}</li>
+<li>{'step': 5, 'variable': 'fmsg', 'operation': "str(flaw.get('message', '')).upper()", 'line': 263}</li>
+<li>{'step': 6, 'variable': 'fvuln_class', 'operation': "str(flaw.get('vuln_class', '')).upper()", 'line': 269}</li>
+<li>{'step': 7, 'variable': 'cwe_ids', 'operation': "flaw.get('cwe_ids', [])", 'line': 266}</li>
+<li>{'step': 8, 'variable': 'ai_judge args', 'operation': 'ai_judge(cwe, vtype, ftitle, fmsg, fvuln_class, cwe_ids)', 'line': 275}</li>
+<li>{'step': 9, 'variable': 'prompt', 'operation': 'f-string embedding untrusted report fields', 'line': 32}</li>
+<li>{'step': 10, 'variable': 'prompt', 'operation': 'fetch_llm(prompt=prompt, model=None, jfmt=True)', 'line': 45}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>python.lang.security.insecure-hash-algorithms-md5.insecure-hash-algorithm-md5 (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/python/utils/crypto_util.py (Line: 5)</p>
+<p><strong>Message:</strong> Detected MD5 hash algorithm which is considered insecure. MD5 is not collision resistant and is therefore not suitable as a cryptographic signature. Use SHA256 or SHA3 instead.</p>
+<p><strong>CWE:</strong> CWE-327: Use of a Broken or Risky Cryptographic Algorithm</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'data', 'operation': "Untrusted external input assigned from request.args.get('data') in python/controllers/routes.py:68", 'line': 68}</li>
+<li>{'step': 2, 'variable': 'data', 'operation': 'Passed as argument to hash_data(data) in python/controllers/routes.py:69', 'line': 69}</li>
+<li>{'step': 3, 'variable': 'data', 'operation': 'Received as formal parameter of hash_data in python/utils/crypto_util.py:3', 'line': 3}</li>
+<li>{'step': 4, 'variable': 'data', 'operation': 'Encoded to UTF-8 and supplied to md5.update() in python/utils/crypto_util.py:6', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>ruby.lang.security.weak-hashes-md5.weak-hashes-md5 (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/ruby/services/crypto_service.rb (Line: 6)</p>
+<p><strong>Message:</strong> Should not use md5 to generate hashes. md5 is proven to be vulnerable through the use of brute-force attacks. Could also result in collisions, leading to potential collision attacks. Use SHA256 or other hashing functions instead.</p>
+<p><strong>CWE:</strong> CWE-328: Use of Weak Hash</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'data', 'operation': 'Assigned from params[:data] (external HTTP parameter, untrusted source)', 'line': 3}</li>
+<li>{'step': 2, 'variable': 'data', 'operation': 'Passed as argument to CryptoService.hash_data(data)', 'line': 4}</li>
+<li>{'step': 3, 'variable': 'data', 'operation': 'Function parameter used in sink call Digest::MD5.hexdigest(data)', 'line': 5}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/auth.js (Line: 7)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req.query.url', 'operation': 'external untrusted HTTP query-string source', 'line': 14}</li>
+<li>{'step': 2, 'variable': 'target', 'operation': 'assignment const target = req.query.url', 'line': 14}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'passed as argument to dangerous sink res.redirect(target)', 'line': 16}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>benchmark.dynamic-ai-sinful-taint-javascript (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/js/controllers/auth.js (Line: 9)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'req', 'operation': 'Function parameter (Express request object) containing external user input', 'line': 13}</li>
+<li>{'step': 2, 'variable': 'req.query.url', 'operation': "Property access of untrusted query parameter 'url'", 'line': 14}</li>
+<li>{'step': 3, 'variable': 'target', 'operation': 'Assignment: const target = req.query.url', 'line': 14}</li>
+<li>{'step': 4, 'variable': 'target', 'operation': 'Passed as argument to res.redirect(target)', 'line': 16}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/verify.py (Line: 25)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'lscan', 'operation': 'json.load(f) reads report file content', 'line': 231}</li>
+<li>{'step': 2, 'variable': 'findings', 'operation': "lscan.get('data',{}).get('findings',[])", 'line': 232}</li>
+<li>{'step': 3, 'variable': 'flaw', 'operation': 'iteration over findings', 'line': 256}</li>
+<li>{'step': 4, 'variable': 'ftitle', 'operation': "str(flaw.get('title','')).upper()", 'line': 262}</li>
+<li>{'step': 5, 'variable': 'fmsg', 'operation': "str(flaw.get('message','')).upper()", 'line': 263}</li>
+<li>{'step': 6, 'variable': 'fvuln_class', 'operation': "str(flaw.get('vuln_class','')).upper()", 'line': 269}</li>
+<li>{'step': 7, 'variable': 'cwe_ids', 'operation': "flaw.get('cwe_ids',[])", 'line': 266}</li>
+<li>{'step': 8, 'variable': 'ai_judge args', 'operation': 'ai_judge(cwe, vtype, ftitle, fmsg, fvuln_class, cwe_ids)', 'line': 275}</li>
+<li>{'step': 9, 'variable': 'prompt', 'operation': 'f-string interpolation of ai_title/ai_msg/ai_class/ai_cwes', 'line': 32}</li>
+<li>{'step': 10, 'variable': 'prompt', 'operation': 'fetch_llm(prompt=prompt) sink', 'line': 45}</li>
+</ul>
+</div>
+<div class='finding medium'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (MEDIUM)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/verify.py (Line: 230)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'rfiles', 'operation': 'glob.glob report files', 'line': 224}</li>
+<li>{'step': 2, 'variable': 'latest', 'operation': 'select newest report by mtime', 'line': 228}</li>
+<li>{'step': 3, 'variable': 'lscan', 'operation': 'json.load(f) from untrusted report file', 'line': 231}</li>
+<li>{'step': 4, 'variable': 'findings', 'operation': 'lscan.get("findings")', 'line': 232}</li>
+<li>{'step': 5, 'variable': 'flaw', 'operation': 'iterate findings', 'line': 256}</li>
+<li>{'step': 6, 'variable': 'ftitle', 'operation': 'flaw.get("title","")', 'line': 262}</li>
+<li>{'step': 7, 'variable': 'fmsg', 'operation': 'flaw.get("message","")', 'line': 263}</li>
+<li>{'step': 8, 'variable': 'cwe_ids', 'operation': 'flaw.get("cwe_ids",[])', 'line': 266}</li>
+<li>{'step': 9, 'variable': 'fvuln_class', 'operation': 'flaw.get("vuln_class","")', 'line': 269}</li>
+<li>{'step': 10, 'variable': 'ai_judge args', 'operation': 'passed to ai_judge', 'line': 275}</li>
+<li>{'step': 11, 'variable': 'prompt', 'operation': 'interpolated into f-string prompt', 'line': 32}</li>
+<li>{'step': 12, 'variable': 'prompt', 'operation': 'passed to fetch_llm', 'line': 45}</li>
+<li>{'step': 13, 'variable': 'payload', 'operation': 'inserted into HTTP JSON payload and sent via requests.post', 'line': 24}</li>
+</ul>
+</div>
+<div class='finding warning'>
+<h3>benchmark.dynamic-ai-sinful-taint-rust (WARNING)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/rust/src/services/deserialize.rs (Line: 5)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding warning'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (WARNING)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/verify.py (Line: 197)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+<div class='finding warning'>
+<h3>benchmark.dynamic-ai-sinful-taint-python (WARNING)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/verify.py (Line: 211)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+</body></html>
