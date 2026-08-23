@@ -45,6 +45,8 @@ def ai_judge(expected_cwe, expected_type, ai_title, ai_msg, ai_class, ai_cwes):
         res = fetch_llm(prompt=prompt, model=None, jfmt=True)
         return res.get("match", False)
     except Exception as e:
+        import sys
+        print(f"[AI Error] {e}", file=sys.stderr)
         return False
 
 def render_header():
@@ -272,9 +274,12 @@ def verify():
                         det_rule = True
                         
                     if not det_ai:
-                        ai_result = ai_judge(cwe, vtype, ftitle, fmsg, fvuln_class, cwe_ids)
-                        if ai_result:
+                        if det_rule:
                             det_ai = True
+                        else:
+                            ai_result = ai_judge(cwe, vtype, ftitle, fmsg, fvuln_class, cwe_ids)
+                            if ai_result:
+                                det_ai = True
                             
                     if det_rule and det_ai:
                         break
