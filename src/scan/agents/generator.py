@@ -32,15 +32,63 @@ def generate(data, templates="src/scan/rules", output="."):
                     # Pattern bắt hàm trả về dữ liệu 
                     rule['pattern-sources'].append({"pattern": f"{name}(...)"})
                     
-                    # Pattern bắt hàm nhận request HTTP 
-                    rule['pattern-sources'].append({
-                        "pattern-inside": f"function {name}(..., $REQ, ...) {{\n  ...\n}}",
-                        "pattern": "$REQ"
-                    })
-                    rule['pattern-sources'].append({
-                        "pattern-inside": f"{name} = (..., $REQ, ...) => {{\n  ...\n}}",
-                        "pattern": "$REQ"
-                    })
+                    if language in ["javascript", "typescript"]:
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"function {name}(..., $REQ, ...) {{\n  ...\n}}",
+                            "pattern": "$REQ"
+                        })
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"{name} = (..., $REQ, ...) => {{\n  ...\n}}",
+                            "pattern": "$REQ"
+                        })
+                    elif language == "python":
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"def {name}(..., $REQ, ...):\n  ...",
+                            "pattern": "$REQ"
+                        })
+                    elif language == "php":
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"function {name}(..., $REQ, ...) {{\n  ...\n}}",
+                            "pattern": "$REQ"
+                        })
+                    elif language == "ruby":
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"def {name}(..., $REQ, ...)\n  ...",
+                            "pattern": "$REQ"
+                        })
+                    elif language == "go":
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"func {name}(..., $REQ $T, ...) $R {{\n  ...\n}}",
+                            "pattern": "$REQ"
+                        })
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"func ($RCV) {name}(..., $REQ $T, ...) $R {{\n  ...\n}}",
+                            "pattern": "$REQ"
+                        })
+                    elif language in ["c", "cpp"]:
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"$RET {name}(..., $TYPE $REQ, ...) {{\n  ...\n}}",
+                            "pattern": "$REQ"
+                        })
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"$RET $CLASS::{name}(..., $TYPE $REQ, ...) {{\n  ...\n}}",
+                            "pattern": "$REQ"
+                        })
+                    elif language in ["java", "csharp"]:
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"$RET {name}(..., $TYPE $REQ, ...) {{\n  ...\n}}",
+                            "pattern": "$REQ"
+                        })
+                    elif language == "rust":
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"fn {name}(..., $REQ: $TYPE, ...) {{\n  ...\n}}",
+                            "pattern": "$REQ"
+                        })
+                    elif language == "scala":
+                        rule['pattern-sources'].append({
+                            "pattern-inside": f"def {name}(..., $REQ: $TYPE, ...) = {{\n  ...\n}}",
+                            "pattern": "$REQ"
+                        })
                 elif item['type'] == 'sink':
                     # Pattern bắt hàm thực thi nguy hiểm
                     rule['pattern-sinks'].append({"pattern": f"{name}(...)"})

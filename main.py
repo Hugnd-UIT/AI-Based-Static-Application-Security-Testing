@@ -417,6 +417,7 @@ def run_scan(path, rules=None, model=None, fix=False):
                 pcves.append(mcve)
     
             # SCA
+            logger.section("SCA")
             rags = []
     
             for idx, data in enumerate(pcves):
@@ -617,7 +618,7 @@ def run_scan(path, rules=None, model=None, fix=False):
     
         else:
             from cli.views.logger import console
-            logger.section("MULTI-AGENT")
+            logger.section("SCA")
             console.print(f"  [bold magenta]● RAG AGENT[/bold magenta]{tag}")
             console.print("  └─ [dim]No vulnerabilities found! Skip![/dim]")
     
@@ -637,6 +638,7 @@ def run_scan(path, rules=None, model=None, fix=False):
             from src.scan.agents.generator import generate
             import os
     
+            logger.section("SAST")
             console.print(f"  [bold magenta]● GENERATING AGENT[/bold magenta]")
             
             console.print("  ├─ [cyan]◆ Extracting codes...[/cyan]")

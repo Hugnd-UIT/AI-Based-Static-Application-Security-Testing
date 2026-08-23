@@ -58,12 +58,12 @@ def extract_functions(target_dir):
                         func_name = next((g for g in match.groups() if g), "anonymous")
                         
                         start_idx = match.start()
-                        end_idx = content.find("\n", start_idx)
-                        if end_idx == -1: end_idx = len(content)
                         
-                        signature = content[start_idx:end_idx].strip()
-                        if signature.endswith("{"):
+                        signature = " ".join(match.group(0).split())
+                        if signature.endswith("{") or signature.endswith(":"):
                             signature = signature[:-1].strip()
+                        elif signature.endswith("=>"):
+                            signature = signature[:-2].strip()
                             
                         docstring = ""
                         lines_before = content[:start_idx].split("\n")

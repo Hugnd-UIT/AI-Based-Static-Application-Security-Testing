@@ -25,6 +25,8 @@ DEPS = {
     "pubspec.lock": "pub",
     "mix.exs": "hex",
     "mix.lock": "hex",
+    "vcpkg.json": "vcpkg",
+    "conanfile.txt": "conan",
 }
 
 # Hàm phân tích thư viện php
@@ -349,6 +351,50 @@ def parse_mix(path: str) -> List[Dict[str, str]]:
     
     return deps
 
+# Hàm phân tích thư viện vcpkg
+def parse_vcpkg(path: str) -> List[Dict[str, str]]:
+    deps = []
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+            for item in data.get("dependencies", []):
+                if isinstance(item, str):
+                    deps.append({"ecosystem": "vcpkg", "package": item, "version": ""})
+                elif isinstance(item, dict) and "name" in item:
+                    ver = item.get("version>=", item.get("version", ""))
+                    deps.append({"ecosystem": "vcpkg", "package": item["name"], "version": ver})
+    
+    except Exception:
+        pass
+    
+    return deps
+
+# Hàm phân tích thư viện conan
+def parse_conan(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            in_requires = False
+            for line in f:
+                line = line.strip()
+                if line.startswith("[requires]"):
+                    in_requires = True
+                    continue
+                elif line.startswith("["):
+                    in_requires = False
+                
+                if in_requires and line and not line.startswith("#"):
+                    parts = line.split("/")
+                    if len(parts) >= 2:
+                        deps.append({"ecosystem": "conan", "package": parts[0].strip(), "version": parts[1].strip()})
+    
+    except Exception:
+        pass
+    
+    return deps
+
 # Hàm phân tích thư viện
 def parse_deps(target: str) -> List[Dict[str, str]]:
     path = Path(target)
@@ -408,6 +454,12 @@ def parse_deps(target: str) -> List[Dict[str, str]]:
 
                 elif name in ["mix.exs", "mix.lock"]:
                     manifests.extend(parse_mix(full))
+
+                elif name == "vcpkg.json":
+                    manifests.extend(parse_vcpkg(full))
+
+                elif name == "conanfile.txt":
+                    manifests.extend(parse_conan(full))
 
             elif name.endswith(".csproj"):
                 manifests.extend(parse_csproj(full))

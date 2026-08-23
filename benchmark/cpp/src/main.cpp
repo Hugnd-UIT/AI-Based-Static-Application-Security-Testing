@@ -1,5 +1,7 @@
 #include <iostream>
 #include <string>
+#include <curl/curl.h>
+#include <openssl/ssl.h>
 #include "../include/db.h"
 #include "../include/system.h"
 #include "../include/memory.h"
@@ -22,6 +24,7 @@ int main(int argc, char* argv[]) {
     } else if (action == "exec") {
         executeCustom(payload);
     } else if (action == "copy") {
+        curl_easy_unescape(NULL, payload.c_str(), 0, NULL);
         copyData(payload.c_str());
     } else if (action == "log") {
         printLog(payload.c_str());

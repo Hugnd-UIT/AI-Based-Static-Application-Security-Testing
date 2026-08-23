@@ -164,8 +164,6 @@ from cli.views import logger
 
 # Hàm báo cáo kết quả
 def report_scan(findings: List[Dict[str, Any]]):
-    logger.section("SAST")
-
     from cli.views.logger import console
 
     if not findings:

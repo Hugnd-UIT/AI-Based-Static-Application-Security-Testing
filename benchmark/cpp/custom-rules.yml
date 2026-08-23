@@ -1,0 +1,105 @@
+rules:
+- id: dynamic-ai-sinful-taint-cpp
+  mode: taint
+  message: 'Potential vulnerability: tainted data flows from user-controlled source
+    to dangerous sink.'
+  severity: WARNING
+  languages:
+  - c
+  - cpp
+  pattern-sources:
+  - pattern: getenv(...)
+  - pattern: gets(...)
+  - pattern: fgets(...)
+  - pattern: scanf(...)
+  - pattern: fscanf(...)
+  - pattern: sscanf(...)
+  - pattern: read(...)
+  - pattern: recv(...)
+  - pattern: recvfrom(...)
+  - pattern: recvmsg(...)
+  - pattern: fread(...)
+  - pattern: getchar()
+  - pattern: getc(...)
+  - pattern: fgetc(...)
+  - pattern: accept(...)
+  - pattern: select(...)
+  - pattern: epoll_wait(...)
+  - pattern: std::cin
+  - pattern: std::getline(...)
+  - pattern: std::cin >> $GET_VAR
+  - pattern: fetchUser(...)
+  - pattern-inside: "$RET fetchUser(..., $TYPE $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "$RET $CLASS::fetchUser(..., $TYPE $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern: readFile(...)
+  - pattern-inside: "$RET readFile(..., $TYPE $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "$RET $CLASS::readFile(..., $TYPE $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern: main(...)
+  - pattern-inside: "$RET main(..., $TYPE $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "$RET $CLASS::main(..., $TYPE $REQ, ...) {\n  ...\n}"
+    pattern: $REQ
+  pattern-sinks:
+  - pattern: system(...)
+  - pattern: popen(...)
+  - pattern: exec(...)
+  - pattern: execl(...)
+  - pattern: execle(...)
+  - pattern: execlp(...)
+  - pattern: execv(...)
+  - pattern: execvp(...)
+  - pattern: execvpe(...)
+  - pattern: execve(...)
+  - pattern: posix_spawn(...)
+  - pattern: printf(...)
+  - pattern: fprintf(...)
+  - pattern: sprintf(...)
+  - pattern: snprintf(...)
+  - pattern: vprintf(...)
+  - pattern: vfprintf(...)
+  - pattern: vsprintf(...)
+  - pattern: syslog(...)
+  - pattern: err(...)
+  - pattern: errx(...)
+  - pattern: strcpy(...)
+  - pattern: strcat(...)
+  - pattern: strncpy(...)
+  - pattern: strncat(...)
+  - pattern: memcpy(...)
+  - pattern: memmove(...)
+  - pattern: memset(...)
+  - pattern: stpcpy(...)
+  - pattern: wcscpy(...)
+  - pattern: wcscat(...)
+  - pattern: fopen(...)
+  - pattern: open(...)
+  - pattern: creat(...)
+  - pattern: freopen(...)
+  - pattern: unlink(...)
+  - pattern: remove(...)
+  - pattern: rename(...)
+  - pattern: malloc(...)
+  - pattern: realloc(...)
+  - pattern: alloca(...)
+  - pattern: executeQuery(...)
+  - pattern: copyData(...)
+  - pattern: printLog(...)
+  - pattern: useAfterFree(...)
+  - pattern: doubleFree(...)
+  - pattern: integerOverflow(...)
+  - pattern: runPing(...)
+  - pattern: executeCustom(...)
+  - pattern: dereferenceNull(...)
+  pattern-sanitizers:
+  - pattern: snprintf($BUF, sizeof($BUF), "%s", ...)
+  - pattern: strlcpy(...)
+  - pattern: strlcat(...)
+  - pattern: strdup(...)
+  - pattern: atoi(...)
+  - pattern: strtol(...)
+  - pattern: strtoul(...)
+  - pattern: strtod(...)

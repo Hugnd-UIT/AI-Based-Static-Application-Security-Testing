@@ -1,0 +1,14 @@
+{
+  "name": "benchmark-cpp",
+  "version": "1.0.0",
+  "dependencies": [
+    {
+      "name": "curl",
+      "version>=": "8.4.0"
+    },
+    {
+      "name": "openssl",
+      "version>=": "3.0.12"
+    }
+  ]
+}

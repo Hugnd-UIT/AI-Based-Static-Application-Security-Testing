@@ -15,6 +15,8 @@ ECO = {
     "crates.io": "crates.io",
     "pub": "Pub",
     "hex": "Hex",
+    "vcpkg": "vcpkg",
+    "conan": "Conan",
 }
 
 # Hàm kiểm tra lỗ hổng OSV
@@ -31,9 +33,11 @@ def check_osv(deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
 
         eco = ECO.get(dep["ecosystem"], dep["ecosystem"])
         query = {
-            "package": {"name": dep["package"], "ecosystem": eco},
+            "package": {"name": dep["package"]},
             "version": dep["version"],
         }
+        if eco not in ["vcpkg", "Conan"]:
+            query["package"]["ecosystem"] = eco
         queries.append(query)
 
     payload = json.dumps({"queries": queries}).encode("utf-8")
