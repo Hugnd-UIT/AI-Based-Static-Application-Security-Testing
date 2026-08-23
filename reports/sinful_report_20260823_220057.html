@@ -1,0 +1,278 @@
+<html>
+<head>
+<title>Sinful Report</title>
+<style>
+body { font-family: Arial, sans-serif; margin: 20px; background-color: #f4f4f9; color: #333; }
+h1 { color: #2c3e50; }
+.finding { background: #fff; padding: 15px; margin-bottom: 20px; border-radius: 5px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+.critical, .high { border-left: 5px solid #e74c3c; }
+.medium { border-left: 5px solid #f39c12; }
+.low, .info { border-left: 5px solid #3498db; }
+h3 { margin-top: 0; }
+pre { background: #272822; color: #f8f8f2; padding: 10px; border-radius: 3px; overflow-x: auto; }
+</style>
+</head>
+<body>
+<h1>Sinful Report</h1>
+<p><strong>Target:</strong> benchmark/cpp</p>
+<p><strong>Total Findings:</strong> 20</p>
+<div class='finding critical'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (CRITICAL)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/system.cpp (Line: 10)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'external user input from command-line argument', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'std::string payload = argv[2];', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'host', 'operation': 'runPing(payload) passes payload as host parameter (const std::string&)', 'line': 23}</li>
+<li>{'step': 4, 'variable': 'cmd', 'operation': 'std::string cmd = "ping -c 4 " + host; tainted host embedded in command string', 'line': 9}</li>
+<li>{'step': 5, 'variable': 'cmd.c_str()', 'operation': 'system(cmd.c_str()) executes the tainted command via shell', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/system.cpp (Line: 15)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'external command-line argument source', 'line': 11}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'std::string payload = argv[2]', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'payload', 'operation': 'runPing(payload)', 'line': 23}</li>
+<li>{'step': 4, 'variable': 'host', 'operation': 'void runPing(const std::string& host) parameter binding', 'line': 7}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'std::string cmd = "ping -c 4 " + host', 'line': 9}</li>
+<li>{'step': 6, 'variable': 'cmd', 'operation': 'system(cmd.c_str())', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/main.cpp (Line: 23)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'external input source: command-line argument', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'assignment from argv[2]', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'payload', 'operation': 'passed as argument to executeCustom()', 'line': 25}</li>
+<li>{'step': 4, 'variable': 'command', 'operation': 'function parameter receives untrusted payload', 'line': 10}</li>
+<li>{'step': 5, 'variable': 'command.c_str()', 'operation': 'passed to popen() sink which executes via /bin/sh -c', 'line': 12}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/db.cpp (Line: 13)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'external user-controlled command-line argument', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'assignment from argv[2]', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'payload', 'operation': 'passed as argument to fetchUser', 'line': 21}</li>
+<li>{'step': 4, 'variable': 'userId', 'operation': 'function parameter receives payload', 'line': 10}</li>
+<li>{'step': 5, 'variable': 'query', 'operation': 'string concatenation with userId', 'line': 12}</li>
+<li>{'step': 6, 'variable': 'query', 'operation': 'passed to executeQuery', 'line': 13}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/main.cpp (Line: 25)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'payload', 'operation': 'std::string payload = argv[2]', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'host', 'operation': 'runPing(payload) - parameter aliases payload', 'line': 23}</li>
+<li>{'step': 3, 'variable': 'cmd', 'operation': 'std::string cmd = "ping -c 4 " + host', 'line': 9}</li>
+<li>{'step': 4, 'variable': 'cmd.c_str()', 'operation': 'system(cmd.c_str())', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/main.cpp (Line: 28)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'External user-controlled command-line argument', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'std::string payload = argv[2]', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'payload', 'operation': 'runPing(payload) - tainted value passed as argument', 'line': 23}</li>
+<li>{'step': 4, 'variable': 'host', 'operation': 'const std::string& host - function parameter receives tainted payload', 'line': 8}</li>
+<li>{'step': 5, 'variable': 'cmd', 'operation': 'std::string cmd = "ping -c 4 " + host', 'line': 9}</li>
+<li>{'step': 6, 'variable': 'cmd', 'operation': 'system(cmd.c_str()) - tainted string executed as shell command', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/main.cpp (Line: 34)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'payload', 'operation': 'assignment from argv[2]', 'line': 13}</li>
+<li>{'step': 2, 'variable': 'command', 'operation': 'passed to executeCustom(payload)', 'line': 21}</li>
+<li>{'step': 3, 'variable': 'cmd', 'operation': 'string concatenation into shell command', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'cmd.c_str()', 'operation': 'sink call system()', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/main.cpp (Line: 36)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'payload', 'operation': 'assignment from argv[2]', 'line': 13}</li>
+<li>{'step': 2, 'variable': 'command', 'operation': 'passed to executeCustom(payload)', 'line': 21}</li>
+<li>{'step': 3, 'variable': 'cmd', 'operation': 'string concatenation into shell command', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'cmd.c_str()', 'operation': 'sink call system()', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/main.cpp (Line: 38)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'payload', 'operation': 'assignment from argv[2]', 'line': 13}</li>
+<li>{'step': 2, 'variable': 'command', 'operation': 'passed to executeCustom(payload)', 'line': 21}</li>
+<li>{'step': 3, 'variable': 'cmd', 'operation': 'string concatenation into shell command', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'cmd.c_str()', 'operation': 'sink call system()', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/main.cpp (Line: 42)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'payload', 'operation': 'assignment from argv[2]', 'line': 13}</li>
+<li>{'step': 2, 'variable': 'command', 'operation': 'passed to executeCustom(payload)', 'line': 21}</li>
+<li>{'step': 3, 'variable': 'cmd', 'operation': 'string concatenation into shell command', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'cmd.c_str()', 'operation': 'sink call system()', 'line': 6}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/memory.cpp (Line: 10)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'command-line argument source', 'line': 10}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'std::string payload = argv[2]', 'line': 10}</li>
+<li>{'step': 3, 'variable': 'payload.c_str()', 'operation': 'passed as argument to copyData', 'line': 13}</li>
+<li>{'step': 4, 'variable': 'input', 'operation': 'copyData formal parameter receives attacker-controlled pointer', 'line': 7}</li>
+<li>{'step': 5, 'variable': 'buffer', 'operation': 'char buffer[128] stack allocation', 'line': 8}</li>
+<li>{'step': 6, 'variable': 'buffer', 'operation': 'strcpy(buffer, input) copies unbounded attacker data into fixed stack buffer', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/memory.cpp (Line: 16)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'external command-line input source', 'line': 13}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'std::string payload = argv[2]', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'payload.c_str()', 'operation': 'passed as argument to copyData', 'line': 28}</li>
+<li>{'step': 4, 'variable': 'input', 'operation': 'const char* input parameter receives payload pointer', 'line': 7}</li>
+<li>{'step': 5, 'variable': 'buffer', 'operation': 'char buffer[128] fixed stack allocation', 'line': 8}</li>
+<li>{'step': 6, 'variable': 'buffer', 'operation': 'strcpy(buffer, input) copies tainted data without bounds check', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/memory.cpp (Line: 17)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'user-controlled command-line argument', 'line': 19}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'std::string payload = argv[2]', 'line': 19}</li>
+<li>{'step': 3, 'variable': 'payload.c_str()', 'operation': 'passed as argument to copyData', 'line': 29}</li>
+<li>{'step': 4, 'variable': 'input', 'operation': 'parameter receives payload.c_str()', 'line': 7}</li>
+<li>{'step': 5, 'variable': 'buffer', 'operation': 'strcpy(buffer, input) copies tainted input into fixed stack buffer', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/memory.cpp (Line: 22)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'payload', 'operation': 'std::string payload = argv[2] (external command-line argument)', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'payload.c_str() passed as argument to copyData()', 'line': 33}</li>
+<li>{'step': 3, 'variable': 'input', 'operation': 'copyData parameter binds to payload.c_str()', 'line': 8}</li>
+<li>{'step': 4, 'variable': 'input', 'operation': 'strcpy(buffer, input) copies tainted data into fixed 128-byte stack buffer', 'line': 10}</li>
+<li>{'step': 5, 'variable': 'payload', 'operation': 'payload.c_str() passed as argument to printLog()', 'line': 35}</li>
+<li>{'step': 6, 'variable': 'message', 'operation': 'printLog parameter binds to payload.c_str()', 'line': 14}</li>
+<li>{'step': 7, 'variable': 'message', 'operation': 'printf(message) uses tainted data as format string', 'line': 16}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/memory.cpp (Line: 25)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'source: command-line argument', 'line': 7}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'assigned from argv[2] in main()', 'line': 13}</li>
+<li>{'step': 3, 'variable': 'payload.c_str()', 'operation': 'passed as argument to copyData()', 'line': 22}</li>
+<li>{'step': 4, 'variable': 'input', 'operation': 'parameter of copyData() receiving payload.c_str()', 'line': 7}</li>
+<li>{'step': 5, 'variable': 'input', 'operation': 'used in strcpy(buffer, input)', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/memory.cpp (Line: 29)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'payload', 'operation': 'std::string payload = argv[2] (external command-line argument)', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'payload.c_str() passed as argument to copyData()', 'line': 28}</li>
+<li>{'step': 3, 'variable': 'input', 'operation': 'copyData parameter binds to payload.c_str()', 'line': 8}</li>
+<li>{'step': 4, 'variable': 'input', 'operation': 'strcpy(buffer, input) copies tainted data into fixed 128-byte stack buffer', 'line': 10}</li>
+<li>{'step': 5, 'variable': 'payload', 'operation': 'payload.c_str() passed as argument to printLog()', 'line': 30}</li>
+<li>{'step': 6, 'variable': 'message', 'operation': 'printLog parameter binds to payload.c_str()', 'line': 14}</li>
+<li>{'step': 7, 'variable': 'message', 'operation': 'printf(message) uses tainted data as format string', 'line': 16}</li>
+<li>{'step': 8, 'variable': 'payload', 'operation': 'payload.c_str() passed as argument to integerOverflow()', 'line': 38}</li>
+<li>{'step': 9, 'variable': 'input', 'operation': 'integerOverflow parameter binds to payload.c_str()', 'line': 32}</li>
+<li>{'step': 10, 'variable': 'input', 'operation': 'memcpy(buffer, input, size) copies tainted data', 'line': 39}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/memory.cpp (Line: 37)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'source (command line argument)', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'assigned from argv[2]', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'payload.c_str()', 'operation': 'passed to copyData', 'line': 28}</li>
+<li>{'step': 4, 'variable': 'input', 'operation': 'function parameter of copyData', 'line': 7}</li>
+<li>{'step': 5, 'variable': 'input', 'operation': 'strcpy(buffer, input)', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/memory.cpp (Line: 39)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'source (command line argument)', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'assigned from argv[2]', 'line': 18}</li>
+<li>{'step': 3, 'variable': 'payload.c_str()', 'operation': 'passed to copyData', 'line': 28}</li>
+<li>{'step': 4, 'variable': 'input', 'operation': 'function parameter of copyData', 'line': 7}</li>
+<li>{'step': 5, 'variable': 'input', 'operation': 'strcpy(buffer, input)', 'line': 10}</li>
+</ul>
+</div>
+<div class='finding high'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (HIGH)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/file.cpp (Line: 9)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+<p><strong>Data Flow:</strong></p>
+<ul>
+<li>{'step': 1, 'variable': 'argv[2]', 'operation': 'User-controlled command-line argument assigned to std::string payload', 'line': 18}</li>
+<li>{'step': 2, 'variable': 'payload', 'operation': 'passed as argument to readFile(payload)', 'line': 32}</li>
+<li>{'step': 3, 'variable': 'filename', 'operation': 'untrusted function parameter received by readFile', 'line': 5}</li>
+<li>{'step': 4, 'variable': 'path', 'operation': 'std::string concatenation: "/var/www/uploads/" + filename', 'line': 7}</li>
+<li>{'step': 5, 'variable': 'path', 'operation': 'path.c_str() passed as first argument to fopen', 'line': 8}</li>
+</ul>
+</div>
+<div class='finding warning'>
+<h3>benchmark.cpp.dynamic-ai-sinful-taint-cpp (WARNING)</h3>
+<p><strong>File:</strong> /mnt/c/Users/ASUS/Documents/AI-Based SAST/benchmark/cpp/src/memory.cpp (Line: 21)</p>
+<p><strong>Message:</strong> Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.</p>
+</div>
+</body></html>

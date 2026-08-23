@@ -72,6 +72,11 @@ def extract_functions(target_dir):
                             if prev_line.endswith("*/") or prev_line.endswith('"""') or prev_line.startswith("#") or prev_line.startswith("//"):
                                 docstring = prev_line
                                 
+                        body_snippet = ""
+                        brace_start = content.find('{', start_idx)
+                        if brace_start != -1:
+                            body_snippet = "\n".join(content[brace_start:brace_start + 400].split("\n")[:10])
+                                
                         rel_path = os.path.relpath(fpath, target_dir)
                                 
                         results.append({
@@ -79,6 +84,7 @@ def extract_functions(target_dir):
                             "function": func_name,
                             "signature": signature,
                             "context": docstring,
+                            "body": body_snippet,
                             "language": lang
                         })
                 except Exception as e:

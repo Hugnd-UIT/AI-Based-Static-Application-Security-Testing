@@ -25,6 +25,15 @@ def generate(data, templates="src/scan/rules", output="."):
         rule = base['rules'][0]
         rule['id'] = f"dynamic-ai-{rule['id']}"
         
+        search_rule = {
+            "id": f"dynamic-ai-search-{language}",
+            "mode": "search",
+            "message": "Potential vulnerability: dangerous function call or defect detected.",
+            "severity": "WARNING",
+            "languages": rule.get("languages", [language]),
+            "pattern-either": []
+        }
+        
         for item in data:
             if item['language'] == language:
                 name = item['function']
@@ -90,10 +99,15 @@ def generate(data, templates="src/scan/rules", output="."):
                             "pattern": "$REQ"
                         })
                 elif item['type'] == 'sink':
-                    # Pattern bắt hàm thực thi nguy hiểm
+                    # Pattern bắt hàm thực thi nguy hiểm (taint sink)
                     rule['pattern-sinks'].append({"pattern": f"{name}(...)"})
+                elif item['type'] == 'vuln':
+                    # Pattern bắt hàm chứa lỗ hổng trực tiếp
+                    search_rule['pattern-either'].append({"pattern": f"{name}(...)"})
                     
         rules.append(rule)
+        if search_rule['pattern-either']:
+            rules.append(search_rule)
         
     if not rules:
         return None

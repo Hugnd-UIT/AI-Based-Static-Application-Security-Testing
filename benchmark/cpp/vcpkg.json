@@ -3,12 +3,12 @@
   "version": "1.0.0",
   "dependencies": [
     {
-      "name": "curl",
-      "version>=": "8.4.0"
+      "name": "poco",
+      "version>=": "1.12.4"
     },
     {
-      "name": "openssl",
-      "version>=": "3.0.12"
+      "name": "nlohmann-json",
+      "version>=": "3.10.0"
     }
   ]
 }

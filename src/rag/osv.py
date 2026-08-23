@@ -55,6 +55,16 @@ def check_osv(deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
 
                     for vuln in result["vulns"]:
                         aliases = vuln.get("aliases", [])
+                        
+                        vid = vuln.get("id")
+                        if vid:
+                            try:
+                                full_req = urllib.request.Request(f"https://api.osv.dev/v1/vulns/{vid}")
+                                with urllib.request.urlopen(full_req, timeout=10) as full_resp:
+                                    full_data = json.loads(full_resp.read().decode("utf-8"))
+                                    vuln.update(full_data)
+                            except Exception:
+                                pass
 
                         if not aliases and vuln.get("id", "").startswith("GHSA"):
                             try:
@@ -72,7 +82,7 @@ def check_osv(deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
                                 "ecosystem": info["ecosystem"],
                                 "vuln_id": vuln.get("id"),
                                 "cve": aliases,
-                                "summary": vuln.get("summary", "No summary provided"),
+                                "summary": vuln.get("summary") or (vuln.get("details", "")[:100] + "..." if vuln.get("details") else "No summary provided"),
                                 "details": vuln.get("details", ""),
                                 "references": [ref.get("url") for ref in vuln.get("references", [])],
                             }

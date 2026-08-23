@@ -4,7 +4,7 @@ rules:
   message: 'Potential vulnerability: tainted data flows from user-controlled source
     to dangerous sink.'
   severity: WARNING
-  languages:
+  languages: &id001
   - c
   - cpp
   pattern-sources:
@@ -28,20 +28,15 @@ rules:
   - pattern: std::cin
   - pattern: std::getline(...)
   - pattern: std::cin >> $GET_VAR
-  - pattern: fetchUser(...)
-  - pattern-inside: "$RET fetchUser(..., $TYPE $REQ, ...) {\n  ...\n}"
+  - pattern: main(...)
+  - pattern-inside: "$RET main(..., $TYPE $REQ, ...) {\n  ...\n}"
     pattern: $REQ
-  - pattern-inside: "$RET $CLASS::fetchUser(..., $TYPE $REQ, ...) {\n  ...\n}"
+  - pattern-inside: "$RET $CLASS::main(..., $TYPE $REQ, ...) {\n  ...\n}"
     pattern: $REQ
   - pattern: readFile(...)
   - pattern-inside: "$RET readFile(..., $TYPE $REQ, ...) {\n  ...\n}"
     pattern: $REQ
   - pattern-inside: "$RET $CLASS::readFile(..., $TYPE $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern: main(...)
-  - pattern-inside: "$RET main(..., $TYPE $REQ, ...) {\n  ...\n}"
-    pattern: $REQ
-  - pattern-inside: "$RET $CLASS::main(..., $TYPE $REQ, ...) {\n  ...\n}"
     pattern: $REQ
   pattern-sinks:
   - pattern: system(...)
@@ -86,14 +81,8 @@ rules:
   - pattern: realloc(...)
   - pattern: alloca(...)
   - pattern: executeQuery(...)
-  - pattern: copyData(...)
-  - pattern: printLog(...)
-  - pattern: useAfterFree(...)
-  - pattern: doubleFree(...)
-  - pattern: integerOverflow(...)
   - pattern: runPing(...)
   - pattern: executeCustom(...)
-  - pattern: dereferenceNull(...)
   pattern-sanitizers:
   - pattern: snprintf($BUF, sizeof($BUF), "%s", ...)
   - pattern: strlcpy(...)
@@ -103,3 +92,12 @@ rules:
   - pattern: strtol(...)
   - pattern: strtoul(...)
   - pattern: strtod(...)
+- id: dynamic-ai-search-cpp
+  mode: search
+  message: 'Potential vulnerability: dangerous function call detected.'
+  severity: WARNING
+  languages: *id001
+  pattern-either:
+  - pattern: executeQuery(...)
+  - pattern: runPing(...)
+  - pattern: executeCustom(...)

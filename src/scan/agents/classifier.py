@@ -14,25 +14,28 @@ def classify(targets, cwe, model=None):
         functions = ""
         for f in batch:
             functions += f"- {f['signature']}\n"
-            if f['context']:
+            if f.get('context'):
                 functions += f"  Comment: {f['context']}\n"
+            if f.get('body'):
+                functions += f"  Body snippet:\n{f['body']}\n"
                 
         prompt = f"""\
             # Role
             You are an elite Static Analysis Classifier for Sinful.
 
             # Objective
-            Analyze a list of internal function signatures and classify them as 'source' (entry points for untrusted data), 'sink' (dangerous execution points), or ignore them if safe, specifically focusing on the {cwe} vulnerability.
+            Analyze a list of internal function signatures (and body snippets) and classify them as 'source', 'sink', 'vuln', or ignore them if safe, specifically focusing on the {cwe} vulnerability.
 
             # Context
-            You will be provided with a list of function signatures extracted from the codebase.
+            You will be provided with a list of functions extracted from the codebase.
 
             # Procedure
-            1. Analyze each function signature and its associated comments.
-            2. Determine if the function acts as a 'source' (e.g., HTTP request handlers, file readers, database readers) where an attacker can inject malicious input.
-            3. Determine if the function acts as a 'sink' (e.g., executing raw SQL, executing shell commands, deserialization) that could lead to {cwe} if the input is untrusted.
-            4. If a function is neither a source nor a sink, DO NOT include it in the output.
-            5. Format the classification into a strict JSON array.
+            1. Analyze each function signature, its comments, and its body snippet.
+            2. Classify as 'source' if it is an entry point for untrusted data (e.g., HTTP handlers, file readers).
+            3. Classify as 'sink' if it is a dangerous execution point (e.g., executing raw SQL, shell commands) that is vulnerable ONLY IF untrusted data flows into it.
+            4. Classify as 'vuln' if the function is INHERENTLY VULNERABLE regardless of data flow (e.g., it contains a hardcoded cryptographic key, performs a double free, or has an obvious use-after-free).
+            5. If a function is safe, DO NOT include it in the output.
+            6. Format the classification into a strict JSON array.
 
             # Output Contract
             ## Expected JSON
@@ -47,6 +50,11 @@ def classify(targets, cwe, model=None):
                 "function": "executeSqlQuery",
                 "type": "sink",
                 "cwe": "{cwe}"
+            }},
+            {{
+                "function": "encryptData",
+                "type": "vuln",
+                "cwe": "{cwe}"
             }}
             ]
             ```
@@ -54,7 +62,7 @@ def classify(targets, cwe, model=None):
             # Constraints
             - Output EXACTLY ONE valid JSON block matching the schema.
             - Do NOT output any conversational text or markdown outside of the JSON array.
-            - Focus STRICTLY on {cwe}.
+            - Focus STRICTLY on {cwe} and obvious high-severity flaws.
 
             ## Functions to Analyze
             {functions}

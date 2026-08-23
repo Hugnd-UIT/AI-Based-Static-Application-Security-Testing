@@ -1,11 +1,5 @@
 [requires]
-# Vulnerable Dependency: OpenSSL
-openssl/3.0.12
-
-# Vulnerable Dependency: Zlib
-zlib/1.2.13
-
-# Vulnerable Dependency: Poco
+nlohmann_json/3.10.0
 poco/1.12.4
 
 [generators]

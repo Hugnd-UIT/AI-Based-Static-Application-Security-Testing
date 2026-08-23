@@ -436,16 +436,16 @@ def run_scan(path, rules=None, model=None, fix=False):
                     if "ccve" in rsum and rsum["ccve"] not in ["None", "Unknown"]:
                         console.print(f"  ├─ [cyan]◆ Analyzing {rsum['ccve']}[/cyan]")
     
-                    if "attack_vector" in rsum and str(rsum["attack_vector"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
+                    if "attack_vector" in rsum and rsum["attack_vector"]:
                         width = max(60, console.width - 15)
     
-                        for line in textwrap.wrap(rsum['attack_vector'], width=width, initial_indent="Vector: ", subsequent_indent="        "):
+                        for line in textwrap.wrap(str(rsum['attack_vector']), width=width, initial_indent="Vector: ", subsequent_indent="        "):
                             console.print(f"  │  [dim]{line}[/dim]")
     
-                    if "mitigation" in rsum and str(rsum["mitigation"]).strip().lower() not in ["none", "unknown", "no details provided", "n/a", ""]:
+                    if "mitigation" in rsum and rsum["mitigation"]:
                         width = max(60, console.width - 15)
     
-                        for line in textwrap.wrap(rsum['mitigation'], width=width, initial_indent="Mitigation: ", subsequent_indent="            "):
+                        for line in textwrap.wrap(str(rsum['mitigation']), width=width, initial_indent="Mitigation: ", subsequent_indent="            "):
                             console.print(f"  │  [dim]{line}[/dim]")
                     console.print(f"  └─ [bold green]✔ Analysis completed[/bold green]")
                 

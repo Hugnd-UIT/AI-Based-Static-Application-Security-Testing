@@ -1,7 +1,7 @@
 #include <iostream>
 #include <string>
-#include <curl/curl.h>
-#include <openssl/ssl.h>
+#include <Poco/Net/HTTPClientSession.h>
+#include <nlohmann_json/json.hpp>
 #include "../include/db.h"
 #include "../include/system.h"
 #include "../include/memory.h"
