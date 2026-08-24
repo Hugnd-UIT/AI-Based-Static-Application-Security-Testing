@@ -105,7 +105,7 @@ def run_scan(path, rules=None, model=None, fix=False):
     flaws = []
     
     try:
-        ctx = use_module.ctx(str(sdir))
+        ctx = use_module.build_context(str(sdir))
 
         if ctx:
             res["file_context"] = ctx
@@ -116,41 +116,7 @@ def run_scan(path, rules=None, model=None, fix=False):
     except Exception:
         ctx = ""
 
-    if ctx:
-        blocks = [b for b in ctx.split("[CROSS-FILE TAINT PATH DETECTED]") if b.strip()]
-        seen_taint = set()
-        for block in blocks:
-            if "Propagates to" not in block: continue
-            m = re.search(r"Propagates to:\s*(\S+)\s*\(line (\d+)\)", block)
-            tfile = m.group(1) if m else None
-            tline = int(m.group(2)) if m else 1
-
-            key = f"{tfile}:{tline}"
-            if key in seen_taint:
-                continue
-            seen_taint.add(key)
-
-            fpath = tfile 
-            if tfile:
-                for root, _, files in os.walk(str(sdir)):
-                    if tfile in files:
-                        fpath = os.path.relpath(os.path.join(root, tfile), str(sdir)).replace("\\", "/")
-                        break
-
-            flaws.append({
-                "id":             "sinful-cross-file-taint",
-                "path":           fpath or str(sdir),
-                "start_line":     tline,
-                "end_line":       tline + 5,
-                "severity":       "HIGH",
-                "message":        "Cross-file taint path detected by inter-procedural analysis.",
-                "lines":          "",
-                "cwe":            [],
-                "dataflow_trace": "[CROSS-FILE TAINT PATH DETECTED]" + block.rstrip(),
-            })
-
-        if flaws:
-            res["findings"] = flaws
+    cache = {}
 
     def process_flaws(flaws, agent_name):
         if not flaws:
@@ -167,13 +133,13 @@ def run_scan(path, rules=None, model=None, fix=False):
                 ast = use_module.extract_context(fpath, item["start_line"], item["end_line"], sdir=str(sdir))
     
                 if ctx:
-                    ast += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{ctx[:1500]}"
+                    ast += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{ctx[:10000]}"
     
             except Exception as e:
                 ast = f"Error extracting AST context: {e}"
     
                 if ctx:
-                    ast += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{ctx[:1500]}"
+                    ast += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{ctx[:10000]}"
             
             item["ast"] = ast
     
@@ -187,8 +153,18 @@ def run_scan(path, rules=None, model=None, fix=False):
                 
                 scan = MODELS[0]
                 console.print(f"  [bold magenta]● SCANNING AGENT[/bold magenta] [[cyan]{scan}[/cyan]]")
+
+                key = (os.path.basename(item.get('path', '')).lower(), item.get('start_line', 0) // 15)
+                if key in cache:
+                    cached_trace, cached_verdict = cache[key]
+                    console.print(f"  ├─ [dim]↩ Reusing cached scan result[/dim]")
+                    item["dataflow_trace"] = json.dumps(cached_trace.get("data_flow", []), indent=2)
+                    item.update(cached_verdict)
+                    if cached_verdict.get("sink_file"):
+                        item["path"] = cached_verdict["sink_file"]
+                    continue
                 
-                while rcount <= retries:
+                while rcount < retries:
                     trace = scan_agents.start_scan(
                         item, ast,
                         model=MODELS[0], # Scanning Agent Role
@@ -274,7 +250,14 @@ def run_scan(path, rules=None, model=None, fix=False):
                     )
                     res["vuln"] = True
                     vuln = True
+                    
+                    if "sink_file" in verdict and verdict["sink_file"]:
+                        item["path"] = verdict["sink_file"]
+                        console.print(f"  ├─ [dim][Sink: {item['path']}][/dim]")
+
                     item.update(verdict)
+
+                    cache[key] = (trace, verdict)
     
                 elif verdict_str == "SAFE":
                     console.print(
@@ -674,6 +657,33 @@ def run_scan(path, rules=None, model=None, fix=False):
             console.print(f"  └─ [bold red]✖ Generator failed: {e}[/bold red]")
     
         sgres = semgrep.scan_code(str(sdir), rules)
+        
+        # Inject direct vulnerabilities from classification
+        if 'classifications' in locals() and classifications:
+            for item in classifications:
+                if item.get('type') == 'vuln':
+                    sgres.append({
+                        "id": f"dynamic-ai-vuln-{item.get('function')}",
+                        "message": f"AI Classifier detected structural vulnerability in {item.get('function')}",
+                        "path": item.get('file', ''),
+                        "start_line": item.get('start_line', 1),
+                        "end_line": item.get('end_line', 2),
+                        "severity": "HIGH",
+                        "dataflow_trace": "[DIRECT VULNERABILITY DETECTED]\nNo taint path required. Structural defect found in function body."
+                    })
+
+        # Deduplicate findings
+        def deduplicate(findings):
+            seen = set()
+            deduped = []
+            for f in findings:
+                key = (f.get("path"), f.get("start_line"), f.get("message"))
+                if key not in seen:
+                    seen.add(key)
+                    deduped.append(f)
+            return deduped
+
+        sgres = deduplicate(sgres)
 
         console.print(f'  └─ [bold green]✔ Scan completed: {len(sgres)} vulnerabilities[/bold green]')
         semgrep.report_scan(sgres)

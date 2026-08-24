@@ -87,6 +87,8 @@ def classify(targets, cwe, model=None):
                         if name in mapping:
                             item['file'] = mapping[name]['file']
                             item['language'] = mapping[name]['language']
+                            item['start_line'] = mapping[name].get('start_line', 1)
+                            item['end_line'] = mapping[name].get('end_line', 1)
                             results.append(item)
         except Exception as e:
             print(f"Classification error: {e}")

@@ -112,13 +112,8 @@ def generate(data, templates="src/scan/rules", output="."):
                 elif item['type'] == 'sink':
                     # Pattern bắt hàm thực thi nguy hiểm (taint sink)
                     rule['pattern-sinks'].append({"pattern": f"{name}(...)"})
-                elif item['type'] == 'vuln':
-                    # Pattern bắt hàm chứa lỗ hổng trực tiếp
-                    search_rule['pattern-either'].append({"pattern": f"{name}(...)"})
                     
         rules.append(rule)
-        if search_rule['pattern-either']:
-            rules.append(search_rule)
         
     if not rules:
         return None

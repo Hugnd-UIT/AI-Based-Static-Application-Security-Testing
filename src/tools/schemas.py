@@ -140,6 +140,10 @@ VERDICT_SCHEMA = {
                     "type": "string",
                     "description": "Vulnerability name/class (e.g., 'SQL Injection')",
                 },
+                "sink_file": {
+                    "type": "string",
+                    "description": "The EXACT path to the file where the sink function is located (e.g. 'src/db.cpp')",
+                },
                 "cwe_ids": {
                     "type": "array",
                     "items": {"type": "integer"},

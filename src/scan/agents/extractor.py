@@ -88,6 +88,8 @@ def _extract_ts(fpath: str, lang_obj, code: bytes, lang: str, rel: str) -> list:
                     "body":      body,
                     "language":  lang,
                     "kind":      "definition",
+                    "start_line": node.start_point[0] + 1,
+                    "end_line":   node.end_point[0] + 1,
                 })
 
         for ch in node.children:
@@ -115,6 +117,8 @@ def _extract_regex(fpath: str, content: str, lang: str, rel: str) -> list:
         if b != -1:
             body = "\n".join(content[b:b + 400].split("\n")[:10])
 
+        sl = content[:start].count('\n') + 1
+
         results.append({
             "file":      rel,
             "function":  name,
@@ -123,6 +127,8 @@ def _extract_regex(fpath: str, content: str, lang: str, rel: str) -> list:
             "body":      body,
             "language":  lang,
             "kind":      "definition",
+            "start_line": sl,
+            "end_line":   sl + 5,
         })
     return results
 
