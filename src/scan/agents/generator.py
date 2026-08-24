@@ -56,10 +56,16 @@ def generate(data, templates="src/scan/rules", output="."):
                             "pattern": "$REQ"
                         })
                     elif language == "php":
-                        rule['pattern-sources'].append({
-                            "pattern-inside": f"function {name}(..., $REQ, ...) {{\n  ...\n}}",
-                            "pattern": "$REQ"
-                        })
+                        for mod in ["public", "protected", "private", ""]:
+                            prefix = f"{mod} " if mod else ""
+                            rule['pattern-sources'].append({
+                                "pattern-inside": f"{prefix}function {name}(...) {{\n  ...\n}}",
+                                "pattern": "$REQ"
+                            })
+                            rule['pattern-sources'].append({
+                                "pattern-inside": f"{prefix}static function {name}(...) {{\n  ...\n}}",
+                                "pattern": "$REQ"
+                            })
                     elif language == "ruby":
                         rule['pattern-sources'].append({
                             "pattern-inside": f"def {name}(..., $REQ, ...)\n  ...",
@@ -84,10 +90,15 @@ def generate(data, templates="src/scan/rules", output="."):
                             "pattern": "$REQ"
                         })
                     elif language in ["java", "csharp"]:
-                        rule['pattern-sources'].append({
-                            "pattern-inside": f"$RET {name}(..., $TYPE $REQ, ...) {{\n  ...\n}}",
-                            "pattern": "$REQ"
-                        })
+                        for mod in ["public", "protected", "private", "internal"]:
+                            rule['pattern-sources'].append({
+                                "pattern-inside": f"{mod} $RET {name}(...) {{\n  ...\n}}",
+                                "pattern": "$REQ"
+                            })
+                            rule['pattern-sources'].append({
+                                "pattern-inside": f"{mod} static $RET {name}(...) {{\n  ...\n}}",
+                                "pattern": "$REQ"
+                            })
                     elif language == "rust":
                         rule['pattern-sources'].append({
                             "pattern-inside": f"fn {name}(..., $REQ: $TYPE, ...) {{\n  ...\n}}",

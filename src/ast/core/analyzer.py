@@ -234,11 +234,11 @@ def find_sinks(dir: str, funcs: dict) -> str:
                                 origin = funcs.get(func, {})
                                 ptext = content[parent.start_byte:parent.end_byte].decode("utf-8", errors="ignore")
                                 entry = (
-                                    f"[PHÁT HIỆN ĐƯỜNG DẪN TAINT LIÊN TẬP TIN]\n"
-                                    f"  Nguồn Taint : {func} in {origin.get('file', 'unknown')}\n"
-                                    f"  Lan truyền tới: {file} (line {curr.start_point[0] + 1})\n"
-                                    f"  Hàm gọi:\n{ptext[:600]}\n"
-                                    f"  Hàm gốc:\n{origin.get('code', '')[:400]}\n"
+                                    f"[CROSS-FILE TAINT PATH DETECTED]\n"
+                                    f"  Taint Source : {func} in {origin.get('file', 'unknown')}\n"
+                                    f"  Propagates to: {file} (line {curr.start_point[0] + 1})\n"
+                                    f"  Caller:\n{ptext[:600]}\n"
+                                    f"  Origin:\n{origin.get('code', '')[:400]}\n"
                                 )
 
                                 if entry not in paths:

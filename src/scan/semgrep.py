@@ -31,6 +31,7 @@ RULES = [
     "p/php",
     "p/ruby",
     "p/c",
+    "p/csharp",
 
     # Nhóm quy tắc đặc thù
     "p/trailofbits",

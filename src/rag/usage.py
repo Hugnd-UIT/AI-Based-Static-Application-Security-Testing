@@ -57,6 +57,14 @@ def check_usage(target: str, cves: List[Dict[str, Any]], ts) -> List[Dict[str, A
             if re.match(r'^[a-zA-Z_]\w*$', token) and len(token) > 2:
                 tokens.add(token)
 
+        COMMON = {
+            "exec", "open", "read", "write", "close", "get", "set", "add",
+            "run", "start", "stop", "init", "load", "save", "delete", "parse",
+            "send", "recv", "connect", "create", "update", "find", "check",
+            "call", "apply", "use", "new", "from", "to", "of", "with",
+        }
+        tokens = {t for t in tokens if len(t) > 4 and t not in COMMON}
+
         if not tokens:
             cve["reachable"] = True
             continue

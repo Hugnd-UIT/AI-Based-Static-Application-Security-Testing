@@ -118,31 +118,37 @@ def run_scan(path, rules=None, model=None, fix=False):
 
     if ctx:
         blocks = [b for b in ctx.split("[CROSS-FILE TAINT PATH DETECTED]") if b.strip()]
+        seen_taint = set()
         for block in blocks:
             if "Propagates to" not in block: continue
-            match = re.search(r"Propagates to\s*:\s*(\S+)\s*\(line (\d+)\)", block)
-            tfile = match.group(1) if match else str(sdir)
-            tline = int(match.group(2)) if match else 1
-            
-            fpath = str(sdir)
-            if match:
+            m = re.search(r"Propagates to:\s*(\S+)\s*\(line (\d+)\)", block)
+            tfile = m.group(1) if m else None
+            tline = int(m.group(2)) if m else 1
+
+            key = f"{tfile}:{tline}"
+            if key in seen_taint:
+                continue
+            seen_taint.add(key)
+
+            fpath = tfile 
+            if tfile:
                 for root, _, files in os.walk(str(sdir)):
                     if tfile in files:
-                        fpath = os.path.join(root, tfile)
+                        fpath = os.path.relpath(os.path.join(root, tfile), str(sdir)).replace("\\", "/")
                         break
-                        
+
             flaws.append({
-                "id": "sinful-cross-file-taint",
-                "path": fpath,
-                "start_line": tline,
-                "end_line": tline + 5,
-                "severity": "HIGH",
-                "message": "Cross-file taint path detected by inter-procedural analysis.",
-                "lines": "",
-                "cwe": [],
+                "id":             "sinful-cross-file-taint",
+                "path":           fpath or str(sdir),
+                "start_line":     tline,
+                "end_line":       tline + 5,
+                "severity":       "HIGH",
+                "message":        "Cross-file taint path detected by inter-procedural analysis.",
+                "lines":          "",
+                "cwe":            [],
                 "dataflow_trace": "[CROSS-FILE TAINT PATH DETECTED]" + block.rstrip(),
             })
-            
+
         if flaws:
             res["findings"] = flaws
 

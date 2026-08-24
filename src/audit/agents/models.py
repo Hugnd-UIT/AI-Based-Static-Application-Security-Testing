@@ -31,6 +31,6 @@ def start_audit(
         directory      = target,
         module       = module,
         model      = use,
-        steps       = 10,
+        steps       = 20,
         agent      = "AUDIT",
     )
