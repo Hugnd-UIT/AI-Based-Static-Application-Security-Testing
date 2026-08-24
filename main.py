@@ -190,7 +190,7 @@ def run_scan(path, rules=None, model=None, fix=False):
                         surr = trace.get("surrogate_function", "Unknown")
                         item["sink_context"] = f"Original sink was unreachable. We are now treating '{surr}' as the sink. Use find_callers('{surr}') if needed."
                         rcount += 1
-                        console.print(f"  ├─ [yellow]⚠ Flow broken → Surrogate: {surr} (retry {rcount}/{retries})[/yellow]")
+                        console.print(f"  ├─ [red]⚠ Flow broken: {surr} - retry {rcount}/{retries}[/red]")
                         
                     else:
                         item["dataflow_trace"] = "No trace available"
@@ -250,10 +250,6 @@ def run_scan(path, rules=None, model=None, fix=False):
                     )
                     res["vuln"] = True
                     vuln = True
-                    
-                    if "sink_file" in verdict and verdict["sink_file"]:
-                        item["path"] = verdict["sink_file"]
-                        console.print(f"  ├─ [dim][Sink: {item['path']}][/dim]")
 
                     item.update(verdict)
 
