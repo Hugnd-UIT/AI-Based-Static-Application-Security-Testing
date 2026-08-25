@@ -57,9 +57,21 @@ def _is_func_node(kind: str) -> bool:
     )
 
 def _get_name(node, code: bytes) -> str:
-    for ch in node.children:
-        if ch.type in ("identifier", "name"):
-            return code[ch.start_byte:ch.end_byte].decode("utf-8", errors="ignore")
+    name_node = node.child_by_field_name('name')
+    if name_node and name_node.type in ("identifier", "name"):
+        return code[name_node.start_byte:name_node.end_byte].decode("utf-8", errors="ignore")
+
+    queue = [node]
+    while queue:
+        curr = queue.pop(0)
+        if curr != node and curr.type in ("identifier", "name"):
+            return code[curr.start_byte:curr.end_byte].decode("utf-8", errors="ignore")
+        
+        for ch in curr.children:
+            t = ch.type.lower()
+            if "parameter" not in t and "block" not in t and "statement" not in t and "body" not in t:
+                queue.append(ch)
+                
     return ""
 
 def _extract_ts(fpath: str, lang_obj, code: bytes, lang: str, rel: str) -> list:
