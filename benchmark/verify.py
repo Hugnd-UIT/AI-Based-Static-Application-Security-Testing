@@ -172,7 +172,6 @@ def extract_cwes(flaw):
         cwes.append(mcwe)
     elif isinstance(mcwe, list):
         cwes.extend(mcwe)
-        
     return cwes
 
 def verify():
@@ -180,11 +179,17 @@ def verify():
     
     render_header()
     
+    # Totals for ALL benchmarks (including NO REPORT)
     total_exp = 0
     total_det_rule = 0
     total_det_ai = 0
     total_proj = 0
     missing_count = 0
+
+    # Totals only for benchmarks that HAVE a report (used for final verdict rate)
+    scanned_exp = 0
+    scanned_det_rule = 0
+    scanned_det_ai = 0
     
     stats = []
     projects = []
@@ -202,7 +207,7 @@ def verify():
             except Exception:
                 pass
     
-    for proj in root.iterdir():
+    for proj in sorted(root.iterdir()):
         if not proj.is_dir():
             continue
             
@@ -226,21 +231,35 @@ def verify():
         rfiles = glob.glob(str(rdir / "sinful_report_*.json")) if rdir.exists() else []
         
         findings = []
+        has_report = False
         if rfiles:
+            has_report = True
             latest = max(rfiles, key=os.path.getmtime)
             try:
                 with open(latest, "r", encoding="utf-8") as f:
                     lscan = json.load(f)
                     findings = lscan.get("data", {}).get("findings", []) if "data" in lscan else lscan.get("findings", [])
             except Exception:
-                stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "detected": 0, "status": "INVALID REPORT"})
+                stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "det_rule": 0, "det_ai": 0, "status": "INVALID REPORT"})
                 projects.append({"name": proj.name, "details": [], "status": "INVALID REPORT"})
                 continue
         elif global_findings:
+            # Filter global findings to this project by path
             proj_marker = f"/benchmark/{proj.name}/"
-            findings = [f for f in global_findings if proj_marker in str(f.get("path", "")).replace("\\", "/")]
-        else:
-            stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "detected": 0, "status": "NO REPORT"})
+            proj_name_lower = proj.name.lower()
+            proj_findings = []
+            for gf in global_findings:
+                fpath_norm = str(gf.get("path", "")).replace("\\", "/")
+                if proj_marker in fpath_norm:
+                    proj_findings.append(gf)
+                    has_report = True
+                elif proj_name_lower in fpath_norm.lower():
+                    proj_findings.append(gf)
+                    has_report = True
+            findings = proj_findings
+        
+        if not has_report:
+            stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "det_rule": 0, "det_ai": 0, "status": "NO REPORT"})
             projects.append({"name": proj.name, "details": [], "status": "NO REPORT"})
             missing_count += 1
             continue
@@ -253,13 +272,18 @@ def verify():
             cwe = v.get("cwe", "").upper()
             target = v.get("file", "")
             vtype = v.get("type", "")
+            target_basename = Path(target).name.lower()
             
             det_rule = False
             det_ai = False
             for flaw in findings:
                 fpath = str(flaw.get("path", "")).replace("\\", "/")
+                fpath_basename = Path(fpath).name.lower()
                 
-                if target in fpath:
+                # Match by full path suffix OR just basename (for relative-path findings)
+                path_match = target in fpath or target_basename == fpath_basename
+                
+                if path_match:
                     fid = str(flaw.get("id", "")).upper()
                     ftitle = str(flaw.get("title", "")).upper()
                     fmsg = str(flaw.get("message", "")).upper()
@@ -280,7 +304,7 @@ def verify():
                             ai_result = ai_judge(cwe, vtype, ftitle, fmsg, fvuln_class, cwe_ids)
                             if ai_result:
                                 det_ai = True
-                            
+                        
                     if det_rule and det_ai:
                         break
             
@@ -299,6 +323,9 @@ def verify():
             
         total_det_rule += det_count_rule
         total_det_ai += det_count_ai
+        scanned_exp += exp_count
+        scanned_det_rule += det_count_rule
+        scanned_det_ai += det_count_ai
         stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "det_rule": det_count_rule, "det_ai": det_count_ai, "status": "OK"})
         projects.append({"name": proj.name, "details": details, "status": "OK"})
         
@@ -309,8 +336,13 @@ def verify():
         
     for pd in projects:
         render_details(pd["name"], pd["details"], pd["status"])
-        
-    render_verdict(total_exp, total_det_rule, total_det_ai)
+
+    # Final verdict uses only scanned benchmarks (NO REPORT ones don't penalize the rate)
+    console.print()
+    if missing_count > 0:
+        console.print(f"  [dim]ℹ  {missing_count} benchmark(s) have no report and are excluded from the detection rate.[/dim]")
+        console.print()
+    render_verdict(scanned_exp, scanned_det_rule, scanned_det_ai)
 
 if __name__ == "__main__":
     verify()

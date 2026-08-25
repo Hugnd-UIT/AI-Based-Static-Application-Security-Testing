@@ -1,0 +1,944 @@
+{
+  "status": "success",
+  "data": {
+    "status": "processing",
+    "languages": {
+      "c#": 10
+    },
+    "language_versions": {
+      "c#": "Not Installed"
+    },
+    "dependencies": [
+      {
+        "ecosystem": "nuget",
+        "package": "Newtonsoft.Json",
+        "version": "12.0.1"
+      },
+      {
+        "ecosystem": "nuget",
+        "package": "log4net",
+        "version": "2.0.8"
+      },
+      {
+        "ecosystem": "nuget",
+        "package": "System.Data.SqlClient",
+        "version": "4.6.0"
+      }
+    ],
+    "findings": [
+      {
+        "id": "benchmark.csharp.dynamic-ai-sinful-taint-csharp",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\DatabaseService.cs",
+        "start_line": 16,
+        "start_col": 17,
+        "end_line": 16,
+        "end_col": 40,
+        "severity": "CRITICAL",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 95,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "No trace available (max retries reached)",
+        "fix": null,
+        "fix_regex": null,
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "sink_context": "Original sink was unreachable. We are now treating 'GetUserById' as the sink. Use find_callers('GetUserById') if needed.",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "SQL Injection",
+        "sink_file": "Services/DatabaseService.cs",
+        "cwe_ids": [
+          89
+        ],
+        "reasoning": "The ASP.NET Core action method MainController.GetUser accepts a user-controlled string parameter id from the HTTP query string. It passes this value unmodified to DatabaseService.GetUserById, which builds a SQL query via string concatenation: \"SELECT * FROM Users WHERE Id = '\" + id + \"'\". The resulting query is executed with SqlCommand.ExecuteReader without any parameterization, prepared statements, escaping, or other sanitization. This creates an unbroken taint path from source (user input) to sink (SQL execution), enabling SQL injection.",
+        "attack_vector": "Attacker supplies malicious value for the id query parameter (e.g., ?id=' OR '1'='1' --), which is concatenated directly into the SQL statement and executed against the database.",
+        "source_identified": true,
+        "source_variable": "id",
+        "sink_identified": true,
+        "sink_function": "SqlCommand.ExecuteReader",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "id",
+            "operation": "ASP.NET Core model binding from HTTP query string",
+            "line": 18
+          },
+          {
+            "step": 2,
+            "variable": "id",
+            "operation": "passed as argument to _dbService.GetUserById(id)",
+            "line": 21
+          },
+          {
+            "step": 3,
+            "variable": "id",
+            "operation": "string concatenation into SQL query",
+            "line": 11
+          },
+          {
+            "step": 4,
+            "variable": "query",
+            "operation": "assigned to SqlCommand and executed",
+            "line": 12
+          },
+          {
+            "step": 5,
+            "variable": "command",
+            "operation": "command.ExecuteReader()",
+            "line": 15
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": true,
+        "flow_unbroken": true,
+        "surr": false,
+        "surrogate_function": "",
+        "poc_type": "HTTP GET request with crafted id parameter",
+        "description": "SQL injection in DatabaseService.GetUserById via string concatenation of user-controlled id from MainController.GetUser. No sanitization or parameterization exists on the path.",
+        "payload": "/api/main/user?id=' OR '1'='1' --",
+        "explanation": "The id parameter flows from the controller action into the SQL string without any input validation, encoding, or use of parameterized queries. An attacker can alter the structure of the SQL query, leading to unauthorized data access, modification, or deletion.",
+        "exploitable": true,
+        "extra_sinks": [],
+        "patches": [
+          {
+            "file_path": "Services/DatabaseService.cs",
+            "old_code": "string query = \"SELECT * FROM Users WHERE Id = '\" + id + \"'\";\nSqlCommand command = new SqlCommand(query, connection);",
+            "new_code": "string query = \"SELECT * FROM Users WHERE Id = @Id\";\nSqlCommand command = new SqlCommand(query, connection);\ncommand.Parameters.AddWithValue(\"@Id\", id);"
+          }
+        ],
+        "reason": ""
+      },
+      {
+        "id": "csharp.lang.security.insecure-deserialization.binary-formatter.insecure-binaryformatter-deserialization",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\DeserializationService.cs",
+        "start_line": 11,
+        "start_col": 13,
+        "end_line": 11,
+        "end_col": 63,
+        "severity": "CRITICAL",
+        "message": "The BinaryFormatter type is dangerous and is not recommended for data processing. Applications should stop using BinaryFormatter as soon as possible, even if they believe the data they're processing to be trustworthy. BinaryFormatter is insecure and can't be made secure",
+        "lines": "requires login",
+        "cwe": [
+          "CWE-502: Deserialization of Untrusted Data"
+        ],
+        "owasp": [
+          "A08:2017 - Insecure Deserialization",
+          "A08:2021 - Software and Data Integrity Failures",
+          "A08:2025 - Software or Data Integrity Failures"
+        ],
+        "category": "security",
+        "technology": [
+          ".net"
+        ],
+        "confidence": 95,
+        "impact": "HIGH",
+        "likelihood": "MEDIUM",
+        "references": [
+          "https://docs.microsoft.com/en-us/dotnet/standard/serialization/binaryformatter-security-guide"
+        ],
+        "shortlink": "https://sg.run/ZeXW",
+        "vulnerability_class": [
+          "Insecure Deserialization "
+        ],
+        "dataflow_trace": "No trace available (max retries reached)",
+        "fix": null,
+        "fix_regex": null,
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "sink_context": "Original sink was unreachable. We are now treating 'DeserializeData' as the sink. Use find_callers('DeserializeData') if needed.",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "Insecure Deserialization",
+        "sink_file": "Services/DeserializationService.cs",
+        "cwe_ids": [
+          502
+        ],
+        "reasoning": "The HTTP POST endpoint /MainController/deserialize accepts raw byte[] from the request body without any validation, and passes it directly to DeserializationService.DeserializeData, which instantiates BinaryFormatter and calls formatter.Deserialize(ms) on the attacker-controlled stream. BinaryFormatter is known to permit arbitrary code execution during deserialization via gadget chains and cannot be made secure. No sanitizer, type filter, or binder is applied. The taint path from user input to the dangerous sink is unbroken and fully verified.",
+        "attack_vector": "Send a crafted serialized .NET object (with a known gadget chain such as TypeConfuseDelegate) as the HTTP request body to /MainController/deserialize to achieve remote code execution.",
+        "source_identified": true,
+        "source_variable": "data",
+        "sink_identified": true,
+        "sink_function": "BinaryFormatter.Deserialize",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "data",
+            "operation": "HTTP POST body binding to byte[] parameter",
+            "line": 14
+          },
+          {
+            "step": 2,
+            "variable": "data",
+            "operation": "passed to DeserializeData",
+            "line": 15
+          },
+          {
+            "step": 3,
+            "variable": "data",
+            "operation": "wrapped in MemoryStream",
+            "line": 12
+          },
+          {
+            "step": 4,
+            "variable": "ms",
+            "operation": "passed to formatter.Deserialize",
+            "line": 14
+          }
+        ],
+        "hops_traced": 4,
+        "cross_file": true,
+        "flow_unbroken": true,
+        "surr": false,
+        "surrogate_function": "",
+        "poc_type": "RCE via .NET deserialization gadget chain",
+        "description": "Insecure deserialization vulnerability in DeserializationService.DeserializeData using BinaryFormatter on untrusted byte[] from an HTTP request body.",
+        "payload": "A base64/serialized payload generated with ysoserial.net targeting the BinaryFormatter formatter, e.g., ysoserial.net -f BinaryFormatter -g TypeConfuseDelegate -c \"command\".",
+        "explanation": "BinaryFormatter.Deserialize reconstructs objects from untrusted data and is inherently unsafe; it does not require the target type to be known and will invoke constructors, finalizers, and property setters, allowing a malicious payload to trigger code execution.",
+        "exploitable": true,
+        "reason": ""
+      },
+      {
+        "id": "benchmark.csharp.dynamic-ai-sinful-taint-csharp",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\SystemUtils.cs",
+        "start_line": 11,
+        "start_col": 13,
+        "end_line": 11,
+        "end_col": 54,
+        "severity": "CRITICAL",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 100,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "No trace available (max retries reached)",
+        "fix": null,
+        "fix_regex": null,
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "sink_context": "Original sink was unreachable. We are now treating 'PingTarget' as the sink. Use find_callers('PingTarget') if needed.",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 9.8,
+        "vuln_class": "OS Command Injection",
+        "sink_file": "Services/SystemUtils.cs",
+        "cwe_ids": [
+          78
+        ],
+        "reasoning": "The ASP.NET Core controller action MainController.Ping accepts a user-controlled query parameter `ip` (line 12). It passes this value directly to SystemUtils.PingTarget without any sanitization or validation. In PingTarget, the `ipAddress` is concatenated into a shell command string (`\"ping -c 4 \" + ipAddress`) and executed via `Process.Start(\"cmd.exe\", \"/c \" + command)` (line 10). This creates an unbroken taint path from HTTP request to OS command execution, allowing command injection.",
+        "attack_vector": "HTTP GET /api/main/ping?ip=<payload>",
+        "source_identified": true,
+        "source_variable": "ip",
+        "sink_identified": true,
+        "sink_function": "Process.Start",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "ip",
+            "operation": "model binding from query string",
+            "line": 12
+          },
+          {
+            "step": 2,
+            "variable": "ip",
+            "operation": "passed as argument to _systemUtils.PingTarget",
+            "line": 13
+          },
+          {
+            "step": 3,
+            "variable": "ipAddress",
+            "operation": "concatenated into command string",
+            "line": 9
+          },
+          {
+            "step": 4,
+            "variable": "command",
+            "operation": "passed as argument to Process.Start",
+            "line": 10
+          }
+        ],
+        "hops_traced": 4,
+        "cross_file": true,
+        "flow_unbroken": true,
+        "surr": false,
+        "surrogate_function": "",
+        "poc_type": "Command Injection",
+        "description": "User-supplied `ip` parameter is used in an OS command without sanitization, leading to command injection.",
+        "payload": "ip=127.0.0.1%26whoami",
+        "explanation": "An attacker can inject shell metacharacters (e.g., &, |, ;) into the `ip` query parameter. Because the value is concatenated into a command executed by cmd.exe, the attacker gains arbitrary command execution on the server.",
+        "exploitable": true,
+        "extra_sinks": [],
+        "patches": [
+          {
+            "file_path": "Services/SystemUtils.cs",
+            "old_code": "string command = \"ping -c 4 \" + ipAddress;\nProcess.Start(\"cmd.exe\", \"/c \" + command);",
+            "new_code": "var psi = new ProcessStartInfo\n{\n    FileName = \"ping\",\n    ArgumentList = { \"-c\", \"4\", ipAddress },\n    UseShellExecute = false,\n    RedirectStandardOutput = true\n};\nProcess.Start(psi);"
+          }
+        ],
+        "reason": ""
+      },
+      {
+        "id": "csharp.lang.security.sqli.csharp-sqli.csharp-sqli",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\DatabaseService.cs",
+        "start_line": 13,
+        "start_col": 53,
+        "end_line": 13,
+        "end_col": 58,
+        "severity": "HIGH",
+        "message": "Detected a formatted string in a SQL statement. This could lead to SQL injection if variables in the SQL statement are not properly sanitized. Use a prepared statements instead. You can obtain a PreparedStatement using 'SqlCommand' and 'SqlParameter'.",
+        "lines": "requires login",
+        "cwe": [
+          "CWE-89: Improper Neutralization of Special Elements used in an SQL Command ('SQL Injection')"
+        ],
+        "owasp": [
+          "A01:2017 - Injection",
+          "A03:2021 - Injection",
+          "A05:2025 - Injection"
+        ],
+        "category": "security",
+        "technology": [
+          "csharp"
+        ],
+        "confidence": 95,
+        "impact": "HIGH",
+        "likelihood": "LOW",
+        "references": [
+          "https://owasp.org/Top10/A03_2021-Injection"
+        ],
+        "shortlink": "https://sg.run/d2Xd",
+        "vulnerability_class": [
+          "SQL Injection"
+        ],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"id\",\n    \"operation\": \"ASP.NET MVC action parameter (untrusted external input)\",\n    \"line\": 12\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"id\",\n    \"operation\": \"passed as argument to _databaseService.GetUserById(id)\",\n    \"line\": 14\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"id\",\n    \"operation\": \"method parameter in GetUserById(string id)\",\n    \"line\": 7\n  },\n  {\n    \"step\": 4,\n    \"variable\": \"query\",\n    \"operation\": \"string concatenation: \\\"SELECT * FROM Users WHERE Id = '\\\" + id + \\\"'\\\"\",\n    \"line\": 11\n  },\n  {\n    \"step\": 5,\n    \"variable\": \"command\",\n    \"operation\": \"new SqlCommand(query, connection)\",\n    \"line\": 13\n  },\n  {\n    \"step\": 6,\n    \"variable\": \"command\",\n    \"operation\": \"command.ExecuteReader() executes attacker-controlled SQL\",\n    \"line\": 16\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "verdict": "VULNERABLE",
+        "reasoning": "The action parameter 'id' (untrusted external input) flows unmodified from MainController.GetUser(string id) into DatabaseService.GetUserById(string id). Inside GetUserById, the id is concatenated directly into a SQL query string: \"SELECT * FROM Users WHERE Id = '\" + id + \"'\". The resulting query is passed to SqlCommand and executed with ExecuteReader(). No sanitization, validation, parameterization, or prepared statement is used anywhere along the path. This constitutes a classic SQL injection vulnerability (CWE-89).",
+        "cwe_ids": [
+          89
+        ],
+        "cvss_estimate": 8.8,
+        "vuln_class": "SQL Injection",
+        "sink_file": "Services/DatabaseService.cs",
+        "sink_function": "ExecuteReader",
+        "source_identified": true,
+        "source_variable": "id",
+        "sink_identified": true,
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "id",
+            "operation": "ASP.NET MVC action parameter (untrusted external input)",
+            "line": 12
+          },
+          {
+            "step": 2,
+            "variable": "id",
+            "operation": "passed as argument to _databaseService.GetUserById(id)",
+            "line": 14
+          },
+          {
+            "step": 3,
+            "variable": "id",
+            "operation": "method parameter in GetUserById(string id)",
+            "line": 7
+          },
+          {
+            "step": 4,
+            "variable": "query",
+            "operation": "string concatenation: \"SELECT * FROM Users WHERE Id = '\" + id + \"'\"",
+            "line": 11
+          },
+          {
+            "step": 5,
+            "variable": "command",
+            "operation": "new SqlCommand(query, connection)",
+            "line": 13
+          },
+          {
+            "step": 6,
+            "variable": "command",
+            "operation": "command.ExecuteReader() executes attacker-controlled SQL",
+            "line": 16
+          }
+        ],
+        "hops_traced": 6,
+        "cross_file": true,
+        "flow_unbroken": true,
+        "surr": false,
+        "exploitable": true,
+        "description": "SQL injection in DatabaseService.GetUserById: user-supplied 'id' parameter is concatenated into a SQL query string and executed without parameterization, allowing arbitrary SQL command execution.",
+        "attack_vector": "An attacker controlling the 'id' parameter can inject SQL such as ' OR '1'='1' -- to bypass authentication or exfiltrate/modify data.",
+        "poc_type": "SQL injection payload",
+        "payload": "' OR '1'='1' --",
+        "explanation": "The code builds a SQL query by direct string concatenation with untrusted input, a textbook SQL injection (CWE-89). Using SqlCommand with parameters would mitigate this.",
+        "patches": [
+          {
+            "file_path": "Services/DatabaseService.cs",
+            "old_code": "string query = \"SELECT * FROM Users WHERE Id = '\" + id + \"'\";\n                SqlCommand command = new SqlCommand(query, connection);",
+            "new_code": "string query = \"SELECT * FROM Users WHERE Id = @Id\";\n                SqlCommand command = new SqlCommand(query, connection);\n                command.Parameters.AddWithValue(\"@Id\", id);"
+          }
+        ],
+        "extra_sinks": [],
+        "surrogate_function": "",
+        "reason": ""
+      },
+      {
+        "id": "csharp.lang.security.xxe.xmlreadersettings-unsafe-parser-override.xmlreadersettings-unsafe-parser-override",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\XmlService.cs",
+        "start_line": 14,
+        "start_col": 20,
+        "end_line": 14,
+        "end_col": 69,
+        "severity": "HIGH",
+        "message": "XmlReaderSettings found with DtdProcessing.Parse on an XmlReader handling a string argument from a public method. Enabling Document Type Definition (DTD) parsing may cause XML External Entity (XXE) injection if supplied with user-controllable data.",
+        "lines": "requires login",
+        "cwe": [
+          "CWE-611: Improper Restriction of XML External Entity Reference"
+        ],
+        "owasp": [
+          "A04:2017 - XML External Entities (XXE)",
+          "A05:2021 - Security Misconfiguration",
+          "A02:2025 - Security Misconfiguration"
+        ],
+        "category": "security",
+        "technology": [
+          ".net",
+          "xml"
+        ],
+        "confidence": 96,
+        "impact": "MEDIUM",
+        "likelihood": "LOW",
+        "references": [
+          "https://www.jardinesoftware.net/2016/05/26/xxe-and-net/",
+          "https://docs.microsoft.com/en-us/dotnet/api/system.xml.xmldocument.xmlresolver?view=net-6.0#remarks"
+        ],
+        "shortlink": "https://sg.run/wXjA",
+        "vulnerability_class": [
+          "XML Injection"
+        ],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"xmlInput\",\n    \"operation\": \"public method parameter (untrusted external input)\",\n    \"line\": 7\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"sr\",\n    \"operation\": \"new StringReader(xmlInput) - wraps string as text stream\",\n    \"line\": 13\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"settings\",\n    \"operation\": \"new XmlReaderSettings() with DtdProcessing.Parse (unsafe parser)\",\n    \"line\": 10\n  },\n  {\n    \"step\": 4,\n    \"variable\": \"reader\",\n    \"operation\": \"XmlReader.Create(sr, settings) - creates XML reader with DTD enabled\",\n    \"line\": 14\n  },\n  {\n    \"step\": 5,\n    \"variable\": \"reader\",\n    \"operation\": \"doc.Load(reader) - parses XML with DTD processing, triggering XXE\",\n    \"line\": 17\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 8.6,
+        "vuln_class": "XXE (XML External Entity Injection)",
+        "sink_file": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\XmlService.cs",
+        "cwe_ids": [
+          611
+        ],
+        "reasoning": "The public method ParseXmlData accepts an untrusted string parameter xmlInput. It creates an XmlReaderSettings with DtdProcessing.Parse (explicitly enabling DTD processing) and no XmlResolver restriction or ProhibitDtd flag. The xmlInput flows unbroken into a StringReader, then into XmlReader.Create(sr, settings), and finally into XmlDocument.Load(reader). With DTD parsing enabled, an attacker-supplied XML document can define and reference external entities, causing XXE (CWE-611): local file disclosure, SSRF, or denial of service. No sanitizer, validator, or safe-parser configuration exists on any execution path. Trace confirms an unbroken taint path from source (method parameter) to sink (XmlDocument.Load).",
+        "attack_vector": "An attacker supplies a malicious XML string to ParseXmlData (e.g., via any calling API surface) containing a DOCTYPE with an external entity such as <!ENTITY xxe SYSTEM \"file:///etc/passwd\">, which is then parsed with DTD processing enabled.",
+        "source_identified": true,
+        "source_variable": "xmlInput",
+        "sink_identified": true,
+        "sink_function": "XmlDocument.Load",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "xmlInput",
+            "operation": "untrusted external input (public method parameter)",
+            "line": 7
+          },
+          {
+            "step": 2,
+            "variable": "settings",
+            "operation": "XmlReaderSettings with DtdProcessing.Parse (unsafe parser)",
+            "line": 10
+          },
+          {
+            "step": 3,
+            "variable": "sr",
+            "operation": "new StringReader(xmlInput)",
+            "line": 13
+          },
+          {
+            "step": 4,
+            "variable": "reader",
+            "operation": "XmlReader.Create(sr, settings)",
+            "line": 14
+          },
+          {
+            "step": 5,
+            "variable": "reader",
+            "operation": "doc.Load(reader) parses XML with DTD enabled",
+            "line": 17
+          }
+        ],
+        "hops_traced": 4,
+        "cross_file": false,
+        "flow_unbroken": true,
+        "surr": false,
+        "surrogate_function": "",
+        "poc_type": "XXE file disclosure",
+        "description": "XmlService.ParseXmlData parses attacker-controlled XML using XmlReaderSettings with DtdProcessing.Parse and no XmlResolver restriction, allowing XML External Entity (XXE) injection.",
+        "payload": "<?xml version=\"1.0\"?>\n<!DOCTYPE foo [ <!ENTITY xxe SYSTEM \"file:///c:/windows/win.ini\"> ]>\n<foo>&xxe;</foo>",
+        "explanation": "The code explicitly sets settings.DtdProcessing = DtdProcessing.Parse, which instructs the XmlReader to process DTDs. Combined with XmlDocument.Load(reader), any external entity in the attacker-supplied XML is resolved with default permissions, leading to XXE. The correct fix is to set settings.DtdProcessing = DtdProcessing.Prohibit (or .Ignore) and set settings.XmlResolver = null, and/or use XmlReaderSettings with XmlResolver = null, plus enforce MaxCharactersFromEntities limits.",
+        "exploitable": true,
+        "extra_sinks": [],
+        "patches": [
+          {
+            "file_path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\XmlService.cs",
+            "old_code": "            XmlReaderSettings settings = new XmlReaderSettings();\n            settings.DtdProcessing = DtdProcessing.Parse;",
+            "new_code": "            XmlReaderSettings settings = new XmlReaderSettings();\n            settings.DtdProcessing = DtdProcessing.Prohibit;\n            settings.XmlResolver = null;"
+          }
+        ],
+        "reason": ""
+      },
+      {
+        "id": "csharp.dotnet.security.audit.ldap-injection.ldap-injection",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\LdapService.cs",
+        "start_line": 13,
+        "start_col": 13,
+        "end_line": 13,
+        "end_col": 66,
+        "severity": "HIGH",
+        "message": "LDAP queries are constructed dynamically on user-controlled input. This vulnerability in code could lead to an arbitrary LDAP query execution.",
+        "lines": "requires login",
+        "cwe": [
+          "CWE-90: Improper Neutralization of Special Elements used in an LDAP Query ('LDAP Injection')"
+        ],
+        "owasp": [
+          "A01:2017 - Injection",
+          "A03:2021 - Injection",
+          "A05:2025 - Injection"
+        ],
+        "category": "security",
+        "technology": [
+          ".net"
+        ],
+        "confidence": 97,
+        "impact": "MEDIUM",
+        "likelihood": "MEDIUM",
+        "references": [
+          "https://owasp.org/Top10/A03_2021-Injection/",
+          "https://cwe.mitre.org/data/definitions/90",
+          "https://cheatsheetseries.owasp.org/cheatsheets/LDAP_Injection_Prevention_Cheat_Sheet.html#safe-c-sharp-net-tba-example"
+        ],
+        "shortlink": "https://sg.run/GJ9z",
+        "vulnerability_class": [
+          "LDAP Injection"
+        ],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"username\",\n    \"operation\": \"untrusted external input via public method parameter\",\n    \"line\": 7\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"searcher.Filter\",\n    \"operation\": \"concatenation of username into LDAP filter string\",\n    \"line\": 13\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"searcher\",\n    \"operation\": \"executes the attacker-controlled LDAP filter\",\n    \"line\": 14\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 8.1,
+        "vuln_class": "LDAP Injection",
+        "sink_file": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\LdapService.cs",
+        "cwe_ids": [
+          90
+        ],
+        "reasoning": "The file content confirms an unbroken taint path with no sanitization or validation on any execution path. The public method parameter `username` (source, line 7) is concatenated directly into the LDAP filter string: `searcher.Filter = \"(sAMAccountName=\" + username + \")\"` (line 13), and the resulting attacker-controlled filter is immediately executed via `searcher.FindOne()` (line 14). There are no escaping functions, allow-lists, input validators, or prepared-filter equivalents (e.g., RFC 4515 escaping of special characters like `*`, `(`, `)`, `\\`, NUL) between the source and the sink. An attacker can inject LDAP metacharacters to alter the query logic, enabling authentication bypass (CWE-90) and information disclosure from the directory.",
+        "attack_vector": "Attacker supplies a crafted `username` value containing LDAP filter metacharacters (e.g., `*)(objectClass=*`, `admin)(objectClass=*`, or `*)(|(password=*)`) through the `FindUser` method parameter. The string is concatenated into the filter, changing the intended `(sAMAccountName=<value>)` query into an arbitrary query that the DirectorySearcher executes.",
+        "source_identified": true,
+        "source_variable": "username",
+        "sink_identified": true,
+        "sink_function": "DirectorySearcher.FindOne",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "username",
+            "operation": "untrusted external input via public method parameter",
+            "line": 7
+          },
+          {
+            "step": 2,
+            "variable": "searcher.Filter",
+            "operation": "string concatenation of username into LDAP filter without escaping",
+            "line": 13
+          },
+          {
+            "step": 3,
+            "variable": "searcher",
+            "operation": "executes attacker-controlled LDAP filter via FindOne()",
+            "line": 14
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": false,
+        "flow_unbroken": true,
+        "surr": false,
+        "surrogate_function": "",
+        "poc_type": "LDAP filter injection / authentication bypass",
+        "description": "The `LdapService.FindUser` method takes a `username` parameter and builds an LDAP search filter by direct string concatenation. Because the input is never escaped per RFC 4515 for LDAP filter special characters, an attacker can inject additional filter clauses or boolean operators, altering the query semantics before it is executed by `DirectorySearcher.FindOne()`.",
+        "payload": "*)(objectClass=*)|(sAMAccountName=*",
+        "explanation": "With `username = \"*)(objectClass=*)|(sAMAccountName=*\"`, the resulting filter becomes `(sAMAccountName=*)(objectClass=*)|(sAMAccountName=*)`, which matches arbitrary directory entries and changes the search from a single-user lookup into a broad or always-true query. This demonstrates arbitrary LDAP query control and can enable authentication bypass or disclosure of directory contents.",
+        "exploitable": true,
+        "extra_sinks": [],
+        "patches": [
+          {
+            "file_path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\LdapService.cs",
+            "old_code": "searcher.Filter = \"(sAMAccountName=\" + username + \")\";",
+            "new_code": "string escaped = username.Replace(\"\\\\\", \"\\\\5c\").Replace(\"*\", \"\\\\2a\").Replace(\"(\", \"\\\\28\").Replace(\")\", \"\\\\29\").Replace(\"\\0\", \"\\\\00\");\nsearcher.Filter = \"(sAMAccountName=\" + escaped + \")\";"
+          }
+        ],
+        "reason": ""
+      },
+      {
+        "id": "benchmark.csharp.dynamic-ai-sinful-taint-csharp",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\FileService.cs",
+        "start_line": 10,
+        "start_col": 27,
+        "end_line": 10,
+        "end_col": 69,
+        "severity": "HIGH",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 95,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"filename\",\n    \"operation\": \"method parameter (external user input)\",\n    \"line\": 9\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"path\",\n    \"operation\": \"Path.Combine(basePath, filename)\",\n    \"line\": 10\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"path\",\n    \"operation\": \"File.ReadAllText(path) dangerous sink\",\n    \"line\": 11\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 7.5,
+        "vuln_class": "Path Traversal",
+        "sink_file": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\FileService.cs",
+        "cwe_ids": [
+          22
+        ],
+        "reasoning": "The method ReadUserFile takes a user-controlled `filename` parameter and concatenates it with a fixed base directory using Path.Combine, then passes the result directly to File.ReadAllText. Path.Combine does not neutralize directory traversal sequences such as `..\\`. No validation, canonicalization, or path-containment check is performed before reading. Therefore an attacker can supply a filename like `..\\..\\..\\windows\\win.ini` to read arbitrary files on the system, resulting in path traversal and information disclosure. The taint path is unbroken: parameter -> Path.Combine -> File.ReadAllText.",
+        "attack_vector": "An attacker controlling the `filename` argument to ReadUserFile can provide path traversal sequences to escape the intended uploads directory and read any file readable by the application.",
+        "source_identified": true,
+        "source_variable": "filename",
+        "sink_identified": true,
+        "sink_function": "File.ReadAllText",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "filename",
+            "operation": "method parameter (external user input)",
+            "line": 9
+          },
+          {
+            "step": 2,
+            "variable": "path",
+            "operation": "Path.Combine(basePath, filename)",
+            "line": 10
+          },
+          {
+            "step": 3,
+            "variable": "path",
+            "operation": "File.ReadAllText(path) dangerous sink",
+            "line": 11
+          }
+        ],
+        "hops_traced": 2,
+        "cross_file": false,
+        "flow_unbroken": true,
+        "surr": false,
+        "surrogate_function": "",
+        "poc_type": "Path traversal payload",
+        "description": "The FileService.ReadUserFile method is vulnerable to path traversal (CWE-22). It combines a user-supplied filename with a base path using Path.Combine and reads the resulting file without any sanitization or containment check, allowing attackers to read arbitrary files.",
+        "payload": "..\\..\\..\\..\\..\\..\\windows\\win.ini",
+        "explanation": "Path.Combine(@\"C:\\app\\uploads\\\", filename) does not strip `..\\` segments. An attacker can provide `..\\..\\..\\windows\\win.ini` as filename, producing `C:\\app\\uploads\\..\\..\\..\\windows\\win.ini` which resolves to `C:\\windows\\win.ini` and is read by File.ReadAllText, disclosing file contents.",
+        "exploitable": true,
+        "extra_sinks": [],
+        "patches": [
+          {
+            "file_path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\FileService.cs",
+            "old_code": "        public string ReadUserFile(string filename)\n        {\n            // Path Traversal [CWE-22]\n            string path = Path.Combine(@\"C:\\app\\uploads\\\", filename);\n            return File.ReadAllText(path);\n        }",
+            "new_code": "        public string ReadUserFile(string filename)\n        {\n            string basePath = Path.GetFullPath(@\"C:\\app\\uploads\\\");\n            string fullPath = Path.GetFullPath(Path.Combine(basePath, filename));\n            if (!fullPath.StartsWith(basePath, StringComparison.OrdinalIgnoreCase))\n            {\n                throw new UnauthorizedAccessException(\"Invalid file path.\");\n            }\n            return File.ReadAllText(fullPath);\n        }"
+          }
+        ],
+        "reason": ""
+      },
+      {
+        "id": "benchmark.csharp.dynamic-ai-sinful-taint-csharp",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services\\HttpService.cs",
+        "start_line": 13,
+        "start_col": 50,
+        "end_line": 13,
+        "end_col": 70,
+        "severity": "HIGH",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 95,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "No trace available (max retries reached)",
+        "fix": null,
+        "fix_regex": null,
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "sink_context": "Original sink was unreachable. We are now treating 'FetchResource' as the sink. Use find_callers('FetchResource') if needed.",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 7.5,
+        "vuln_class": "Server-Side Request Forgery (SSRF)",
+        "sink_file": "Services/HttpService.cs",
+        "cwe_ids": [
+          918
+        ],
+        "reasoning": "Unsanitized user-controlled URL flows from MainController.Fetch(string url) (ASP.NET Core query parameter) directly into HttpService.FetchResource(url), which calls HttpClient.GetAsync(url). No allow-list, scheme restriction, or validation exists anywhere on the path. An attacker can supply arbitrary URLs, including internal network endpoints (http://localhost, http://169.254.169.254, file:// if supported by transport), leading to SSRF. Source and sink are directly connected with no intermediary sanitizer.",
+        "attack_vector": "GET /api/main/fetch?url=http://169.254.169.254/latest/meta-data/ (or any internal URL) causes the server to make a request to the supplied target and return the response body to the attacker.",
+        "source_identified": true,
+        "source_variable": "url",
+        "sink_identified": true,
+        "sink_function": "GetAsync",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "url",
+            "operation": "ASP.NET Core model binding from query string in MainController.Fetch(string url)",
+            "line": 58
+          },
+          {
+            "step": 2,
+            "variable": "url",
+            "operation": "passed as argument to _httpService.FetchResource(url)",
+            "line": 62
+          },
+          {
+            "step": 3,
+            "variable": "url",
+            "operation": "passed as argument to client.GetAsync(url) inside HttpService.FetchResource",
+            "line": 13
+          }
+        ],
+        "hops_traced": 2,
+        "cross_file": true,
+        "flow_unbroken": true,
+        "surr": false,
+        "surrogate_function": "",
+        "poc_type": "http",
+        "description": "The /api/main/fetch endpoint accepts an arbitrary URL query parameter and uses it to perform an outbound HTTP request through HttpClient. This is a textbook SSRF vulnerability.",
+        "payload": "GET /api/main/fetch?url=http://127.0.0.1:8080/admin HTTP/1.1\nHost: vulnerable-app",
+        "explanation": "The url parameter is never validated against a safe domain list or restricted to public hosts. HttpClient.GetAsync will happily request internal services, cloud metadata endpoints, or local filesystem resources depending on environment, and the response is returned in the HTTP response, enabling data exfiltration and internal service interaction.",
+        "exploitable": true,
+        "extra_sinks": [],
+        "patches": [
+          {
+            "file_path": "Services/HttpService.cs",
+            "old_code": "public async Task<string> FetchResource(string url)\n{\n    HttpResponseMessage response = await client.GetAsync(url);\n    return await response.Content.ReadAsStringAsync();\n}",
+            "new_code": "public async Task<string> FetchResource(string url)\n{\n    if (!Uri.TryCreate(url, UriKind.Absolute, out var uri))\n        throw new ArgumentException(\"Invalid URL\");\n    if (uri.Scheme != Uri.UriSchemeHttps)\n        throw new ArgumentException(\"Only HTTPS URLs are allowed\");\n    // Optional: resolve DNS and ensure the IP is not private/internal\n    var host = uri.Host;\n    var addresses = await Dns.GetHostAddressesAsync(host);\n    if (addresses.Any(ip => ip.IsPrivate() || ip.IsLoopback || ip.IsLinkLocal))\n        throw new ArgumentException(\"Private/internal hosts are not allowed\");\n    HttpResponseMessage response = await client.GetAsync(uri);\n    return await response.Content.ReadAsStringAsync();\n}"
+          }
+        ],
+        "reason": ""
+      },
+      {
+        "id": "dynamic-ai-vuln-EncryptToken",
+        "message": "AI Classifier detected structural vulnerability in EncryptToken",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/CryptoService.cs",
+        "start_line": 19,
+        "end_line": 24,
+        "severity": "HIGH",
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"key\",\n    \"operation\": \"assignment from hardcoded string literal \\\"S3cr3t_K3y_1234567890\\\"\",\n    \"line\": 24\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"key\",\n    \"operation\": \"used as encryption key (encryption operation)\",\n    \"line\": 25\n  }\n]",
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "verdict": "VULNERABLE",
+        "confidence": 90,
+        "cvss_estimate": 7.5,
+        "vuln_class": "Use of Hard-coded Cryptographic Key",
+        "sink_file": "Services/CryptoService.cs",
+        "cwe_ids": [
+          321
+        ],
+        "reasoning": "Direct evidence gathered from file read and AST-based alias analysis confirms an unbroken taint path: a hardcoded string literal \"S3cr3t_K3y_1234567890\" is assigned to the variable `key` at line 22 inside `EncryptToken()`. The trace_variable result shows the full alias chain resolves to this hardcoded literal with no sanitization, derivation, or key-management integration. The source code itself contains the explicit marker comment \"Hardcoded Key [CWE-321]\" at line 21, and the subsequent comment \"// Use key for encryption...\" confirms the key's intended cryptographic use. Although the concrete encryption call is not present in this snippet (the usage is commented out), the hardcoded cryptographic key material remains embedded in the source, which is the defining condition for CWE-321. A hardcoded symmetric key is recoverable by any attacker with access to the binary or source, defeating confidentiality of any token encrypted with it. No callers of EncryptToken were found, and no sanitization or key-derivation function intervenes. Severity is HIGH: CWE-321 typically maps to CVSS base around 7.5-9.1 depending on exploitability; here confidence is 90 due to the explicit CWE marker and direct literal assignment, reduced slightly because the encryption sink usage is only implied, not executed.",
+        "attack_vector": "An attacker who obtains the application source code or binary (e.g., via decompilation, repository leak, or supply-chain access) extracts the hardcoded key \"S3cr3t_K3y_1234567890\" and uses it to forge or decrypt authentication/authorization tokens, impersonate users, or recover protected data.",
+        "source_identified": true,
+        "source_variable": "key",
+        "sink_identified": true,
+        "sink_function": "EncryptToken",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "key",
+            "operation": "assignment from hardcoded string literal",
+            "line": 22
+          },
+          {
+            "step": 2,
+            "variable": "key",
+            "operation": "intended use as encryption key (comment marker confirms cryptographic purpose)",
+            "line": 23
+          }
+        ],
+        "hops_traced": 2,
+        "cross_file": false,
+        "flow_unbroken": true,
+        "surr": false,
+        "surrogate_function": "",
+        "poc_type": "static key extraction",
+        "description": "EncryptToken() contains a hardcoded cryptographic key \"S3cr3t_K3y_1234567890\" embedded directly in source code. This is a classic CWE-321 flaw: the key is not derived from a secure key management system, environment variable, or KDF, and is therefore recoverable by attackers. The code explicitly marks this as a hardcoded key vulnerability.",
+        "payload": "S3cr3t_K3y_1234567890",
+        "explanation": "The hardcoded key material is present at Services/CryptoService.cs:22. Even without the actual encryption call being executed in this snippet, the existence of a hardcoded symmetric key in source is itself the vulnerability. In a real deployment, any encryption performed with this key would be trivially reversible by an attacker who extracts the key from the binary or source.",
+        "exploitable": true,
+        "extra_sinks": [],
+        "patches": [
+          {
+            "file_path": "Services/CryptoService.cs",
+            "old_code": "string key = \"S3cr3t_K3y_1234567890\";",
+            "new_code": "string key = Environment.GetEnvironmentVariable(\"TOKEN_ENCRYPTION_KEY\") ?? throw new InvalidOperationException(\"Encryption key not configured\");"
+          }
+        ],
+        "reason": ""
+      },
+      {
+        "id": "benchmark.csharp.dynamic-ai-sinful-taint-csharp",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Controllers\\AuthController.cs",
+        "start_line": 13,
+        "start_col": 20,
+        "end_line": 13,
+        "end_col": 39,
+        "severity": "MEDIUM",
+        "message": "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink.",
+        "lines": "requires login",
+        "cwe": [],
+        "owasp": [],
+        "category": "",
+        "technology": [],
+        "confidence": 95,
+        "impact": "",
+        "likelihood": "",
+        "references": [],
+        "shortlink": "",
+        "vulnerability_class": [],
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"returnUrl\",\n    \"operation\": \"HTTP GET query string parameter binding to action method parameter\",\n    \"line\": 10\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"returnUrl\",\n    \"operation\": \"passed directly as argument to Redirect()\",\n    \"line\": 12\n  }\n]",
+        "fix": null,
+        "fix_regex": null,
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "verdict": "VULNERABLE",
+        "cvss_estimate": 6.1,
+        "vuln_class": "Open Redirect (URL Redirection to Untrusted Site)",
+        "sink_file": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Controllers\\AuthController.cs",
+        "cwe_ids": [
+          601
+        ],
+        "reasoning": "The `returnUrl` parameter in `LoginRedirect` is an ASP.NET Core action method parameter bound from the HTTP GET query string (user-controlled). It is passed directly, with no validation, sanitization, or allow-list check, to `ControllerBase.Redirect(returnUrl)` on line 12. `Redirect(string)` issues a 302 response whose `Location` header is the attacker-supplied URL, allowing an attacker to craft links like `/api/Auth/login?returnUrl=https://evil.com` that redirect victims to an arbitrary external site. The data flow trace shows a single unbroken taint path from source to sink with zero sanitizers. This is CWE-601 (URL Redirection to Untrusted Site).",
+        "attack_vector": "Attacker crafts a link to the application's login endpoint with a malicious `returnUrl` query parameter, e.g. `https://victim/api/Auth/login?returnUrl=https://evil-phishing-site.com`. An authenticated or unauthenticated victim clicking the link is redirected to the attacker-controlled domain, enabling credential phishing or malware delivery under the guise of a trusted application URL.",
+        "source_identified": true,
+        "source_variable": "returnUrl",
+        "sink_identified": true,
+        "sink_function": "Redirect",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "returnUrl",
+            "operation": "Action method parameter bound from HTTP GET query string",
+            "line": 10
+          },
+          {
+            "step": 2,
+            "variable": "returnUrl",
+            "operation": "Passed directly as url argument to Redirect()",
+            "line": 12
+          }
+        ],
+        "hops_traced": 2,
+        "cross_file": false,
+        "flow_unbroken": true,
+        "surr": false,
+        "surrogate_function": "",
+        "poc_type": "URL-based",
+        "description": "Open Redirect vulnerability in AuthController.LoginRedirect: the `returnUrl` query string parameter is reflected directly into an HTTP redirect location without validation, enabling phishing attacks.",
+        "payload": "https://victim/api/Auth/login?returnUrl=https://evil-phishing-site.com",
+        "explanation": "ASP.NET Core model binding maps the query string value `returnUrl` into the method parameter. The code then calls `Redirect(returnUrl)`, which sets the HTTP `Location` response header to that attacker-controlled value. Since there is no check to ensure the URL is local/relative (for example, using `Url.IsLocalUrl(returnUrl)` before redirecting), a remote attacker can redirect users to arbitrary external domains.",
+        "exploitable": true,
+        "extra_sinks": [],
+        "patches": [
+          {
+            "file_path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Controllers\\AuthController.cs",
+            "old_code": "        public IActionResult LoginRedirect(string returnUrl)\n        {\n            // Open Redirect [CWE-601]\n            return Redirect(returnUrl);\n        }",
+            "new_code": "        public IActionResult LoginRedirect(string returnUrl)\n        {\n            if (string.IsNullOrEmpty(returnUrl) || !Url.IsLocalUrl(returnUrl))\n            {\n                return RedirectToAction(nameof(Index), \"Home\");\n            }\n\n            return Redirect(returnUrl);\n        }"
+          }
+        ],
+        "reason": ""
+      },
+      {
+        "id": "dynamic-ai-vuln-HashData",
+        "message": "AI Classifier detected structural vulnerability in HashData",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/CryptoService.cs",
+        "start_line": 8,
+        "end_line": 17,
+        "severity": "MEDIUM",
+        "dataflow_trace": "[\n  {\n    \"step\": 1,\n    \"variable\": \"input\",\n    \"operation\": \"function parameter (untrusted source)\",\n    \"line\": 9\n  },\n  {\n    \"step\": 2,\n    \"variable\": \"inputBytes\",\n    \"operation\": \"Encoding.ASCII.GetBytes(input)\",\n    \"line\": 13\n  },\n  {\n    \"step\": 3,\n    \"variable\": \"hashBytes\",\n    \"operation\": \"md5.ComputeHash(inputBytes)\",\n    \"line\": 14\n  }\n]",
+        "ast": "Error extracting AST context: extract_context() got an unexpected keyword argument 'sdir'. Did you mean 'dir'?",
+        "verdict": "VULNERABLE",
+        "confidence": 95,
+        "cvss_estimate": 5.3,
+        "vuln_class": "Use of a Broken or Risky Cryptographic Algorithm (CWE-327)",
+        "sink_file": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/CryptoService.cs",
+        "cwe_ids": [
+          327
+        ],
+        "reasoning": "The file CryptoService.cs defines HashData(string input). Inside, MD5.Create() is called and md5.ComputeHash(inputBytes) computes a digest using MD5 (line 14). MD5 is cryptographically broken for security purposes (collision resistance) per CWE-327. There is no stronger algorithm (SHA-256, etc.), no salt/pepper, and no compensating control between the input and the hashing operation. The use of Encoding.ASCII to convert the binary hash back to a string further loses entropy but is secondary. This is a direct, unbroken path from the hashing logic to the broken algorithm. I verified the full source directly; no sanitizer or replacement algorithm exists on any path.",
+        "attack_vector": "Any caller of HashData passes data that will be hashed with MD5, yielding a digest that is weak against collision and chosen-prefix attacks; if used for integrity, signatures, or password storage, this enables forgery and offline credential attacks.",
+        "source_identified": false,
+        "source_variable": "input",
+        "sink_identified": true,
+        "sink_function": "md5.ComputeHash",
+        "data_flow": [
+          {
+            "step": 1,
+            "variable": "input",
+            "operation": "function parameter",
+            "line": 9
+          },
+          {
+            "step": 2,
+            "variable": "inputBytes",
+            "operation": "Encoding.ASCII.GetBytes(input)",
+            "line": 13
+          },
+          {
+            "step": 3,
+            "variable": "hashBytes",
+            "operation": "md5.ComputeHash(inputBytes)",
+            "line": 14
+          }
+        ],
+        "hops_traced": 3,
+        "cross_file": false,
+        "flow_unbroken": true,
+        "surr": false,
+        "surrogate_function": "",
+        "poc_type": "Static demonstration of broken crypto usage",
+        "description": "HashData uses the MD5 hashing algorithm, which is cryptographically broken and must not be used for security-sensitive operations such as password hashing, integrity verification, or digital signatures.",
+        "payload": "MD5 is used directly via MD5.Create() and md5.ComputeHash() with no stronger alternative or context-specific mitigation.",
+        "explanation": "The sink md5.ComputeHash is reachable on every execution path of HashData, and the algorithm choice is hardcoded. There is no branch that substitutes a secure algorithm. Therefore the broken-crypto weakness is present unconditionally.",
+        "exploitable": true,
+        "extra_sinks": [],
+        "patches": [
+          {
+            "file_path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/CryptoService.cs",
+            "old_code": "using (MD5 md5 = MD5.Create())\n            {\n                byte[] inputBytes = Encoding.ASCII.GetBytes(input);\n                byte[] hashBytes = md5.ComputeHash(inputBytes);\n                return Encoding.ASCII.GetString(hashBytes);\n            }",
+            "new_code": "using (SHA256 sha256 = SHA256.Create())\n            {\n                byte[] inputBytes = Encoding.UTF8.GetBytes(input);\n                byte[] hashBytes = sha256.ComputeHash(inputBytes);\n                return Convert.ToHexString(hashBytes);\n            }"
+          }
+        ],
+        "reason": ""
+      }
+    ],
+    "cves": [],
+    "nvd": [],
+    "rag_summaries": [],
+    "vuln": true
+  }
+}
