@@ -1,20 +1,30 @@
-google-generativeai
-tree-sitter
-tree-sitter-python
-tree-sitter-javascript
-tree-sitter-typescript
-tree-sitter-php
-tree-sitter-java
-tree-sitter-go
-tree-sitter-ruby
-tree-sitter-c-sharp
-tree-sitter-c
-tree-sitter-cpp
-semgrep
-typer
-rich
-prompt_toolkit
-openai
-python-dotenv
-pyyaml
-textual
+# Engine quét
+semgrep==1.173.0
+
+# Phân tích cú pháp
+tree-sitter==0.26.0
+tree-sitter-python==0.25.0
+tree-sitter-javascript==0.25.0
+tree-sitter-typescript==0.23.2
+tree-sitter-php==0.24.1
+tree-sitter-java==0.23.5
+tree-sitter-go==0.25.0
+tree-sitter-ruby==0.23.1
+tree-sitter-c-sharp==0.23.5
+tree-sitter-c==0.24.2
+tree-sitter-cpp==0.23.4
+tree-sitter-rust==0.24.0
+tree-sitter-scala==0.24.0
+
+# Gọi model
+openai==3.1.0
+
+# Giao diện dòng lệnh
+rich==15.0.0
+typer==0.25.1
+prompt_toolkit==3.0.53
+
+# Tiện ích
+requests==2.34.2
+python-dotenv==1.2.2
+PyYAML==6.0.3

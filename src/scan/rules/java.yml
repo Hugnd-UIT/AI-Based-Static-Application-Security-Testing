@@ -5,7 +5,13 @@ rules:
     severity: WARNING
     languages: [java]
     pattern-sources:
-      # Servlet / JAX-RS 
+      # Tham số hàm, nối luồng khi nguồn nằm ở file khác
+      - patterns:
+          - pattern-inside: |
+              $RET $FN(..., $T $P, ...) { ... }
+          - pattern: $P
+
+      # Servlet / JAX-RS
       - pattern: $USE_REQ.getParameter(...)
       - pattern: $USE_REQ.getParameterValues(...)
       - pattern: $USE_REQ.getHeader(...)
@@ -17,13 +23,11 @@ rules:
       - pattern: $USE_REQ.getRequestURI()
       - pattern: $USE_REQ.getPathInfo()
 
-      # Spring MVC 
-      - pattern: "@RequestParam"
-      - pattern: "@PathVariable"
-      - pattern: "@RequestHeader"
-      - pattern: "@RequestBody"
-      - pattern: "@CookieValue"
-      - pattern: "@ModelAttribute"
+      # Spring MVC
+      - patterns:
+          - pattern-inside: |
+              $RET $FN(..., @$ANNO $T $P, ...) { ... }
+          - pattern: $P
       - pattern: $GET_MODEL.getAttribute(...)
 
       # Spring WebFlux 
@@ -68,9 +72,12 @@ rules:
       - pattern: Files.newInputStream(...)
       - pattern: Paths.get(...)
 
-      # SSRF 
+      # SSRF
+      - pattern: new URL(...)
       - pattern: new URL(...).openConnection()
       - pattern: new URL(...).openStream()
+      - pattern: $URL.openConnection()
+      - pattern: $URL.openStream()
       - pattern: $CLIENT.get(...).uri(...)
       - pattern: RestTemplate(...).getForObject(...)
 
@@ -112,3 +119,26 @@ rules:
       - pattern: Integer.parseInt(...)
       - pattern: Long.parseLong(...)
       - pattern: Double.parseDouble(...)
+
+  # Chuỗi SQL hoặc lệnh ghép từ biến, bắt cả khi sink nằm ngoài file
+  - id: sinful-strcat-java
+    message: "SQL or command string built from a variable; verify the value is not attacker controlled."
+    severity: WARNING
+    languages: [java]
+    pattern-either:
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}(\$where|\b(select|insert|update|delete|drop|union|ping|curl|wget|nc|bash)\b)(?:\\.|[^"\n]){0,200}(\$\{|\$[a-z_]|#\{|\{\}|%[sdvq])'
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}\b(select|insert|update|delete|drop|union|ping|curl|wget)\b(?:\\.|[^"\n]){0,200}"\s*[+.]\s*[a-z_$]'
+
+  # Thuật toán băm hoặc mã hóa yếu
+  - id: sinful-weakcrypto-java
+    message: "Weak or broken cryptographic algorithm."
+    severity: WARNING
+    languages: [java]
+    pattern-regex: '(?i)\b(md5|sha1|des|rc4|ecb|md4)\b'
+
+  # Bí mật hardcode trong mã nguồn
+  - id: sinful-secret-java
+    message: "Hardcoded credential or cryptographic key."
+    severity: WARNING
+    languages: [java]
+    pattern-regex: '(?i)(\b(secret|password|passwd|pwd|api_?key|private_?key|access_?key|token|salt|encryption_?key|hardcoded)\w*|\b(key|iv|creds?|credential)\b)\s*(=|:|:=|=>)\s*["''][^"''\n]{4,}["'']'

@@ -1,6 +1,10 @@
 import typer
 import os
 import sys
+from pathlib import Path
+
+# Chạy trực tiếp file này thì gốc repo chưa có trong sys.path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 # Cấu hình encoding stdout/stderr
 if hasattr(sys.stdout, 'reconfigure'):
@@ -124,15 +128,16 @@ def start_cli():
                 'status-path': 'fg:ansibrightgreen bold',        
             })
 
-            tapp = Application(
-                layout=layout,
-                key_bindings=keys,
-                style=style,
-                color_depth=ColorDepth.TRUE_COLOR,
-                full_screen=False,
-            )
-
             try:
+                # Terminal không dựng được prompt_toolkit thì rơi xuống input thường
+                tapp = Application(
+                    layout=layout,
+                    key_bindings=keys,
+                    style=style,
+                    color_depth=ColorDepth.TRUE_COLOR,
+                    full_screen=False,
+                )
+
                 print()
                 cmd = tapp.run()
 

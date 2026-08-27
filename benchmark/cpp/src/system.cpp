@@ -18,9 +18,11 @@ void executeCustom(const std::string& command) {
     }
 }
 
-void dereferenceNull() {
+void dereferenceNull(const std::string& input) {
     int* ptr = NULL;
     // Null Pointer Dereference [CWE-476]
-    int val = *ptr;
-    std::cout << val << std::endl;
+    if (input == "trigger") {
+        int val = *ptr;
+        std::cout << val << std::endl;
+    }
 }

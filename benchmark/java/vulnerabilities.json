@@ -51,6 +51,31 @@
             "cwe": "CWE-601",
             "file": "src/main/java/com/benchmark/controllers/MainController.java",
             "type": "Open Redirect"
+        },
+        {
+            "cve": "CVE-2021-44228",
+            "file": "pom.xml",
+            "type": "org.apache.logging.log4j:log4j-core"
+        },
+        {
+            "cve": "CVE-2017-18349",
+            "file": "pom.xml",
+            "type": "com.alibaba:fastjson"
+        },
+        {
+            "cve": "CVE-2022-22965",
+            "file": "pom.xml",
+            "type": "org.springframework:spring-webmvc"
+        },
+        {
+            "cve": "CVE-2015-7501",
+            "file": "pom.xml",
+            "type": "commons-collections:commons-collections"
+        },
+        {
+            "cve": "CVE-2019-16942",
+            "file": "pom.xml",
+            "type": "com.fasterxml.jackson.core:jackson-databind"
         }
     ]
 }

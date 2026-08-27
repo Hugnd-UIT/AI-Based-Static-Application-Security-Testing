@@ -9,19 +9,41 @@ root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(root))
 
 try:
-    from main import start_sast
+    from main import run_scan
     from cli.views import logger
     from rich.panel import Panel
 
-except ImportError:
-    print("Error: Cannot import the main module of Sinful SAST.")
-    sys.exit(1)
+except ImportError as err:
+    print(f"Error: Cannot import the main module of Sinful SAST: {err}")
+    sys.exit(2)
+
+# Đổi mức độ nghiêm trọng sang mức của SARIF
+def sev_level(find: dict) -> str:
+    sev = (find.get("severity") or "").upper()
+
+    if sev in ("CRITICAL", "HIGH", "ERROR"):
+        return "error"
+
+    if sev in ("MEDIUM", "WARNING"):
+        return "warning"
+
+    return "note"
+
+# GitHub chỉ map được alert khi uri là đường dẫn tương đối so với gốc repo
+def rel_path(path: str) -> str:
+    try:
+        rel = os.path.relpath(str(path), os.getcwd())
+
+    except Exception:
+        rel = str(path)
+
+    return rel.replace("\\", "/")
 
 # Tạo báo cáo định dạng SARIF
 def gen_sarif(finds, out):
     rules = {}
     res = []
-    
+
     # Duyệt qua các lỗi
     for find in finds:
         rid = find.get("id") or find.get("check_id") or find.get("rule_id", "VULN-001")
@@ -31,18 +53,18 @@ def gen_sarif(finds, out):
                 "id": rid,
                 "shortDescription": {"text": find.get("title") or find.get("message") or rid},
                 "fullDescription": {"text": find.get("description") or find.get("message", "Security vulnerability detected.")},
-                "defaultConfiguration": {"level": "error" if find.get("severity") == "ERROR" else "warning"}
+                "defaultConfiguration": {"level": sev_level(find)}
             }
-        
-        path = find.get("path") or find.get("file", "unknown")
+
+        path = rel_path(find.get("path") or find.get("file", "unknown"))
         line = find.get("start_line") or find.get("start") or find.get("line") or getattr(find.get("start"), "line", 1)
 
         if isinstance(line, dict):
             line = line.get("line", 1)
-            
+
         sres = {
             "ruleId": rid,
-            "level": "error" if find.get("severity") == "ERROR" else "warning",
+            "level": sev_level(find),
             "message": {"text": find.get("extra", {}).get("message") or find.get("message", "Vulnerability found")},
             "locations": [
                 {
@@ -80,7 +102,7 @@ def gen_sarif(finds, out):
 def run_ci():
     parser = argparse.ArgumentParser(description="Sinful SAST CI Scanner")
     parser.add_argument("--exit-code", type=int, default=1, help="Exit code when vulnerabilities are found")
-    parser.add_argument("--severity", type=str, default="ERROR,WARNING", help="Comma-separated severities to block on")
+    parser.add_argument("--severity", type=str, default="CRITICAL,HIGH", help="Comma-separated severities to block on")
     parser.add_argument("--format", type=str, default="table", choices=["table", "sarif"], help="Output format")
     parser.add_argument("--output", type=str, default="results.sarif", help="Output file path for sarif")
     args = parser.parse_args()
@@ -97,17 +119,21 @@ def run_ci():
     
 
     tdir = os.getcwd()
-    
+
+    # Mã 2 dành cho lỗi của chính scanner, tách khỏi mã chặn do có lỗ hổng
     try:
         # Chạy quét bảo mật
-        scan = start_sast(tdir)
+        scan = run_scan(tdir)
 
     except Exception as err:
 
         if args.format != "sarif":
             logger.console.print("[cyan]━ ━ ━  CI WORKFLOW ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")
             logger.console.print(f"[red]✖ Exception occurred during scanning: {err}[/red]\n")
-        sys.exit(1)
+
+        else:
+            print(f"Scanner error: {err}")
+        sys.exit(2)
 
     # Nếu quét bị lỗi
     if scan.get("status") == "error":
@@ -115,10 +141,14 @@ def run_ci():
         if args.format != "sarif":
             logger.console.print("[cyan]━ ━ ━  CI WORKFLOW ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")
             logger.console.print(f"[red]✖ Scan failed: {scan.get('message')}[/red]\n")
-        sys.exit(1)
+
+        else:
+            print(f"Scan failed: {scan.get('message')}")
+        sys.exit(2)
 
     data = scan.get("data", {})
     finds = data.get("findings", [])
+    lost = data.get("unverified", 0)
     
     # Tạo báo cáo SARIF nếu được yêu cầu
     if args.format == "sarif":
@@ -127,8 +157,27 @@ def run_ci():
     
     # Kiểm tra mức độ nghiêm trọng
     sevs = [sev.strip().upper() for sev in args.severity.split(",")]
-    count = len([f for f in finds if f.get("severity", "ERROR") in sevs])
+    count = len([f for f in finds if f.get("severity", "").upper() in sevs])
     vuln = count > 0
+
+    # Có điểm nghi vấn không lấy được phán quyết thì chưa kết luận được, để pass là bỏ lọt lỗ hổng
+    if not vuln and lost:
+
+        if args.format != "sarif":
+            logger.console.print("[cyan]━ ━ ━  CI WORKFLOW ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")
+            logger.console.print("Environment     [green]✔ VERIFIED[/green]")
+            logger.console.print("Security Scan   [yellow]⚠ INCONCLUSIVE[/yellow]")
+            logger.console.print(f"Unverified      [yellow]⚠ {lost}[/yellow]")
+            logger.console.print("Security Gate   [yellow]⚠ NO VERDICT[/yellow]\n")
+            logger.console.print(f"{lost} finding(s) could not be audited, so the result is not a clean bill of health.\n")
+            logger.console.print("[dim]Exit code: 2[/dim]")
+
+        else:
+            print(f"Scan inconclusive: {lost} finding(s) had no verdict")
+        sys.exit(2)
+
+    if args.format == "sarif":
+        sys.exit(args.exit_code if vuln else 0)
 
     if args.format != "sarif":
         logger.console.print("[cyan]━ ━ ━  CI WORKFLOW ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")

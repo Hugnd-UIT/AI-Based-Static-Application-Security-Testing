@@ -13,6 +13,12 @@
     
     <!-- Vulnerable Dependency: System.Data.SqlClient 4.6.0 -->
     <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
+
+    <!-- Vulnerable Dependency: System.Text.Encodings.Web 4.7.1 (CVE-2021-26701) -->
+    <PackageReference Include="System.Text.Encodings.Web" Version="4.7.1" />
+
+    <!-- Vulnerable Dependency: System.Net.Http 4.3.0 (CVE-2017-0247) -->
+    <PackageReference Include="System.Net.Http" Version="4.3.0" />
   </ItemGroup>
 
 </Project>

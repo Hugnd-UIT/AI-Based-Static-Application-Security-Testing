@@ -1,5 +1,6 @@
 import os
 from datetime import datetime
+from html import escape
 
 # Hàm tạo report dạng HTML
 def report_html(findings: list, target: str, out: str) -> str:
@@ -21,7 +22,7 @@ def report_html(findings: list, target: str, out: str) -> str:
         "</head>",
         "<body>",
         "<h1>Sinful Report</h1>",
-        f"<p><strong>Target:</strong> {target}</p>",
+        f"<p><strong>Target:</strong> {escape(str(target))}</p>",
         f"<p><strong>Total Findings:</strong> {len(findings)}</p>"
     ]
     
@@ -30,34 +31,36 @@ def report_html(findings: list, target: str, out: str) -> str:
     else:
         for f in findings:
             sev = f.get('severity', 'INFO').lower()
-            html.append(f"<div class='finding {sev}'>")
-            
+            html.append(f"<div class='finding {escape(sev)}'>")
+
             rule = f.get('id') or f.get('check_id') or f.get('rule_id', 'Unknown')
             msg = f.get('message') or f.get('title') or f.get('description', 'N/A')
             file = f.get('path') or f.get('file', 'N/A')
             line = f.get('start_line') or f.get('start') or f.get('line', 'N/A')
             if isinstance(line, dict): line = line.get('line', 'N/A')
-            
-            html.append(f"<h3>{rule} ({f.get('severity', 'INFO')})</h3>")
-            html.append(f"<p><strong>File:</strong> {file} (Line: {line})</p>")
-            html.append(f"<p><strong>Message:</strong> {msg}</p>")
-            
-            if f.get('cwe'):
-                html.append(f"<p><strong>CWE:</strong> {', '.join(f.get('cwe'))}</p>")
-                
+
+            # Escape vì nội dung lấy từ code được quét và từ AI
+            html.append(f"<h3>{escape(str(rule))} ({escape(f.get('severity', 'INFO'))})</h3>")
+            html.append(f"<p><strong>File:</strong> {escape(str(file))} (Line: {escape(str(line))})</p>")
+            html.append(f"<p><strong>Message:</strong> {escape(str(msg))}</p>")
+
+            cwes = f.get('cwe_ids') or f.get('cwe')
+            if cwes:
+                html.append(f"<p><strong>CWE:</strong> {escape(', '.join(str(c) for c in cwes))}</p>")
+
             code = f.get("code")
             if code:
                 html.append("<p><strong>Code:</strong></p>")
-                html.append(f"<pre><code>{code}</code></pre>")
-                
+                html.append(f"<pre><code>{escape(str(code))}</code></pre>")
+
             dflow = f.get("data_flow")
             if dflow and isinstance(dflow, list):
                 html.append("<p><strong>Data Flow:</strong></p>")
                 html.append("<ul>")
                 for step in dflow:
-                    html.append(f"<li>{step}</li>")
+                    html.append(f"<li>{escape(str(step))}</li>")
                 html.append("</ul>")
-                
+
             html.append("</div>")
             
     html.append("</body></html>")

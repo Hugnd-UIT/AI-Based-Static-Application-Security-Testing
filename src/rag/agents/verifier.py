@@ -10,7 +10,7 @@ def start_verify(
     target: str = "",
     module=None,
 ) -> dict:
-    from main import MODELS
+    from src.config import MODELS, STEPS
     use = model or MODELS[0]
 
     msg = VTMP.format(
@@ -25,6 +25,6 @@ def start_verify(
         directory      = target,
         module       = module,
         model      = use,
-        steps       = 20,
+        steps       = STEPS,
         agent      = "POC_VERIFIER",
     )

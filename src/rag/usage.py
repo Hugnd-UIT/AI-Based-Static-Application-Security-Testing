@@ -3,35 +3,98 @@ import re
 from pathlib import Path
 from typing import List, Dict, Any
 
+SKIPS = {".git", "node_modules", "vendor", ".venv", "venv", "__pycache__", "target", "build", "dist", "bin", "obj", ".idea", ".vs"}
+
+# Dòng khai báo phụ thuộc của 10 ngôn ngữ, gom về một chỗ thay vì regex riêng cho từng cách viết
+HEAD = re.compile(
+    r"""(?:\#\s*include|\bimport\b|\bfrom\b|\brequire(?:_relative|_once)?\b|\binclude_once\b|\buse\b|\busing\b|\bextern\s+crate\b)""",
+    re.IGNORECASE,
+)
+
+# Trong go/scala mỗi phụ thuộc là một dòng chuỗi trần nằm trong khối import
+BARE = re.compile(r"""^\s*[\w.]*\s*['\"][^'\"]{3,}['\"]\s*,?\s*$""")
+
+_IMPORTS: Dict[str, str] = {}
+
+# Chuẩn hóa mọi kiểu ngăn cách tên gói về một dấu để so được chéo ngôn ngữ
+def flat(txt: str) -> str:
+    low = str(txt).lower()
+    low = low.replace("::", "/")
+
+    for ch in (".", "\\", ":", "-", "_", "@"):
+        low = low.replace(ch, "/")
+
+    while "//" in low:
+        low = low.replace("//", "/")
+
+    return low
+
+# Tọa độ trong manifest hiếm khi trùng tên viết trong code nên phải tách ra nhiều biến thể
+def aliases(pkg: str) -> List[str]:
+    raw = str(pkg).strip()
+
+    if not raw:
+        return []
+
+    out = {flat(raw)}
+
+    # group:artifact của maven/sbt, vendor/name của composer, đường dẫn module của go
+    for part in re.split(r"[:/]", raw):
+        part = part.strip()
+
+        if len(part) > 2:
+            out.add(flat(part))
+
+    # Tên phân phối thường có tiền tố mà code không dùng, ví dụ PyYAML import là yaml
+    for one in list(out):
+        for pre in ("py/", "python/", "go/", "node/", "rb/", "ruby/", "php/", "lib"):
+
+            if one.startswith(pre) and len(one) - len(pre) > 2:
+                out.add(one[len(pre):])
+
+    return [a for a in out if len(a) > 2]
+
+# Đọc cả cây một lần rồi giữ lại, vì mỗi lần quét lại toàn bộ file cho từng gói rất chậm
+def import_text(target: str) -> str:
+    if target in _IMPORTS:
+        return _IMPORTS[target]
+
+    lines = []
+
+    for root, dirs, files in os.walk(target):
+        dirs[:] = [d for d in dirs if d not in SKIPS and not d.startswith(".")]
+
+        for name in files:
+
+            try:
+                with open(os.path.join(root, name), "r", encoding="utf-8", errors="ignore") as fp:
+                    body = fp.read()
+            except Exception:
+                continue
+
+            for line in body.splitlines():
+
+                if len(line) > 400:
+                    continue
+
+                if HEAD.search(line) or BARE.match(line):
+                    lines.append(flat(line))
+
+    _IMPORTS[target] = "\n".join(lines)
+
+    return _IMPORTS[target]
+
 # Hàm kiểm tra package được sử dụng hay không
 def is_imported(target: str, pkg: str) -> bool:
-    if not pkg: return True
-    patterns = [
-        re.compile(rf"""require\s*\(\s*['\"]{re.escape(pkg)}['\"\s]*\)"""),
-        re.compile(rf"""from\s+['\"]{re.escape(pkg)}['\"]"""),
-        re.compile(rf"""import\s+['\"]{re.escape(pkg)}['\"]"""),
-        re.compile(rf"""import\s+\w+\s+from\s+['\"]{re.escape(pkg)}['\"]"""),
-        re.compile(rf"""import\s+{re.escape(pkg)}"""),
-        re.compile(rf"""use\s+.*{re.escape(pkg)}"""),
-        re.compile(rf"""extern\s+crate\s+{re.escape(pkg)}"""),
-        re.compile(rf"""import\s+['\"]package:{re.escape(pkg)}.*['\"]"""),
-        re.compile(rf"""alias\s+.*{re.escape(pkg)}"""),
-        re.compile(rf"""#include\s*[<\"](.*{re.escape(pkg)}.*)[>\"]""", re.IGNORECASE),
-    ]
-    skips = {".git", "node_modules", "vendor", ".venv", "__pycache__"}
-    for root, dirs, files in os.walk(target):
-        dirs[:] = [d for d in dirs if d not in skips]
-        for f in files:
-            path = os.path.join(root, f)
-            try:
-                with open(path, 'r', encoding='utf-8') as fp:
-                    content = fp.read()
-                    for p in patterns:
-                        if p.search(content):
-                            return True
-            except Exception:
-                pass
-    return False
+    if not pkg:
+        return True
+
+    text = import_text(target)
+
+    if not text:
+        return False
+
+    return any(alias in text for alias in aliases(pkg))
 
 # Hàm kiểm tra khả năng dính lỗ hổng
 def check_usage(target: str, cves: List[Dict[str, Any]], ts) -> List[Dict[str, Any]]:

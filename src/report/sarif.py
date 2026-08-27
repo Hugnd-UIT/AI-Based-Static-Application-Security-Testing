@@ -25,7 +25,7 @@ def report_sarif(findings: list, target: str, out: str) -> str:
                 }
             }],
             "properties": {
-                "cwe": f.get("cwe", []),
+                "cwe": f.get("cwe_ids") or f.get("cwe", []),
                 "severity": severity,
                 "confidence": f.get("confidence", 0),
             }

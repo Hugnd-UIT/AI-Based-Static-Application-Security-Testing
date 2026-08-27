@@ -5,7 +5,13 @@ rules:
     severity: WARNING
     languages: [scala]
     pattern-sources:
-      # Play Framework 
+      # Tham số hàm, nối luồng khi nguồn nằm ở file khác
+      - patterns:
+          - pattern-inside: |
+              def $FN(..., $P: $T, ...) = ...
+          - pattern: $P
+
+      # Play Framework
       - pattern: request.getQueryString(...)
       - pattern: request.body.asFormUrlEncoded
       - pattern: request.body.asJson
@@ -20,7 +26,7 @@ rules:
       # Akka HTTP 
       - pattern: parameter(...)
       - pattern: parameters(...)
-      - pattern: entity(as[...])
+      - pattern: entity(as[$T])
       - pattern: headerValueByName(...)
       - pattern: cookie(...)
 
@@ -51,12 +57,13 @@ rules:
       # Anorm 
       - pattern: SQL(...)
 
-      # Command Injection 
+      # Command Injection
       - pattern: scala.sys.process.Process(...)
       - pattern: Runtime.getRuntime.exec(...)
       - pattern: ProcessBuilder(...)
-      - pattern: '"!" + ...'
-      - pattern: '"!!" + ...'
+      - pattern: $CMD.!
+      - pattern: $CMD.!!
+      - pattern: Process($CMD).!
 
       # Path Traversal
       - pattern: scala.io.Source.fromFile(...)
@@ -80,9 +87,15 @@ rules:
       - pattern: Results.Ok($DATA)
       - pattern: Html(...)
 
-      # LDAP 
+      # LDAP
       - pattern: $CTX.search(...)
       - pattern: InitialDirContext(...).search(...)
+
+      # XML / XXE
+      - pattern: XML.loadString(...)
+      - pattern: XML.load(...)
+      - pattern: scala.xml.XML.loadString(...)
+      - pattern: scala.xml.XML.load(...)
     pattern-sanitizers:
       # SQL
       - pattern: $USE_CONN.prepareStatement(...)
@@ -99,3 +112,26 @@ rules:
       - pattern: $STR.toLong
       - pattern: $STR.toDouble
       - pattern: Integer.parseInt(...)
+
+  # Chuỗi SQL hoặc lệnh ghép từ biến, bắt cả khi sink nằm ngoài file
+  - id: sinful-strcat-scala
+    message: "SQL or command string built from a variable; verify the value is not attacker controlled."
+    severity: WARNING
+    languages: [scala]
+    pattern-either:
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}(\$where|\b(select|insert|update|delete|drop|union|ping|curl|wget|nc|bash)\b)(?:\\.|[^"\n]){0,200}(\$\{|\$[a-z_]|#\{|\{\}|%[sdvq])'
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}\b(select|insert|update|delete|drop|union|ping|curl|wget)\b(?:\\.|[^"\n]){0,200}"\s*[+.]\s*[a-z_$]'
+
+  # Thuật toán băm hoặc mã hóa yếu
+  - id: sinful-weakcrypto-scala
+    message: "Weak or broken cryptographic algorithm."
+    severity: WARNING
+    languages: [scala]
+    pattern-regex: '(?i)\b(md5|sha1|des|rc4|ecb|md4)\b'
+
+  # Bí mật hardcode trong mã nguồn
+  - id: sinful-secret-scala
+    message: "Hardcoded credential or cryptographic key."
+    severity: WARNING
+    languages: [scala]
+    pattern-regex: '(?i)(\b(secret|password|passwd|pwd|api_?key|private_?key|access_?key|token|salt|encryption_?key|hardcoded)\w*|\b(key|iv|creds?|credential)\b)\s*(=|:|:=|=>)\s*["''][^"''\n]{4,}["'']'

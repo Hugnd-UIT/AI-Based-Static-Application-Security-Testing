@@ -4,6 +4,10 @@
     "require": {
         "php": ">=7.0.0",
         "guzzlehttp/guzzle": "6.2.0",
+        "twig/twig": "2.4.4",
+        "phpmailer/phpmailer": "6.0.0",
+        "smarty/smarty": "3.1.38",
+        "symfony/http-kernel": "4.4.0",
         "monolog/monolog": "1.12.0"
     }
 }

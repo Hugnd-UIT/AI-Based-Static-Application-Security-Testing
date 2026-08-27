@@ -136,7 +136,7 @@ def normalise_verdict(dval: dict) -> dict:
     final.setdefault("verdict", "UNKNOWN")
     final.setdefault("confidence", 0)
     final.setdefault("severity", "INFO")
-    final.setdefault("reason", "")
+    final.setdefault("reasoning", "")
     return final
 
 # Hàm xử lý kết quả
@@ -146,7 +146,7 @@ def fallback_verdict(error: str = "", reason: str = "", text: str = "") -> dict:
         "confidence": 0,
         "severity": "INFO",
         "vulns": "N/A",
-        "reason": f"Agent loop did not complete. {reason} {error}".strip(),
+        "reasoning": f"Agent loop did not complete. {reason} {error}".strip(),
         "response": text[:500] if text else "",
     }
 

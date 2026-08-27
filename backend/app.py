@@ -8,13 +8,18 @@ app = FastAPI(title="Sinful SAST Backend Proxy")
 URL = "https://api.xkiro.com"
 env = os.environ.get("AI_API_KEY", "")
 KEYS = [k.strip() for k in env.split(",") if k.strip()]
-iter = itertools.cycle(KEYS) if KEYS else None
+pool = itertools.cycle(KEYS) if KEYS else None
 
 HUB = "https://api.github.com"
 HUB_KEY = os.environ.get("GITHUB_API_KEY")
 
 FIRE = "https://api.firecrawl.dev/v1/scrape"
 FIRE_KEY = os.environ.get("FIRECRAWL_API_KEY")
+
+# API kiểm tra tình trạng server
+@app.get("/health")
+async def health():
+    return {"status": "ok", "keys": len(KEYS)}
 
 # API gọi github
 @app.api_route("/github/{path:path}", methods=["GET", "POST"])
@@ -68,7 +73,7 @@ async def fwd_ai(req: Request, path: str):
     if not KEYS:
         raise HTTPException(status_code=500, detail="Server is missing AI_API_KEY")
     
-    key = next(iter)
+    key = next(pool)
     url = f"{URL}/{path}"
     body = await req.body()
     

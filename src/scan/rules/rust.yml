@@ -5,7 +5,13 @@ rules:
     severity: WARNING
     languages: [rust]
     pattern-sources:
-      # Actix-web 
+      # Tham số hàm, nối luồng khi nguồn nằm ở file khác
+      - patterns:
+          - pattern-inside: |
+              fn $FN(..., $P: $T, ...) { ... }
+          - pattern: $P
+
+      # Actix-web
       - pattern: web::Query($PARAMS)
       - pattern: web::Form($PARAMS)
       - pattern: web::Json($PARAMS)
@@ -69,9 +75,19 @@ rules:
       - pattern: bincode::deserialize(...)
       - pattern: ciborium::de::from_reader(...)
 
-      # Code Execution unsafe 
+      # Code Execution unsafe
       - pattern: libc::system(...)
       - pattern: libc::execve(...)
+
+      # Unsafe memory
+      - pattern: $PTR.offset(...)
+      - pattern: $PTR.add(...)
+      - pattern: $BUF.as_ptr()
+      - pattern: $BUF.as_mut_ptr()
+      - pattern: $BUF.get_unchecked(...)
+      - pattern: std::slice::from_raw_parts(...)
+      - pattern: std::ptr::copy(...)
+      - pattern: std::mem::transmute(...)
     pattern-sanitizers:
       # SQL — use parameterized/bind approach 
       - pattern: sqlx::query(...)                   # with bind usage 
@@ -84,3 +100,26 @@ rules:
       - pattern: $VAL.parse::<i32>()
       - pattern: $VAL.parse::<u64>()
       - pattern: $VAL.parse::<f64>()
+
+  # Chuỗi SQL hoặc lệnh ghép từ biến, bắt cả khi sink nằm ngoài file
+  - id: sinful-strcat-rust
+    message: "SQL or command string built from a variable; verify the value is not attacker controlled."
+    severity: WARNING
+    languages: [rust]
+    pattern-either:
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}(\$where|\b(select|insert|update|delete|drop|union|ping|curl|wget|nc|bash)\b)(?:\\.|[^"\n]){0,200}(\$\{|\$[a-z_]|#\{|\{\}|%[sdvq])'
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}\b(select|insert|update|delete|drop|union|ping|curl|wget)\b(?:\\.|[^"\n]){0,200}"\s*[+.]\s*[a-z_$]'
+
+  # Thuật toán băm hoặc mã hóa yếu
+  - id: sinful-weakcrypto-rust
+    message: "Weak or broken cryptographic algorithm."
+    severity: WARNING
+    languages: [rust]
+    pattern-regex: '(?i)\b(md5|sha1|des|rc4|ecb|md4)\b'
+
+  # Bí mật hardcode trong mã nguồn
+  - id: sinful-secret-rust
+    message: "Hardcoded credential or cryptographic key."
+    severity: WARNING
+    languages: [rust]
+    pattern-regex: '(?i)(\b(secret|password|passwd|pwd|api_?key|private_?key|access_?key|token|salt|encryption_?key|hardcoded)\w*|\b(key|iv|creds?|credential)\b)\s*(=|:|:=|=>)\s*["''][^"''\n]{4,}["'']'

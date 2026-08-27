@@ -51,6 +51,31 @@
             "cwe": "CWE-321",
             "file": "src/crypto.cpp",
             "type": "Hardcoded Cryptographic Key"
+        },
+        {
+            "cve": "CVE-2023-52389",
+            "file": "conanfile.txt",
+            "type": "poco"
+        },
+        {
+            "cve": "CVE-2025-6140",
+            "file": "conanfile.txt",
+            "type": "spdlog"
+        },
+        {
+            "cve": "CVE-2023-34993",
+            "file": "conanfile.txt",
+            "type": "tinyxml2"
+        },
+        {
+            "cve": "CVE-2022-1941",
+            "file": "conanfile.txt",
+            "type": "protobuf"
+        },
+        {
+            "cve": "CVE-2018-20573",
+            "file": "conanfile.txt",
+            "type": "yaml-cpp"
         }
     ]
 }

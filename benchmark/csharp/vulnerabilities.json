@@ -51,6 +51,31 @@
             "cwe": "CWE-90",
             "file": "Services/LdapService.cs",
             "type": "LDAP Injection"
+        },
+        {
+            "cve": "CVE-2024-21907",
+            "file": "Benchmark.CSharp.csproj",
+            "type": "Newtonsoft.Json"
+        },
+        {
+            "cve": "CVE-2018-1285",
+            "file": "Benchmark.CSharp.csproj",
+            "type": "log4net"
+        },
+        {
+            "cve": "CVE-2024-0056",
+            "file": "Benchmark.CSharp.csproj",
+            "type": "System.Data.SqlClient"
+        },
+        {
+            "cve": "CVE-2021-26701",
+            "file": "Benchmark.CSharp.csproj",
+            "type": "System.Text.Encodings.Web"
+        },
+        {
+            "cve": "CVE-2017-0247",
+            "file": "Benchmark.CSharp.csproj",
+            "type": "System.Net.Http"
         }
     ]
 }

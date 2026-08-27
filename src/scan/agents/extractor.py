@@ -3,6 +3,9 @@ import re
 
 EXTS = {
     ".js":    "javascript",
+    ".jsx":   "javascript",
+    ".mjs":   "javascript",
+    ".cjs":   "javascript",
     ".py":    "python",
     ".java":  "java",
     ".rb":    "ruby",
@@ -10,10 +13,15 @@ EXTS = {
     ".scala": "scala",
     ".php":   "php",
     ".ts":    "typescript",
+    ".tsx":   "typescript",
     ".cs":    "csharp",
     ".go":    "go",
     ".cpp":   "cpp",
+    ".cc":    "cpp",
+    ".cxx":   "cpp",
+    ".hpp":   "cpp",
     ".c":     "c",
+    ".h":     "c",
 }
 
 REGEX = {

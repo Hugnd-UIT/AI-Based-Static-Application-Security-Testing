@@ -2,6 +2,7 @@ import os
 import json
 import time
 import textwrap
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from cli.views.logger import console
 from cli.views import logger
 
@@ -15,6 +16,7 @@ from src.core.processor import process_flaws
 def run_sca(deps, sdir, use_module, res, model, cache, fix):
     sca_flaws = []
     cves = []
+    hot = []
     parts = []
     
     if deps:
@@ -25,13 +27,31 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
 
         from src.rag import usage
         cves = usage.check_usage(str(sdir), cves, use_module)
-        cves = [cve for cve in cves if cve.get("reachable", True)]
 
+        # Dep khai báo trong manifest mà có cve thì vẫn phải báo, reachable chỉ dùng để chọn cái đem đi phân tích sâu
         res["cves"] = cves
         osv.report_osv(cves)
 
-        scves = set()
+        hot = []
+
+        # Phân tích sâu tốn nhiều request nên chặn trần và dàn đều theo package để repo nhiều dep không chạy hàng giờ
+        cap = int(os.getenv("SINFUL_SCA_DEEP") or "10")
+        per = {}
+
         for cve in cves:
+            if not cve.get("reachable", True):
+                continue
+
+            pkg = str(cve.get("package", "")).lower()
+
+            if len(hot) >= cap or per.get(pkg, 0) >= 2:
+                continue
+
+            per[pkg] = per.get(pkg, 0) + 1
+            hot.append(cve)
+
+        scves = set()
+        for cve in hot:
             for alias in cve.get("cve", []):
                 if str(alias).startswith("CVE-"):
                     scves.add(alias)
@@ -56,28 +76,37 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
 
                 return ndata
 
+            # Mỗi cve tốn 1 nvd + 2 firecrawl + 1 github nên chạy song song cho đỡ lâu
             ids = list(scves)
-            for idx, cid in enumerate(ids):
-                try:
-                    nres = fetch_cve(cid)
-                    if nres:
-                        console.print("")
-                        nvd.report_nvd(nres)
-                        res["nvd"].append(nres)
-                except Exception as e:
-                    console.print(f"  [dim]Failed to fetch {cid}: {e}[/dim]")
-                
-                if idx < len(ids) - 1:
-                    time.sleep(0.6)
+            done = {}
+
+            with ThreadPoolExecutor(max_workers=5) as pool:
+                jobs = {pool.submit(fetch_cve, cid): cid for cid in ids}
+
+                for num, job in enumerate(as_completed(jobs), 1):
+                    cid = jobs[job]
+                    console.print(f"  [dim]Enriching {num}/{len(ids)} {cid}[/dim]")
+
+                    try:
+                        done[cid] = job.result()
+                    except Exception as e:
+                        console.print(f"  [dim]Failed to fetch {cid}: {e}[/dim]")
+
+            for cid in ids:
+                nres = done.get(cid)
+                if nres:
+                    console.print("")
+                    nvd.report_nvd(nres)
+                    res["nvd"].append(nres)
 
     parts = []
     tag = fr" [[cyan]{model}[/cyan]]"
     
-    if res["nvd"] or res["cves"]:
+    if res["nvd"] or hot:
         pcves = []
         fnvd = {n.get("cve_id"): n for n in res.get("nvd", []) if n.get("cve_id")}
 
-        for base in res.get("cves", []):
+        for base in hot:
             mcve = dict(base)
             aliases = mcve.get("cve", [])
 

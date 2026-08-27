@@ -17,9 +17,9 @@ void printLog(const char* message) {
     printf("\n");
 }
 
-void useAfterFree() {
+void useAfterFree(const char* input) {
     char* ptr = (char*)malloc(100);
-    strcpy(ptr, "Hello");
+    if(input) strcpy(ptr, input);
     free(ptr);
     // Use After Free [CWE-416]
     printf("%s\n", ptr);

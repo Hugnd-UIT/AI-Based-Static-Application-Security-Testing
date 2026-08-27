@@ -5,7 +5,13 @@ rules:
     severity: WARNING
     languages: [csharp]
     pattern-sources:
-      # ASP.NET Core / MVC 
+      # Tham số hàm, nối luồng khi nguồn nằm ở file khác
+      - patterns:
+          - pattern-inside: |
+              $RET $FN(..., $T $P, ...) { ... }
+          - pattern: $P
+
+      # ASP.NET Core / MVC
       - pattern: Request.Query[...]
       - pattern: Request.Query.ContainsKey(...)
       - pattern: Request.Form[...]
@@ -53,8 +59,11 @@ rules:
       - pattern: $PROC.StartInfo.Arguments = ...
       - pattern: $PROC.StartInfo.FileName = ...
 
-      # Code Execution / Deserialization 
+      # Code Execution / Deserialization
       - pattern: BinaryFormatter().Deserialize(...)
+      - pattern: $FMT.Deserialize(...)
+      - pattern: $FMT.ReadObject(...)
+      - pattern: new MemoryStream(...)
       - pattern: JavaScriptSerializer().Deserialize(...)
       - pattern: XmlSerializer(...).Deserialize(...)
       - pattern: NetDataContractSerializer().ReadObject(...)
@@ -86,14 +95,19 @@ rules:
       - pattern: Response.Redirect(...)
       - pattern: Redirect(...)
 
-      # LDAP Injection 
+      # LDAP Injection
       - pattern: DirectorySearcher($FILTER)
       - pattern: DirectoryEntry(..., ..., ...)
+      - pattern: $SEARCHER.Filter = ...
 
-      # XML / XXE 
+      # XML / XXE
       - pattern: XDocument.Load(...)
       - pattern: XmlDocument().Load(...)
       - pattern: XPathDocument(...)
+      - pattern: XmlReader.Create(...)
+      - pattern: new StringReader(...)
+      - pattern: $DOC.Load(...)
+      - pattern: $DOC.LoadXml(...)
     pattern-sanitizers:
       # SQL — Parameterized 
       - pattern: new SqlParameter(...)
@@ -115,3 +129,26 @@ rules:
       - pattern: int.Parse(...)
       - pattern: Convert.ToInt32(...)
       - pattern: Convert.ToInt64(...)
+
+  # Chuỗi SQL hoặc lệnh ghép từ biến, bắt cả khi sink nằm ngoài file
+  - id: sinful-strcat-csharp
+    message: "SQL or command string built from a variable; verify the value is not attacker controlled."
+    severity: WARNING
+    languages: [csharp]
+    pattern-either:
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}(\$where|\b(select|insert|update|delete|drop|union|ping|curl|wget|nc|bash)\b)(?:\\.|[^"\n]){0,200}(\$\{|\$[a-z_]|#\{|\{\}|%[sdvq])'
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}\b(select|insert|update|delete|drop|union|ping|curl|wget)\b(?:\\.|[^"\n]){0,200}"\s*[+.]\s*[a-z_$]'
+
+  # Thuật toán băm hoặc mã hóa yếu
+  - id: sinful-weakcrypto-csharp
+    message: "Weak or broken cryptographic algorithm."
+    severity: WARNING
+    languages: [csharp]
+    pattern-regex: '(?i)\b(md5|sha1|des|rc4|ecb|md4)\b'
+
+  # Bí mật hardcode trong mã nguồn
+  - id: sinful-secret-csharp
+    message: "Hardcoded credential or cryptographic key."
+    severity: WARNING
+    languages: [csharp]
+    pattern-regex: '(?i)(\b(secret|password|passwd|pwd|api_?key|private_?key|access_?key|token|salt|encryption_?key|hardcoded)\w*|\b(key|iv|creds?|credential)\b)\s*(=|:|:=|=>)\s*["''][^"''\n]{4,}["'']'

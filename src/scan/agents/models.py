@@ -10,7 +10,7 @@ def start_scan(
     target: str = "",
     module=None,
 ) -> dict:
-    from main import MODELS
+    from src.config import MODELS, STEPS
     resolved = model or MODELS[0]
 
     extra = ""
@@ -33,6 +33,6 @@ def start_scan(
         directory = target,
         module    = module,
         model     = resolved,
-        steps     = 15,
+        steps     = min(15, STEPS),
         agent     = "SCAN",
     )

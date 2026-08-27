@@ -74,6 +74,32 @@ def extract_chunk(path: Path, start: int, end: int, pad: int = 15) -> str:
 
     return "".join(lines[idx_start:idx_end])
 
+_parsers = {}
+
+# Hàm lấy parser theo đuôi file, cache lại cho nhanh
+def get_parser(ext: str):
+    if ext not in LANG: return None
+    if ext not in _parsers:
+        _parsers[ext] = Parser(Language(LANG[ext]))
+    return _parsers[ext]
+
+# Hàm lấy tên hàm bao quanh một dòng code
+def get_function_at(path: str, line: int) -> str:
+    parser = get_parser(Path(path).suffix.lower())
+    if not parser: return "Unknown"
+
+    try:
+        with open(path, "rb") as f:
+            content = f.read()
+
+        match, _ = find_func(parser.parse(content).root_node, line, line)
+        if not match: return "Unknown"
+
+        return get_node(match, content) or "Unknown"
+
+    except Exception:
+        return "Unknown"
+
 _code_cache = {}
 
 # Hàm lấy code implementation
@@ -97,7 +123,7 @@ def get_code(dir: str, func: str) -> str:
                 if func.encode("utf-8") not in content:
                     continue
 
-                parser = Parser(Language(LANG[ext]))
+                parser = get_parser(ext)
                 tree = parser.parse(content)
 
                 match = ""

@@ -27,6 +27,7 @@ DEPS = {
     "mix.lock": "hex",
     "vcpkg.json": "vcpkg",
     "conanfile.txt": "conan",
+    "build.sbt": "maven",
 }
 
 # Hàm phân tích thư viện php
@@ -301,21 +302,75 @@ def parse_nuget(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Hàm phân tích thư viện cargo
+# Sections that hold real crates, including [target.'cfg(...)'.dependencies]
+CARGO_DEP_SECTIONS = ("dependencies", "dev-dependencies", "build-dependencies")
+
+
+# Whether a TOML section header declares crates rather than metadata
+def is_cargo_deps(section: str) -> bool:
+    return section.split(".")[-1].strip().strip("'\"") in CARGO_DEP_SECTIONS
+
+
+# Parse Cargo.toml and Cargo.lock, which use two different layouts
 def parse_cargo(path: str) -> List[Dict[str, str]]:
     deps = []
-    
+
     try:
         with open(path, "r", encoding="utf-8") as f:
-            content = f.read()
-            matches = re.findall(r'^([a-zA-Z0-9_\-]+)\s*=\s*(?:\{.*?version\s*=\s*)?[\'"]([^\'"]+)[\'"]', content, re.MULTILINE)
-            
-            for pkg, ver in matches:
-                deps.append({"ecosystem": "crates.io", "package": pkg, "version": ver.strip('^~<>="')})
-    
+            lines = f.read().splitlines()
+
     except Exception:
-        pass
-    
+        return deps
+
+    is_lock = path.endswith(".lock")
+    section = ""
+    entry = {}
+
+    for raw in lines:
+        line = raw.strip()
+
+        if not line or line.startswith("#"):
+            continue
+
+        # A new header closes the [[package]] block Cargo.lock spreads over several lines
+        if line.startswith("["):
+            if entry.get("package") and entry.get("version"):
+                deps.append({"ecosystem": "crates.io", **entry})
+
+            entry = {}
+            section = line.strip("[]").strip()
+            continue
+
+        pair = re.match(r'^([A-Za-z0-9_\-]+)\s*=\s*(.+)$', line)
+
+        if not pair:
+            continue
+
+        key, val = pair.group(1), pair.group(2).strip()
+
+        # Cargo.lock lists name and version as separate keys inside one [[package]]
+        if is_lock and section == "package":
+            if key in ("name", "version"):
+                entry["package" if key == "name" else "version"] = val.strip("'\"")
+
+            continue
+
+        # Skipping non-dependency sections keeps [package] name/version/edition out of the results
+        if not is_cargo_deps(section):
+            continue
+
+        if val.startswith("{"):
+            ver = re.search(r'version\s*=\s*[\'"]([^\'"]+)[\'"]', val)
+
+        else:
+            ver = re.match(r'^[\'"]([^\'"]+)[\'"]', val)
+
+        if ver:
+            deps.append({"ecosystem": "crates.io", "package": key, "version": ver.group(1).strip('^~<>="')})
+
+    if entry.get("package") and entry.get("version"):
+        deps.append({"ecosystem": "crates.io", **entry})
+
     return deps
 
 # Hàm phân tích thư viện pubspec
@@ -395,6 +450,24 @@ def parse_conan(path: str) -> List[Dict[str, str]]:
     
     return deps
 
+# Hàm phân tích thư viện sbt
+def parse_sbt(path: str) -> List[Dict[str, str]]:
+    deps = []
+
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+            # "group" % "artifact" % "version", chấp nhận cả %% của scala
+            pat = r'"([\w.\-]+)"\s*%{1,3}\s*"([\w.\-]+)"\s*%\s*"([\w.\-]+)"'
+
+            for group, artifact, ver in re.findall(pat, content):
+                deps.append({"ecosystem": "maven", "package": f"{group}:{artifact}", "version": ver})
+
+    except Exception:
+        pass
+
+    return deps
+
 # Hàm phân tích thư viện
 def parse_deps(target: str) -> List[Dict[str, str]]:
     path = Path(target)
@@ -460,6 +533,9 @@ def parse_deps(target: str) -> List[Dict[str, str]]:
 
                 elif name == "conanfile.txt":
                     manifests.extend(parse_conan(full))
+
+                elif name == "build.sbt":
+                    manifests.extend(parse_sbt(full))
 
             elif name.endswith(".csproj"):
                 manifests.extend(parse_csproj(full))

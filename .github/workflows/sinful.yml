@@ -14,15 +14,25 @@ jobs:
       security-events: write
       actions: read
       contents: read
-    
+
+    env:
+      AI_BASE_URL: ${{ secrets.AI_BASE_URL }}
+      AI_API_KEY: ${{ secrets.AI_API_KEY }}
+      GITHUB_API_KEY: ${{ secrets.GITHUB_API_KEY }}
+      FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
+      NIST_API_KEY: ${{ secrets.NIST_API_KEY }}
+      SINFUL_WORK_DIR: ${{ runner.temp }}/sinful
+      PYTHONIOENCODING: utf-8
+
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up dependencies
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.12'
+          cache: 'pip'
 
       - name: Install dependencies
         run: |
@@ -31,27 +41,33 @@ jobs:
 
       - name: Execute CI Pipeline
         run: |
-          python cli/pipeline/ci.py --exit-code 1 --severity ERROR,WARNING --format sarif --output results.sarif
-        continue-on-error: true
+          set +e
+          python cli/pipeline/ci.py --exit-code 1 --severity CRITICAL,HIGH --format sarif --output results.sarif
+          echo "code=$?" >> $GITHUB_OUTPUT
         id: sast
+
       - name: Upload SARIF results
         uses: github/codeql-action/upload-sarif@v3
         with:
           sarif_file: results.sarif
-        if: always()
+        if: always() && hashFiles('results.sarif') != ''
         continue-on-error: true
         id: upload_sarif
-        
+
       - name: Check SARIF status
         if: always() && steps.upload_sarif.outcome == 'failure'
         run: |
           echo "::warning::Failed to upload SARIF results to GitHub Advanced Security"
-          echo "If your repository is PRIVATE, you must have a GitHub Advanced Security license to use the this feature."
+          echo "If your repository is PRIVATE, you must have a GitHub Advanced Security license to use this feature."
 
       - name: Check CI status
-        if: steps.sast.outcome == 'failure'
+        if: always() && steps.sast.outputs.code != '0'
         run: |
-          echo "::error::Critical vulnerabilities detected! Blocking pipeline."
+          if [ "${{ steps.sast.outputs.code }}" = "2" ]; then
+            echo "::error::Scan produced no verdict (scanner error or unaudited findings). Blocking pipeline."
+          else
+            echo "::error::Critical vulnerabilities detected! Blocking pipeline."
+          fi
           exit 1
 
   deploy_production:
@@ -62,12 +78,17 @@ jobs:
 
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Set up dependencies
-        uses: actions/setup-python@v4
+      - name: Set up Python
+        uses: actions/setup-python@v5
         with:
-          python-version: '3.10'
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install rich
 
       - name: Execute CD Pipeline
         run: |

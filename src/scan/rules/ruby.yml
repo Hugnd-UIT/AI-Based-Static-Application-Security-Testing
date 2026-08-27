@@ -5,7 +5,21 @@ rules:
     severity: WARNING
     languages: [ruby]
     pattern-sources:
-      # Rails 
+      # Tham số hàm, nối luồng khi nguồn nằm ở file khác
+      - patterns:
+          - pattern-inside: |
+              def self.$FN(..., $P, ...)
+                ...
+              end
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              def $FN(..., $P, ...)
+                ...
+              end
+          - pattern: $P
+
+      # Rails
       - pattern: params[...]
       - pattern: params.require(...)
       - pattern: params.permit(...)
@@ -63,14 +77,29 @@ rules:
       - pattern: File.delete(...)
       - pattern: Pathname.new(...)
 
-      # SSRF 
+      # SSRF
+      - pattern: URI.parse(...)
+      - pattern: Net::HTTP.get_response(...)
+      - pattern: Net::HTTP.start(...)
       - pattern: Net::HTTP.get(...)
       - pattern: open(...)
       - pattern: URI.open(...)
       - pattern: Faraday.get(...)
       - pattern: HTTParty.get(...)
 
-      # XSS / Open Redirect 
+      # Mass Assignment
+      - pattern: $H.merge!(...)
+      - pattern: $GET_MODEL.update(...)
+      - pattern: $GET_MODEL.update_attributes(...)
+      - pattern: $GET_MODEL.assign_attributes(...)
+      - pattern: $GET_MODEL.new(...)
+
+      # XML / XXE
+      - pattern: Nokogiri::XML(...)
+      - pattern: Nokogiri::XML::Document.parse(...)
+      - pattern: REXML::Document.new(...)
+
+      # XSS / Open Redirect
       - pattern: 'render inline: ...'
       - pattern: redirect_to(...)
     pattern-sanitizers:
@@ -94,3 +123,26 @@ rules:
       # Type casting 
       - pattern: Integer(...)
       - pattern: Float(...)
+
+  # Chuỗi SQL hoặc lệnh ghép từ biến, bắt cả khi sink nằm ngoài file
+  - id: sinful-strcat-ruby
+    message: "SQL or command string built from a variable; verify the value is not attacker controlled."
+    severity: WARNING
+    languages: [ruby]
+    pattern-either:
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}(\$where|\b(select|insert|update|delete|drop|union|ping|curl|wget|nc|bash)\b)(?:\\.|[^"\n]){0,200}(\$\{|\$[a-z_]|#\{|\{\}|%[sdvq])'
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}\b(select|insert|update|delete|drop|union|ping|curl|wget)\b(?:\\.|[^"\n]){0,200}"\s*[+.]\s*[a-z_$]'
+
+  # Thuật toán băm hoặc mã hóa yếu
+  - id: sinful-weakcrypto-ruby
+    message: "Weak or broken cryptographic algorithm."
+    severity: WARNING
+    languages: [ruby]
+    pattern-regex: '(?i)\b(md5|sha1|des|rc4|ecb|md4)\b'
+
+  # Bí mật hardcode trong mã nguồn
+  - id: sinful-secret-ruby
+    message: "Hardcoded credential or cryptographic key."
+    severity: WARNING
+    languages: [ruby]
+    pattern-regex: '(?i)(\b(secret|password|passwd|pwd|api_?key|private_?key|access_?key|token|salt|encryption_?key|hardcoded)\w*|\b(key|iv|creds?|credential)\b)\s*(=|:|:=|=>)\s*["''][^"''\n]{4,}["'']'

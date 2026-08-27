@@ -1,7 +1,11 @@
 #include <iostream>
 #include <string>
 #include <Poco/Net/HTTPClientSession.h>
-#include <nlohmann_json/json.hpp>
+#include <spdlog/spdlog.h>
+#include <tinyxml2.h>
+#include <google/protobuf/message.h>
+#include <yaml-cpp/yaml.h>
+
 #include "../include/db.h"
 #include "../include/system.h"
 #include "../include/memory.h"

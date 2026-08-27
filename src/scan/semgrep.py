@@ -2,41 +2,56 @@ import json
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Any
+from src.config import TIMEOUT
 
-RULES = [
-    # Bộ quy tắc tiêu chuẩn
+# Bộ quy tắc chung, luôn chạy
+CORE = [
     "p/owasp-top-ten",
     "p/security-audit",
     "p/secrets",
     "p/default",
+]
 
-    # Nhóm lỗ hổng bảo mật
+# Bộ quy tắc theo từng ngôn ngữ
+BY_LANG = {
+    "python": ["p/python", "p/django", "p/flask", "p/fastapi"],
+    "javascript": ["p/javascript", "p/nodejs", "p/react"],
+    "typescript": ["p/typescript", "p/nodejs", "p/react"],
+    "java": ["p/java", "p/jwt"],
+    "go": ["p/golang"],
+    "php": ["p/php"],
+    "ruby": ["p/ruby"],
+    "rust": ["p/rust"],
+    "scala": ["p/scala"],
+    "c": ["p/c", "p/trailofbits"],
+    "c++": ["p/c", "p/trailofbits"],
+    "c#": ["p/csharp"],
+}
+
+# Bộ quy tắc bổ sung khi không biết ngôn ngữ
+EXTRA = [
     "p/xss",
     "p/sql-injection",
     "p/command-injection",
     "p/insecure-transport",
     "p/supply-chain",
-
-    # Nhóm Ngôn ngữ & Framework
-    "p/python",
-    "p/django",
-    "p/flask",
-    "p/fastapi",
-    "p/nodejs",
-    "p/javascript",
-    "p/typescript",
-    "p/react",
-    "p/java",
-    "p/golang",
-    "p/php",
-    "p/ruby",
-    "p/c",
-    "p/csharp",
-
-    # Nhóm quy tắc đặc thù
-    "p/trailofbits",
-    "p/jwt",
 ]
+
+RULES = CORE + EXTRA + sorted({r for rs in BY_LANG.values() for r in rs})
+
+# Hàm chọn quy tắc theo ngôn ngữ phát hiện được
+def pick_rules(langs) -> List[str]:
+    if not langs:
+        return list(RULES)
+
+    picked = list(CORE)
+
+    for lang in langs:
+        for rule in BY_LANG.get(str(lang).lower(), []):
+            if rule not in picked:
+                picked.append(rule)
+
+    return picked
 
 # Hàm quét mã nguồn
 def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
@@ -80,7 +95,7 @@ def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
         env = os.environ.copy()
         env["SEMGREP_SEND_METRICS"] = "off"
         
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=600, env=env)
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT, env=env)
 
         output = result.stdout.strip()
 
@@ -116,8 +131,13 @@ def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
             extra = item.get("extra", {})
             meta = extra.get("metadata", {})
 
+            # Bỏ tiền tố đường dẫn semgrep gắn vào id của rule tự sinh
+            rid = item.get("check_id") or ""
+            if "dynamic-ai-" in rid:
+                rid = rid[rid.index("dynamic-ai-"):]
+
             clean = {
-                "id": item.get("check_id"),
+                "id": rid,
                 "path": item.get("path"),
                 "start_line": item.get("start", {}).get("line"),
                 "start_col": item.get("start", {}).get("col"),

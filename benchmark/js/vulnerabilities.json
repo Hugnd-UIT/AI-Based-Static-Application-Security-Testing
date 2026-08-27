@@ -51,6 +51,31 @@
             "cwe": "CWE-798",
             "file": "utils/auth.js",
             "type": "Hardcoded Secret"
+        },
+        {
+            "cve": "CVE-2020-8203",
+            "file": "package.json",
+            "type": "lodash"
+        },
+        {
+            "cve": "CVE-2024-29041",
+            "file": "package.json",
+            "type": "express"
+        },
+        {
+            "cve": "CVE-2017-5941",
+            "file": "package.json",
+            "type": "node-serialize"
+        },
+        {
+            "cve": "CVE-2020-7598",
+            "file": "package.json",
+            "type": "minimist"
+        },
+        {
+            "cve": "CVE-2019-19919",
+            "file": "package.json",
+            "type": "handlebars"
         }
     ]
 }

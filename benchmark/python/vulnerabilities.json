@@ -51,6 +51,31 @@
             "cwe": "CWE-284",
             "file": "services/logic_service.py",
             "type": "Improper Access Control"
+        },
+        {
+            "cve": "CVE-2020-14343",
+            "file": "requirements.txt",
+            "type": "PyYAML"
+        },
+        {
+            "cve": "CVE-2018-1000656",
+            "file": "requirements.txt",
+            "type": "Flask"
+        },
+        {
+            "cve": "CVE-2018-18074",
+            "file": "requirements.txt",
+            "type": "requests"
+        },
+        {
+            "cve": "CVE-2019-10906",
+            "file": "requirements.txt",
+            "type": "jinja2"
+        },
+        {
+            "cve": "CVE-2019-11324",
+            "file": "requirements.txt",
+            "type": "urllib3"
         }
     ]
 }

@@ -51,6 +51,31 @@
             "cwe": "CWE-943",
             "file": "services/nosql.go",
             "type": "NoSQL Injection"
+        },
+        {
+            "cve": "CVE-2020-26160",
+            "file": "go.mod",
+            "type": "github.com/dgrijalva/jwt-go"
+        },
+        {
+            "cve": "CVE-2020-28483",
+            "file": "go.mod",
+            "type": "github.com/gin-gonic/gin"
+        },
+        {
+            "cve": "CVE-2021-43565",
+            "file": "go.mod",
+            "type": "golang.org/x/crypto"
+        },
+        {
+            "cve": "CVE-2021-3121",
+            "file": "go.mod",
+            "type": "github.com/gogo/protobuf"
+        },
+        {
+            "cve": "CVE-2021-38561",
+            "file": "go.mod",
+            "type": "golang.org/x/text"
         }
     ]
 }

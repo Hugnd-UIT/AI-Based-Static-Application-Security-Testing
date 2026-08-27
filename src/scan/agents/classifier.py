@@ -33,7 +33,14 @@ def classify(targets, cwe, model=None):
             1. Analyze each function signature, its comments, and its body snippet.
             2. Classify as 'source' if it is an entry point for untrusted data (e.g., HTTP handlers, file readers).
             3. Classify as 'sink' if it is a dangerous execution point (e.g., executing raw SQL, shell commands) that is vulnerable ONLY IF untrusted data flows into it.
-            4. Classify as 'vuln' if the function is INHERENTLY VULNERABLE regardless of data flow (e.g., it contains a hardcoded cryptographic key, performs a double free, or has an obvious use-after-free).
+            4. Classify as 'vuln' if the function is INHERENTLY VULNERABLE regardless of data flow. This covers:
+               - hardcoded cryptographic keys, secrets, or weak algorithms
+               - memory defects such as double free, use-after-free, out-of-bounds access
+               - business logic flaws: arithmetic on an unvalidated quantity, price or amount, missing bounds or sign check, integer overflow in a calculation
+               - missing authorization: a lookup or state change keyed by an identifier with no ownership or permission check (IDOR)
+               - mass assignment: merging or copying a caller-supplied map straight into a record or model
+               - unsafe comparison or authentication decision based on a client-supplied value
+               - a query, filter or command string assembled by interpolation instead of binding, even when the function only returns the assembled string rather than executing it
             5. If a function is safe, DO NOT include it in the output.
             6. Format the classification into a strict JSON array.
 
@@ -62,7 +69,7 @@ def classify(targets, cwe, model=None):
             # Constraints
             - Output EXACTLY ONE valid JSON block matching the schema.
             - Do NOT output any conversational text or markdown outside of the JSON array.
-            - Focus STRICTLY on {cwe} and obvious high-severity flaws.
+            - Prioritise {cwe}, but also report any other high-severity flaw you see. Prefer recall over precision: a later audit stage prunes false positives.
 
             ## Functions to Analyze
             {functions}

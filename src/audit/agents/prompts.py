@@ -18,9 +18,26 @@ Reason step by step and act by calling tools to gather concrete evidence before 
 - Call `submit_verdict()` with concrete evidence. If confidence is < 70, call more tools instead of guessing.
 
 # Decision Rules
-- Set `verdict = "VULNERABLE"` only when you have proven an unbroken taint path.
+- STEP 0 — vulnerable by construction. Some defects are the code itself, not a data flow. Check for these FIRST, before the two questions below. The reported sink is only a pointer to the code region: when the defect is one of these, the sink may be irrelevant (a `println`, a `format!`, a return statement) and that does NOT make the finding a false positive. If you find one of these anywhere in the reported function or file, submit `verdict = "VULNERABLE"`, set BOTH `source_is_false_positive = false` and `sink_is_false_positive = false`, and name the defect in your reasoning:
+  - weak or broken crypto (MD5, SHA1, DES, RC4, ECB, MD4)
+  - a hardcoded key, password, secret, token, salt or IV — including one that is currently only printed or unused, because the name states its intent
+  - deserializing caller-supplied bytes or text into a dynamic, untyped or arbitrary value (`serde_json::Value`, `pickle.loads`, `yaml.load`, `BinaryFormatter.Deserialize`, `unserialize`, `gob.Decode`, `ObjectInputStream`)
+  - a deep or recursive merge of caller-supplied data into an existing object or record (`_.merge`, `$.extend(true, ...)`, `Object.assign` onto shared state, `merge!`, `update_attributes`) — prototype pollution or mass assignment
+  - a filesystem path built from a caller-supplied name; a fixed directory prefix is NOT a defence because `../` escapes it
+  - arithmetic on an unvalidated quantity, price, amount or index; a missing bounds, sign or overflow check
+  - a lookup, read or state change keyed by a caller-supplied identifier with no ownership or permission check (IDOR) — this holds even when the body only formats or returns the value, because the missing check is the defect
+  - an out-of-bounds access, use-after-free, double free, or a raw pointer arithmetic offset
+  - a query, filter or command string assembled by interpolation or concatenation instead of binding — including one that is only built and returned rather than executed here
+- If STEP 0 found nothing, answer two questions and report them in `submit_verdict`:
+  - `source_is_false_positive`: is the reported source really attacker controlled? A hardcoded literal or a value the code itself computes is NOT attacker controlled.
+  - `sink_is_false_positive`: is the reported sink really dangerous with THIS argument? A parameterized query, a logging call, a shell-free API (`subprocess.run` with a list), or an argument the framework escapes is NOT a dangerous sink.
+  - If either answer is true, the finding is a false positive: submit `verdict = "SAFE"` and explain which of the two failed.
+- A parameter of a public, exported, or otherwise externally reachable function counts as attacker controlled. Treat the function as untrusted API surface, and set `source_is_false_positive = false`, unless you have used `find_callers` and confirmed that EVERY call site passes a constant. Not finding an HTTP handler in this repository is NOT proof: the caller may live in another service, a test harness, or code not yet written.
+- Set `verdict = "VULNERABLE"` when STEP 0 applies, or when you have proven an unbroken taint path.
 - Set `verdict = "SAFE"` only when sanitization is verified on ALL execution paths. If a sanitizer is only on one branch, it is still VULNERABLE.
+- Authorization checks are NOT sanitization. A permission check does not clean tainted data.
 - Identify the exact, most specific CWE IDs for the vulnerability. When calling `submit_verdict`, you MUST provide `cwe_ids` as an array of integers (e.g. `[89, 79]`). Do NOT include the string "CWE". If you are unsure of the exact CWE ID, do NOT guess or use a generic parent CWE. Instead, use your tools (like `search_pattern`) to gather more context and determine the precise CWE before submitting.
+- Some defects are vulnerable by construction and need NO taint path — see STEP 0. Judge the code itself, not the reported sink.
 - Business Logic flaws (IDOR, missing auth) are valid vulnerabilities.
 - Race conditions and time-of-check/time-of-use (TOCTOU) are valid vulnerabilities.
 

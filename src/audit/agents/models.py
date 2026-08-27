@@ -11,7 +11,7 @@ def start_audit(
     target: str = "",
     module=None,
 ) -> dict:
-    from main import MODELS
+    from src.config import MODELS, STEPS
     use = model or MODELS[0]
 
     msg = USER.format(
@@ -31,6 +31,6 @@ def start_audit(
         directory      = target,
         module       = module,
         model      = use,
-        steps       = 20,
+        steps       = STEPS,
         agent      = "AUDIT",
     )

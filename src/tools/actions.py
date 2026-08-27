@@ -1,5 +1,6 @@
 import os
 import re
+import json
 import importlib
 from pathlib import Path
 
@@ -14,10 +15,10 @@ TOOLS = {
 }
 
 # Khởi tạo tree-sitter
-def start_tree_siiter():
+def start_sitter():
     import importlib.util
     from pathlib import Path
-    path = Path(__file__).parent.parent / "audit" / "ast" / "tree-sitter.py"
+    path = Path(__file__).parent.parent / "ast" / "tree-sitter.py"
     spec = importlib.util.spec_from_file_location("module", str(path.resolve()))
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
@@ -26,10 +27,11 @@ def start_tree_siiter():
 
 # Hàm xử lý đường dẫn
 def resolve_path(target: str, rel: str) -> Path:
-    path = (Path(target) / rel).resolve()
+    root = Path(target).resolve()
+    path = (root / rel).resolve()
 
     # Chống path traversal
-    if not str(path).startswith(str(Path(target).resolve())):
+    if path != root and root not in path.parents:
         raise ValueError(f"Path traversal attempt: {rel}")
 
     return path
@@ -73,7 +75,7 @@ def trace_variable(args: dict, target: str, module=None) -> str:
         return "[ERROR] 'var_name' and 'file_path' are required."
 
     try:
-        sitter = module or start_tree_siiter()
+        sitter = module or start_sitter()
         path = resolve_path(target, file)
         
         # Dùng AST phân tích biến
@@ -129,7 +131,7 @@ def find_function(args: dict, target: str, module=None) -> str:
         return "[ERROR] 'function_name' is required."
 
     try:
-        sitter = module or start_tree_siiter()
+        sitter = module or start_sitter()
         source = sitter.get_code(target, func)
 
         return source or f"[NOT FOUND] Function '{func}' not found in the repository."
@@ -145,7 +147,7 @@ def find_callers(args: dict, target: str, module=None) -> str:
         return "[ERROR] 'function_name' is required."
 
     try:
-        sitter = module or start_tree_siiter()
+        sitter = module or start_sitter()
         callers = []
         skip = {".git", "node_modules", "vendor", ".venv", "__pycache__"}
 
@@ -165,7 +167,7 @@ def find_callers(args: dict, target: str, module=None) -> str:
                     with open(path, "rb") as f:
                         code = f.read()
                     
-                    parser = sitter.Parser(sitter.Language(sitter.LANG[ext]))
+                    parser = sitter.get_parser(ext)
                     tree = parser.parse(code)
                     nodes = sitter.find_callers(tree.root_node, func, code)
 
@@ -246,10 +248,34 @@ def search_pattern(args: dict, target: str, module=None) -> str:
 def submit_verdict(args: dict, target: str, module=None) -> dict:
     return args
 
+# Bộ nhớ kết quả công cụ, tránh phân tích lại cùng một câu hỏi
+_memory = {}
+_LIMIT = 512
+
+# Hàm xóa bộ nhớ, gọi khi bắt đầu lượt quét mới vì file có thể đã đổi
+def reset_memory():
+    _memory.clear()
+
 # Hàm chạy công cụ
 def execute_tool(name: str, args: dict, target: str, module=None):
     if name not in TOOLS:
         return f"[ERROR] Unknown tool: '{name}'. Available: {list(TOOLS)}"
 
     func = globals().get(name)
-    return func(args, target, module)
+
+    # Phán quyết không phải công cụ chỉ đọc nên không lưu lại
+    if name == "submit_verdict":
+        return func(args, target, module)
+
+    key = (target, name, json.dumps(args, sort_keys=True, default=str))
+
+    if key in _memory:
+        return _memory[key]
+
+    result = func(args, target, module)
+
+    # Chỉ lưu kết quả đọc được, bỏ qua lỗi tạm thời
+    if isinstance(result, str) and not result.startswith("[ERROR]") and len(_memory) < _LIMIT:
+        _memory[key] = result
+
+    return result

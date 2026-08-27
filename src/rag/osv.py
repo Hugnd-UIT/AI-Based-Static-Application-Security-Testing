@@ -19,17 +19,49 @@ ECO = {
     "conan": "Conan",
 }
 
+GEMS = "https://rubygems.org/api/v2/rubygems/{}/versions/{}.json"
+
+# Gem tổng như rails không có advisory riêng, lỗ hổng nằm ở gem con nên phải mở ra theo version ghim
+def expand_gems(deps: List[Dict[str, str]]) -> List[Dict[str, str]]:
+    out = []
+
+    for dep in deps:
+        try:
+            with urllib.request.urlopen(GEMS.format(dep["package"], dep["version"]), timeout=15) as resp:
+                data = json.loads(resp.read().decode("utf-8"))
+
+        except Exception:
+            continue
+
+        for sub in data.get("dependencies", {}).get("runtime", []):
+            req = str(sub.get("requirements", "")).strip()
+
+            if not req.startswith("="):
+                continue
+
+            out.append({"ecosystem": "rubygems", "package": sub.get("name", ""), "version": req.lstrip("= ").strip()})
+
+    return [d for d in out if d["package"] and d["version"]]
+
 # Hàm kiểm tra lỗ hổng OSV
-def check_osv(deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
+def check_osv(deps: List[Dict[str, str]], depth: int = 0) -> List[Dict[str, Any]]:
     if not deps:
         return []
 
     queries = []
+    picked = []
+    seen_dep = set()
 
     # Map hệ sinh thái của hệ thống sang hệ sinh thái của osv
     for dep in deps:
         if not dep.get("version"):
             continue
+
+        # Cùng package cùng version khai báo ở nhiều manifest thì chỉ hỏi osv một lần
+        tag = (dep["package"].lower(), dep["version"])
+        if tag in seen_dep:
+            continue
+        seen_dep.add(tag)
 
         eco = ECO.get(dep["ecosystem"], dep["ecosystem"])
         query = {
@@ -39,6 +71,10 @@ def check_osv(deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
         if eco not in ["vcpkg", "Conan"]:
             query["package"]["ecosystem"] = eco
         queries.append(query)
+        picked.append(dep)
+
+    if not queries:
+        return []
 
     payload = json.dumps({"queries": queries}).encode("utf-8")
     req = urllib.request.Request(URL, data=payload, headers={"Content-Type": "application/json"})
@@ -48,23 +84,31 @@ def check_osv(deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
             data = json.loads(resp.read().decode("utf-8"))
             results = data.get("results", [])
             vulns = []
+            seen_cve = set()
 
             for idx, result in enumerate(results):
                 if "vulns" in result:
-                    info = deps[idx]
+                    info = picked[idx]
 
                     for vuln in result["vulns"]:
                         aliases = vuln.get("aliases", [])
                         
-                        vid = vuln.get("id")
+                        vid = vuln.get("id", "")
                         if vid:
                             try:
                                 full_req = urllib.request.Request(f"https://api.osv.dev/v1/vulns/{vid}")
                                 with urllib.request.urlopen(full_req, timeout=10) as full_resp:
                                     full_data = json.loads(full_resp.read().decode("utf-8"))
                                     vuln.update(full_data)
+                                    aliases = vuln.get("aliases", [])
                             except Exception:
                                 pass
+                            
+                        if not aliases:
+                            import re as _re
+                            m = _re.search(r'(CVE-\d{4}-\d+)', vid)
+                            if m:
+                                aliases = [m.group(1)]
 
                         if not aliases and vuln.get("id", "").startswith("GHSA"):
                             try:
@@ -74,6 +118,13 @@ def check_osv(deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
                                     aliases = alias_data.get("aliases", [])
                             except Exception:
                                 pass
+
+                        # Nhiều bản ghi distro cùng trỏ về một cve nên gộp lại theo cve
+                        cves = [c for c in aliases if str(c).startswith("CVE-")]
+                        tag = (info["package"].lower(), cves[0] if cves else vuln.get("id"))
+                        if tag in seen_cve:
+                            continue
+                        seen_cve.add(tag)
 
                         vulns.append(
                             {
@@ -87,6 +138,13 @@ def check_osv(deps: List[Dict[str, str]]) -> List[Dict[str, Any]]:
                                 "references": [ref.get("url") for ref in vuln.get("references", [])],
                             }
                         )
+
+            # Gem tổng không có advisory riêng nên mở thêm một lớp gem con rồi hỏi lại osv
+            if depth == 0:
+                metas = [picked[idx] for idx, r in enumerate(results) if not r.get("vulns") and picked[idx]["ecosystem"] == "rubygems"]
+
+                if metas:
+                    vulns.extend(check_osv(expand_gems(metas), depth + 1))
 
             return vulns
 

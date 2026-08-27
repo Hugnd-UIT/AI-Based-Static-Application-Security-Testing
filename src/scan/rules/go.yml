@@ -5,7 +5,17 @@ rules:
     severity: WARNING
     languages: [go]
     pattern-sources:
-      # net/http 
+      # Tham số hàm, nối luồng khi nguồn nằm ở file khác
+      - patterns:
+          - pattern-inside: |
+              func $FN(..., $P $T, ...) { ... }
+          - pattern: $P
+      - patterns:
+          - pattern-inside: |
+              func ($RV $RT) $FN(..., $P $T, ...) { ... }
+          - pattern: $P
+
+      # net/http
       - pattern: $USE_REQ.URL.Query()
       - pattern: $USE_REQ.URL.Query().Get(...)
       - pattern: $USE_REQ.FormValue(...)
@@ -84,8 +94,13 @@ rules:
       # LDAP 
       - pattern: $USE_CONN.Search(...)
 
-      # Deserialzation / Code Execution 
+      # Deserialzation / Code Execution
       - pattern: gob.NewDecoder($R).Decode(...)
+      - pattern: gob.NewDecoder(...)
+      - pattern: bytes.NewBuffer(...)
+      - pattern: $DEC.Decode(...)
+      - pattern: json.Unmarshal(...)
+      - pattern: yaml.Unmarshal(...)
       - pattern: plugin.Open(...)
     pattern-sanitizers:
       # SQL — use parameterized queries 
@@ -107,3 +122,26 @@ rules:
       - pattern: strconv.Atoi(...)
       - pattern: strconv.ParseInt(...)
       - pattern: strconv.ParseFloat(...)
+
+  # Chuỗi SQL hoặc lệnh ghép từ biến, bắt cả khi sink nằm ngoài file
+  - id: sinful-strcat-go
+    message: "SQL or command string built from a variable; verify the value is not attacker controlled."
+    severity: WARNING
+    languages: [go]
+    pattern-either:
+      - pattern-regex: '(?i)("|`)(?:\\.|[^"`\n]){0,200}(\$where|\b(select|insert|update|delete|drop|union|ping|curl|wget|nc|bash)\b)(?:\\.|[^"`\n]){0,200}(\$\{|\$[a-z_]|#\{|\{\}|%[sdvq])'
+      - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}\b(select|insert|update|delete|drop|union|ping|curl|wget)\b(?:\\.|[^"\n]){0,200}"\s*[+.]\s*[a-z_$]'
+
+  # Thuật toán băm hoặc mã hóa yếu
+  - id: sinful-weakcrypto-go
+    message: "Weak or broken cryptographic algorithm."
+    severity: WARNING
+    languages: [go]
+    pattern-regex: '(?i)\b(md5|sha1|des|rc4|ecb|md4)\b'
+
+  # Bí mật hardcode trong mã nguồn
+  - id: sinful-secret-go
+    message: "Hardcoded credential or cryptographic key."
+    severity: WARNING
+    languages: [go]
+    pattern-regex: '(?i)(\b(secret|password|passwd|pwd|api_?key|private_?key|access_?key|token|salt|encryption_?key|hardcoded)\w*|\b(key|iv|creds?|credential)\b)\s*(=|:|:=|=>)\s*["''`][^"''`\n]{4,}["''`]'

@@ -2,7 +2,9 @@ import os
 from cli.views.logger import console
 from cli.views import logger
 
+from src.config import get_work
 from src.scan import semgrep
+from src.scan.semgrep import pick_rules
 from src.scan.agents.extractor import extract_functions
 from src.scan.agents.classifier import classify
 from src.scan.agents.generator import generate
@@ -14,27 +16,26 @@ def run_sast(sdir, rules, model, ctx, use_module, cache, res, fix):
         logger.section("SAST")
         console.print(f"  [bold magenta]● GENERATING AGENT[/bold magenta]")
 
-        # Clean up stale custom rules from previous runs to prevent duplicates
-        stale = os.path.join(str(sdir), "custom-rules.yml")
+        # Xóa rule cũ trong thư mục làm việc để không bị trùng
+        stale = os.path.join(str(get_work()), "custom-rules.yml")
         if os.path.exists(stale):
             os.remove(stale)
-        
+
         console.print("  ├─ [cyan]◆ Extracting codes...[/cyan]")
         apis = extract_functions(str(sdir))
-        
+
         if apis:
             console.print(f"  ├─ [cyan]◆ Classifying {len(apis)} sources & sinks...[/cyan]")
             vuln_scope = "Any potential security vulnerability, including zero-days, injection flaws, logic defects, and dangerous data flows"
             classifications = classify(apis, vuln_scope)
-                    
+
             console.print("  ├─ [cyan]◆ Generating rules...[/cyan]")
-            dynamic_rule_path = generate(classifications, output=str(sdir))
-            
+            dynamic_rule_path = generate(classifications)
+
             if dynamic_rule_path and os.path.exists(dynamic_rule_path):
                 console.print(f"  └─ [bold green]✔ Generate completed: {os.path.basename(dynamic_rule_path)}[/bold green]")
                 if rules is None:
-                    from src.scan.semgrep import RULES as default_rules
-                    rules = default_rules.copy()
+                    rules = pick_rules(res.get("languages", {}))
                 elif isinstance(rules, str):
                     rules = [rules]
                 rules.append(dynamic_rule_path)
@@ -45,6 +46,9 @@ def run_sast(sdir, rules, model, ctx, use_module, cache, res, fix):
     except Exception as e:
         console.print(f"  └─ [bold red]✖ Generator failed: {e}[/bold red]")
 
+    # Nếu không có rule chỉ định thì chọn theo ngôn ngữ đã phát hiện
+    if rules is None:
+        rules = pick_rules(res.get("languages", {}))
 
     sgres = semgrep.scan_code(str(sdir), rules)
     

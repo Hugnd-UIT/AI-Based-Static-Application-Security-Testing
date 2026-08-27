@@ -32,7 +32,8 @@ def process_command(cmd: str) -> bool:
 
     # Quét bảo mật cơ bản
     if low.startswith("/scan"):
-        path = raw[5:].strip()
+        path = raw[5:].strip().strip("\"'")
+
         if path:
             execute_scan(path, fix=False)
         else:
@@ -41,7 +42,8 @@ def process_command(cmd: str) -> bool:
 
     # Quét bảo mật và tự động sửa lỗi
     if low.startswith("/auto-fix"):
-        path = raw[9:].strip()
+        path = raw[9:].strip().strip("\"'")
+
         if path:
             execute_scan(path, fix=True)
         else:

@@ -20,15 +20,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from cli.views import logger
-
-MODELS = [
-    "deepseek/deepseek-v4-pro"
-]
+from src.config import MODELS, SITTER, skip_sca
 
 # Khởi tạo công cụ phân tích cú pháp Tree-sitter
 def init_sitter():
-    set_path = Path("src/ast/tree-sitter.py").resolve()
-    load_spec = importlib.util.spec_from_file_location("ts_module", set_path)
+    load_spec = importlib.util.spec_from_file_location("ts_module", str(SITTER))
     use_module = importlib.util.module_from_spec(load_spec)
     load_spec.loader.exec_module(use_module)
 
@@ -37,8 +33,10 @@ def init_sitter():
 # Khởi chạy toàn bộ quy trình quét bảo mật
 def run_scan(path, rules=None, model=None, fix=False):
     m = model or MODELS[0]
-    tag = fr" [[cyan]{m}[/cyan]]"
-    
+
+    # Đặt lại đồng hồ để thời lượng tính từ lúc bắt đầu quét
+    logger.reset_timer()
+
     temp = None
     res = {
         "status": "processing",
@@ -49,6 +47,7 @@ def run_scan(path, rules=None, model=None, fix=False):
         "cves": [],
         "nvd": [],
         "rag_summaries": [],
+        "unverified": 0,
     }
 
     if path.startswith("http://") or path.startswith("https://") or path.startswith("git@"):
@@ -102,8 +101,6 @@ def run_scan(path, rules=None, model=None, fix=False):
     res["dependencies"] = deps
     dep_parser.report_deps(deps)
 
-    flaws = []
-    
     try:
         ctx = use_module.build_context(str(sdir))
 
@@ -118,11 +115,20 @@ def run_scan(path, rules=None, model=None, fix=False):
 
     cache = {}
 
+    from src.tools.actions import reset_memory
+    reset_memory()
+
     from src.core.sca import run_sca
     from src.core.sast import run_sast
 
     # Run SCA
-    sca_flaws = run_sca(deps, sdir, use_module, res, m, cache, fix)
+    if skip_sca():
+        logger.section("SCA")
+        logger.console.print("  [dim]Skipped by SINFUL_SKIP_SCA[/dim]")
+        sca_flaws = []
+
+    else:
+        sca_flaws = run_sca(deps, sdir, use_module, res, m, cache, fix)
     
     # Run SAST
     sgres = run_sast(sdir, rules, m, ctx, use_module, cache, res, fix)
@@ -172,7 +178,17 @@ def run_scan(path, rules=None, model=None, fix=False):
     sother = cfinds - scrit - shigh - smed - slow
 
     vuln = res.get("vuln", False) or cfinds > 0
-    msg = "[bold red]✖ VULNERABLE[/bold red]" if vuln else "[bold green]✓ SAFE[/bold green]"
+    lost = res.get("unverified", 0)
+
+    # Mất phán quyết thì chưa kết luận được, báo an toàn lúc này là dương tính giả ngược
+    if vuln:
+        msg = "[bold red]✖ VULNERABLE[/bold red]"
+
+    elif lost:
+        msg = "[bold yellow]⚠ INCONCLUSIVE[/bold yellow]"
+
+    else:
+        msg = "[bold green]✓ SAFE[/bold green]"
 
     table.add_row("Target", f"[bold]{sdir.name}[/bold]")
     table.add_row("Languages", f"[cyan]{langs}[/cyan]", "Files", f"[cyan]{files}[/cyan]")
@@ -190,6 +206,9 @@ def run_scan(path, rules=None, model=None, fix=False):
         table.add_row("[green]✓ LOW[/green]", str(slow))
     if sother > 0:
         table.add_row("[dim]? UNKNOWN[/dim]", str(sother))
+
+    if lost > 0:
+        table.add_row("[yellow]⚠ Unverified[/yellow]", str(lost))
     table.add_row("", "")
     table.add_row("Status", msg)
 

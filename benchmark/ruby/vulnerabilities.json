@@ -51,6 +51,31 @@
             "cwe": "CWE-915",
             "file": "services/logic_service.rb",
             "type": "Mass Assignment"
+        },
+        {
+            "cve": "CVE-2019-5418",
+            "file": "Gemfile",
+            "type": "rails"
+        },
+        {
+            "cve": "CVE-2019-5477",
+            "file": "Gemfile",
+            "type": "nokogiri"
+        },
+        {
+            "cve": "CVE-2018-7212",
+            "file": "Gemfile",
+            "type": "sinatra"
+        },
+        {
+            "cve": "CVE-2019-16782",
+            "file": "Gemfile",
+            "type": "rack"
+        },
+        {
+            "cve": "CVE-2018-16468",
+            "file": "Gemfile",
+            "type": "loofah"
         }
     ]
 }

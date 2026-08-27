@@ -11,6 +11,11 @@
         { "cwe": "CWE-611", "file": "src/main/scala/services/XmlService.scala", "type": "XML External Entity" },
         { "cwe": "CWE-840", "file": "src/main/scala/services/LogicService.scala", "type": "Business Logic Flaw" },
         { "cwe": "CWE-284", "file": "src/main/scala/services/LogicService.scala", "type": "Improper Access Control" },
-        { "cwe": "CWE-502", "file": "src/main/scala/services/DeserializeService.scala", "type": "Insecure Deserialization" }
+        { "cwe": "CWE-502", "file": "src/main/scala/services/DeserializeService.scala", "type": "Insecure Deserialization" },
+        { "cve": "CVE-2021-44228", "file": "build.sbt", "type": "org.apache.logging.log4j:log4j-core" },
+        { "cve": "CVE-2019-16942", "file": "build.sbt", "type": "com.fasterxml.jackson.core:jackson-databind" },
+        { "cve": "CVE-2022-42889", "file": "build.sbt", "type": "org.apache.commons:commons-text" },
+        { "cve": "CVE-2022-1471", "file": "build.sbt", "type": "org.yaml:snakeyaml" },
+        { "cve": "CVE-2021-35515", "file": "build.sbt", "type": "org.apache.commons:commons-compress" }
     ]
 }

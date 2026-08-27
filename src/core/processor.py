@@ -1,10 +1,23 @@
 import os
 import json
+import time
 import textwrap
 from cli.views.logger import console
 from src.scan.agents import models as scan_agents
 from src.audit.agents import models as audit_agents
 from cli.views import logger
+
+# Mất phán quyết vì hạ tầng lỗi khác hẳn model kết luận không rõ, phải đếm riêng để khỏi báo an toàn oan
+def broke(txt: str) -> bool:
+    low = str(txt).lower()
+
+    return (
+        "did not complete" in low
+        or "quota" in low
+        or "http error" in low
+        or "rate limit" in low
+        or "429" in low
+    )
 
 def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, fix=False):
     if not flaws:
@@ -16,7 +29,7 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
         
         try:
             fpath = str(sdir / item["path"]) if item["path"] != str(sdir) else str(sdir)
-            ast = use_module.extract_context(fpath, item["start_line"], item["end_line"], sdir=str(sdir))
+            ast = use_module.extract_context(fpath, item["start_line"], item["end_line"], dir=str(sdir))
 
             if ctx:
                 ast += f"\n\n[INTER-PROCEDURAL TAINT ANALYSIS]\n{ctx[:10000]}"
@@ -118,6 +131,43 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
             )
 
             verdict_str = verdict.get("verdict", "UNKNOWN").upper()
+
+            # Model lỗi tạm thời làm mất phán quyết nên thử lại một lần
+            if verdict_str == "UNKNOWN" and "did not complete" in str(verdict.get("reasoning", "")):
+                why = str(verdict.get("reasoning", "")).lower()
+
+                # Hết quota thì thử lại chắc chắn vẫn lỗi, chỉ tốn thêm thời gian chờ
+                if "quota" in why:
+                    console.print("  ├─ [dim]↷ Skip retry, daily token quota exhausted[/dim]")
+
+                else:
+                    console.print("  ├─ [dim]↻ Audit interrupted, retrying[/dim]")
+
+                    # Thử lại ngay sẽ đâm vào đúng cửa sổ chặn nhịp nên phải hạ nhiệt trước
+                    time.sleep(float(os.getenv("SINFUL_AUDIT_COOLDOWN") or "20"))
+
+                    verdict = audit_agents.start_audit(
+                        item, ast, ctx,
+                        model=model,
+                        target=str(sdir),
+                        module=use_module,
+                    )
+                    verdict_str = verdict.get("verdict", "UNKNOWN").upper()
+
+            # Cắt tỉa dương tính giả bằng hai câu hỏi riêng về source và sink
+            prune = ""
+
+            if verdict.get("source_is_false_positive"):
+                prune = "source is not attacker controlled"
+
+            elif verdict.get("sink_is_false_positive"):
+                prune = "sink is not dangerous in this call"
+
+            if prune and verdict_str == "VULNERABLE":
+                verdict["verdict"] = "SAFE"
+                verdict_str = "SAFE"
+                console.print(f"  ├─ [dim]↷ Pruned: {prune}[/dim]")
+
             vuln = verdict_str == "VULNERABLE"
             reason = verdict.get("reasoning", "")
 
@@ -138,6 +188,10 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
                 vuln = True
                 item.update(verdict)
 
+                # Nếu agent phán quyết không nêu luồng dữ liệu thì lấy lại của agent quét
+                if not item.get("data_flow") and trace.get("data_flow"):
+                    item["data_flow"] = trace["data_flow"]
+
                 if sink_fn:
                     cache[key] = verdict
                 # Always store partial_key so scan-failed duplicates are caught
@@ -148,8 +202,13 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
             else:
                 console.print(f"  └─ [bold yellow]⚠ UNKNOWN[/bold yellow]")
 
+                # Không có phán quyết vì hạ tầng lỗi thì đánh dấu để pipeline không kết luận là an toàn
+                if broke(verdict.get("reasoning", "")):
+                    res["unverified"] = res.get("unverified", 0) + 1
+
         except Exception as e:
             console.print(f"  ├─ [bold red]✖ Auditor Agent failed: {e}[/bold red]")
+            res["unverified"] = res.get("unverified", 0) + 1
 
         if fix:
             try:

@@ -10,7 +10,7 @@ def start_expand(
     target: str = "",
     module=None,
 ) -> dict:
-    from main import MODELS
+    from src.config import MODELS, STEPS
     use = model or MODELS[0]
 
     msg = ETMP.format(
@@ -25,6 +25,6 @@ def start_expand(
         directory      = target,
         module       = module,
         model      = use,
-        steps       = 6,
+        steps       = min(6, STEPS),
         agent      = "SINK_EXPANDER",
     )

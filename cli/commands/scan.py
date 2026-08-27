@@ -4,6 +4,7 @@ import os
 from main import run_scan
 import src.fix.patch as patcher
 import src.fix.agents.models as ai_agents
+from src.tools.actions import resolve_path
 from cli.views import logger
 
 # Bắt đầu quét thư mục
@@ -11,12 +12,8 @@ def execute_scan(path: str, fix: bool = False):
     logger.log_info(f"Starting Sinful on {path}...")
     logger.blank_line()
 
-    def do_scan():
-        model = os.environ.get("MODELS")
-        return run_scan(path, model=model, fix=fix)
-
-    from cli.views.spinner import show_spinner
-    res = show_spinner("Analyzing source code", do_scan)
+    # Không bọc spinner vì tiến trình quét đã tự in ra console
+    res = run_scan(path, fix=fix)
     logger.blank_line()
 
     # Nếu có lỗi
@@ -27,9 +24,14 @@ def execute_scan(path: str, fix: bool = False):
     # Trích xuất dữ liệu
     data = res.get("data", {})
     finds = data.get("findings", [])
+    lost = data.get("unverified", 0)
+
+    # Mất phán quyết thì chưa kết luận được, báo sạch lúc này là bỏ lọt lỗ hổng
+    if not finds and lost:
+        logger.log_warning(f"Inconclusive: {lost} finding(s) could not be audited, so this is not a clean bill of health.")
 
     # Nếu không tìm thấy lỗi
-    if not finds:
+    elif not finds:
         logger.log_success("No vulnerabilities found! You're clean.")
         return
 
@@ -113,13 +115,24 @@ def execute_scan(path: str, fix: bool = False):
             try:
                 # Duyệt qua các bản vá
                 for patch in patches:
-                    ppath = patch.get("file_path", fpath)
                     old = patch.get("old_code", "")
                     new = patch.get("new_code", "")
+
                     if not old or not new:
                         continue
+
+                    # Chặn AI vá ra ngoài thư mục được quét
+                    try:
+                        ppath = str(resolve_path(path, patch.get("file_path") or fpath))
+
+                    except ValueError:
+                        logger.log_warning(f"Patch rejected, path escapes the target: {patch.get('file_path')}")
+                        continue
+
+                    # Nếu AI trả sai đường dẫn thì thử tìm theo tên file
                     if not os.path.exists(ppath):
                         alt = os.path.join(path, os.path.basename(ppath))
+
                         if os.path.exists(alt):
                             ppath = alt
 

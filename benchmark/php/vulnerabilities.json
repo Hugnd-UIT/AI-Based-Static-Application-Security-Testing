@@ -51,6 +51,31 @@
             "cwe": "CWE-807",
             "file": "controllers/UserController.php",
             "type": "Reliance on Untrusted Inputs"
+        },
+        {
+            "cve": "CVE-2022-29248",
+            "file": "composer.json",
+            "type": "guzzlehttp/guzzle"
+        },
+        {
+            "cve": "CVE-2019-9942",
+            "file": "composer.json",
+            "type": "twig/twig"
+        },
+        {
+            "cve": "CVE-2018-19296",
+            "file": "composer.json",
+            "type": "phpmailer/phpmailer"
+        },
+        {
+            "cve": "CVE-2021-26120",
+            "file": "composer.json",
+            "type": "smarty/smarty"
+        },
+        {
+            "cve": "CVE-2022-24894",
+            "file": "composer.json",
+            "type": "symfony/http-kernel"
         }
     ]
 }

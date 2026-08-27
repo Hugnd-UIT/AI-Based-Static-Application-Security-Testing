@@ -174,6 +174,33 @@ def extract_cwes(flaw):
         cwes.extend(mcwe)
     return cwes
 
+# Manifest của từng hệ sinh thái, dùng để gán đường dẫn cho lỗi SCA
+MANI = {
+    "requirements.txt": "pypi",
+    "pyproject.toml": "pypi",
+    "package.json": "npm",
+    "composer.json": "packagist",
+    "pom.xml": "maven",
+    "build.sbt": "maven",
+    "go.mod": "go",
+    "Gemfile": "rubygems",
+    "packages.config": "nuget",
+    "Cargo.toml": "crates.io",
+    "conanfile.txt": "conan",
+    "vcpkg.json": "vcpkg",
+}
+
+# Hàm tìm manifest thật của project, tránh gán cứng một tên file
+def find_manifests(proj):
+    out = {}
+    for p in sorted(proj.rglob("*")):
+        if not p.is_file():
+            continue
+        eco = MANI.get(p.name) or ("nuget" if p.suffix == ".csproj" else None)
+        if eco and eco not in out:
+            out[eco] = str(p.relative_to(proj)).replace("\\", "/")
+    return out
+
 def verify():
     root = Path(__file__).resolve().parent
     
@@ -239,6 +266,22 @@ def verify():
                 with open(latest, "r", encoding="utf-8") as f:
                     lscan = json.load(f)
                     findings = lscan.get("data", {}).get("findings", []) if "data" in lscan else lscan.get("findings", [])
+                    cves = lscan.get("data", {}).get("cves", []) if "data" in lscan else lscan.get("cves", [])
+                    manis = find_manifests(proj)
+                    seen_sca = set()
+                    for c in cves:
+                        pkg = c.get("package", "")
+                        if pkg in seen_sca:
+                            continue
+                        seen_sca.add(pkg)
+                        cve_list = c.get("cve", [])
+                        findings.append({
+                            "path": manis.get(c.get("ecosystem", ""), ""),
+                            "id": c.get("vuln_id", ""),
+                            "title": pkg,
+                            "sca_package": pkg,
+                            "cve": cve_list,
+                        })
             except Exception:
                 stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "det_rule": 0, "det_ai": 0, "status": "INVALID REPORT"})
                 projects.append({"name": proj.name, "details": [], "status": "INVALID REPORT"})
@@ -270,8 +313,9 @@ def verify():
         
         for v in vulns:
             cwe = v.get("cwe", "").upper()
+            is_sca = "cve" in v  # SCA entries use 'cve' key instead of 'cwe'
             target = v.get("file", "")
-            vtype = v.get("type", "")
+            vtype = v.get("type", "")  # package name for SCA, vuln type for SAST
             target_basename = Path(target).name.lower()
             
             det_rule = False
@@ -284,6 +328,18 @@ def verify():
                 path_match = target in fpath or target_basename == fpath_basename
                 
                 if path_match:
+                    if is_sca:
+                        # For SCA: match by CVE ID in the cve list or package name
+                        expected_cve = v.get("cve", "").upper()
+                        fpkg = str(flaw.get("sca_package", "")).lower()
+                        fcves = [str(x).upper() for x in flaw.get("cve", [])]
+                        cve_match = expected_cve in fcves
+                        pkg_match = vtype.lower() == fpkg
+                        if cve_match or pkg_match:
+                            det_rule = True
+                            det_ai = True
+                        continue
+
                     fid = str(flaw.get("id", "")).upper()
                     ftitle = str(flaw.get("title", "")).upper()
                     fmsg = str(flaw.get("message", "")).upper()

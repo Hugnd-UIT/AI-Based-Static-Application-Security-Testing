@@ -1,10 +1,14 @@
 import os
 import yaml
+from src.config import TEMPLATES, get_work
 
-def generate(data, templates="src/scan/rules", output="."):
+def generate(data, templates=None, output=None):
     if not data:
         return None
-        
+
+    templates = str(templates or TEMPLATES)
+    output = str(output or get_work())
+
     rules = []
     languages = list(set([item['language'] for item in data]))
     
@@ -112,13 +116,18 @@ def generate(data, templates="src/scan/rules", output="."):
                 elif item['type'] == 'sink':
                     # Pattern bắt hàm thực thi nguy hiểm (taint sink)
                     rule['pattern-sinks'].append({"pattern": f"{name}(...)"})
-                    
+                    # Bắt luôn khi không chứng minh được luồng taint trong cùng file
+                    search_rule['pattern-either'].append({"pattern": f"{name}(...)"})
+
         rules.append(rule)
+        if search_rule['pattern-either']:
+            rules.append(search_rule)
         
     if not rules:
         return None
         
     final = {"rules": rules}
+    os.makedirs(output, exist_ok=True)
     destination = os.path.join(output, "custom-rules.yml")
     
     with open(destination, 'w', encoding='utf-8') as file:

@@ -11,7 +11,7 @@ def start_fix(
     target: str = "",
     module=None,
 ) -> dict:
-    from main import MODELS
+    from src.config import MODELS, STEPS
     use = model or MODELS[0]
 
     msg = USER.format(
@@ -31,6 +31,6 @@ def start_fix(
         directory      = target,
         module       = module,
         model      = use,
-        steps       = 5,
+        steps       = min(5, STEPS),
         agent      = "FIX",
     )
