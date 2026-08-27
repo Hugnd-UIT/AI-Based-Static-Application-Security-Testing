@@ -23,7 +23,7 @@ def execute_scan(path: str, fix: bool = False):
 
     # Trích xuất dữ liệu
     data = res.get("data", {})
-    finds = data.get("findings", [])
+    finds = data.get("sast", [])
     lost = data.get("unverified", 0)
 
     # Mất phán quyết thì chưa kết luận được, báo sạch lúc này là bỏ lọt lỗ hổng

@@ -9,155 +9,9 @@ import glob
 import json
 from pathlib import Path
 
-try:
-    from rich.console import Console
-    from rich.table import Table
-    from rich.panel import Panel
-    from rich.text import Text
-    from rich import box
-except ImportError as e:
-    print(f"Error: Unable to import required libraries. {e}")
-    sys.exit(1)
-
-console = Console()
-
-import sys
 project_root = str(Path(__file__).resolve().parent.parent)
 if project_root not in sys.path:
     sys.path.append(project_root)
-
-def ai_judge(expected_cwe, expected_type, ai_title, ai_msg, ai_class, ai_cwes):
-    try:
-        from src.llm import fetch_llm
-        prompt = f"""
-            You are a vulnerability verification judge. 
-            The benchmark EXPECTED this vulnerability: CWE: {expected_cwe}, Type: {expected_type}
-            The AI scanner FOUND this vulnerability on the exact same file:
-            - Title: {ai_title}
-            - Message: {ai_msg}
-            - Class: {ai_class}
-            - Extracted CWEs: {ai_cwes}
-
-            Determine if the AI's finding correctly describes or is a variant of the expected vulnerability.
-            Return a JSON object with exactly one boolean field "match".
-            Example: {{"match": true}} or {{"match": false}}
-        """
-        res = fetch_llm(prompt=prompt, model=None, jfmt=True)
-        return res.get("match", False)
-    except Exception as e:
-        import sys
-        print(f"[AI Error] {e}", file=sys.stderr)
-        return False
-
-def render_header():
-    content = "[bold cyan]SINFUL[/bold cyan]\n[dim]Benchmark Verification Suite[/dim]"
-    console.print(Panel(content, box=box.ROUNDED, expand=False, padding=(1, 4)), justify="center")
-    console.print()
-
-def render_summary(projs, expected, found_rule, found_ai, no_report):
-    missed_rule = expected - found_rule
-    rate_rule = (found_rule / expected * 100) if expected > 0 else 0
-    missed_ai = expected - found_ai
-    rate_ai = (found_ai / expected * 100) if expected > 0 else 0
-    
-    table = Table(box=box.SIMPLE_HEAVY, show_header=False)
-    table.add_column("Metric", style="bold")
-    table.add_column("Value", justify="right")
-    
-    table.add_row("Projects Evaluated", str(projs))
-    if no_report > 0:
-        table.add_row("Missing Reports", f"[yellow]{no_report}[/yellow]")
-    table.add_row("Expected Findings", str(expected))
-    table.add_row("Detected (Script Match)", f"[green]{found_rule}[/green]")
-    table.add_row("Missed (Script Match)", f"[red]{missed_rule}[/red]")
-    table.add_row("Detection Rate (Script Match)", f"{rate_rule:.1f}%")
-    table.add_row("Detected (AI Match)", f"[green]{found_ai}[/green]")
-    table.add_row("Missed (AI Match)", f"[red]{missed_ai}[/red]")
-    table.add_row("Detection Rate (AI Match)", f"{rate_ai:.1f}%")
-    
-    console.print(Text("BENCHMARK SUMMARY", style="bold cyan"))
-    console.print(table)
-    console.print()
-
-def get_status_style(rate):
-    if rate >= 80:
-        return "[bold green]PASS[/bold green]"
-    elif rate >= 50:
-        return "[bold yellow]PARTIAL[/bold yellow]"
-    return "[bold red]FAIL[/bold red]"
-
-def render_overview(stats):
-    console.print(Text("PROJECT OVERVIEW", style="bold cyan"))
-    table = Table(box=box.MINIMAL, header_style="bold dim")
-    table.add_column("Project")
-    table.add_column("Language")
-    table.add_column("Expected", justify="right")
-    table.add_column("Det(Script)", justify="right")
-    table.add_column("Det(AI)", justify="right")
-    table.add_column("Rate(Script)", justify="right")
-    table.add_column("Rate(AI)", justify="right")
-    table.add_column("Status")
-    
-    for stat in stats:
-        name = stat["name"]
-        lang = stat["lang"]
-        exp = stat["expected"]
-        det_rule = stat["det_rule"]
-        det_ai = stat["det_ai"]
-        status = stat["status"]
-        
-        if status == "NO REPORT":
-            table.add_row(name, lang, str(exp), "-", "-", "-", "-", "[dim]NO REPORT[/dim]")
-        elif status == "INVALID REPORT":
-            table.add_row(name, lang, str(exp), "-", "-", "-", "-", "[dim red]INVALID[/dim red]")
-        else:
-            rate_rule = (det_rule / exp * 100) if exp > 0 else 0
-            rate_ai = (det_ai / exp * 100) if exp > 0 else 0
-            final_status = get_status_style(rate_rule)
-            table.add_row(name, lang, str(exp), f"{det_rule}/{exp}", f"{det_ai}/{exp}", f"{rate_rule:.1f}%", f"{rate_ai:.1f}%", final_status)
-            
-    console.print(table)
-    console.print()
-
-def render_details(name, details, status):
-    console.print(Text(f"FINDINGS: {name}", style="bold cyan"))
-    if status == "NO REPORT":
-        console.print("  [dim]⚠ NO REPORT[/dim]")
-        console.print()
-        return
-    elif status == "INVALID REPORT":
-        console.print("  [dim red]⚠ INVALID REPORT[/dim red]")
-        console.print()
-        return
-        
-    table = Table(box=box.SIMPLE, header_style="bold dim")
-    table.add_column("CWE")
-    table.add_column("Target File", overflow="fold")
-    table.add_column("Vulnerability Type")
-    table.add_column("Script Match")
-    table.add_column("AI Match")
-    
-    for d in details:
-        res_rule = "[green]✓[/green]" if d["det_rule"] else "[red]✗[/red]"
-        res_ai = "[green]✓[/green]" if d["det_ai"] else "[red]✗[/red]"
-        table.add_row(d["cwe"], d["file"], d["type"], res_rule, res_ai)
-        
-    console.print(table)
-    console.print()
-
-def render_verdict(expected, found_rule, found_ai):
-    console.print(Text("FINAL EVALUATION", style="bold cyan"))
-    rate_rule = (found_rule / expected * 100) if expected > 0 else 0
-    rate_ai = (found_ai / expected * 100) if expected > 0 else 0
-    
-    content = f"[bold]Script Match Detection Rate:[/bold] {rate_rule:.1f}%\n"
-    content += f"Detected {found_rule} out of {expected} expected vulnerabilities.\n\n"
-    content += f"[bold]AI Match Detection Rate:[/bold] {rate_ai:.1f}%\n"
-    content += f"Detected {found_ai} out of {expected} expected vulnerabilities.\n\n"
-    content += f"[bold]Script Match Status:[/bold] {get_status_style(rate_rule)}\n"
-    content += f"[bold]AI Match Status:[/bold] {get_status_style(rate_ai)}"
-    
-    console.print(Panel(content, box=box.ROUNDED, expand=False, border_style="cyan"))
 
 def extract_cwes(flaw):
     cwes = flaw.get("cwe", [])
@@ -174,52 +28,100 @@ def extract_cwes(flaw):
         cwes.extend(mcwe)
     return cwes
 
-# Manifest của từng hệ sinh thái, dùng để gán đường dẫn cho lỗi SCA
-MANI = {
-    "requirements.txt": "pypi",
-    "pyproject.toml": "pypi",
-    "package.json": "npm",
-    "composer.json": "packagist",
-    "pom.xml": "maven",
-    "build.sbt": "maven",
-    "go.mod": "go",
-    "Gemfile": "rubygems",
-    "packages.config": "nuget",
-    "Cargo.toml": "crates.io",
-    "conanfile.txt": "conan",
-    "vcpkg.json": "vcpkg",
-}
+def verify_ai(expected_cwe, expected_type, ai_title, ai_msg, ai_class, ai_cwes):
+    try:
+        from src.llm import fetch_llm
+        prompt = f"""
+            You are a vulnerability verification judge. 
+            The benchmark EXPECTED this vulnerability: CWE: {expected_cwe}, Type: {expected_type}
+            The AI scanner FOUND this vulnerability on the exact same file:
+            - Title: {ai_title}
+            - Message: {ai_msg}
+            - Class: {ai_class}
+            - Extracted CWEs: {ai_cwes}
 
-# Hàm tìm manifest thật của project, tránh gán cứng một tên file
-def find_manifests(proj):
-    out = {}
-    for p in sorted(proj.rglob("*")):
-        if not p.is_file():
-            continue
-        eco = MANI.get(p.name) or ("nuget" if p.suffix == ".csproj" else None)
-        if eco and eco not in out:
-            out[eco] = str(p.relative_to(proj)).replace("\\", "/")
-    return out
+            Please use Chain of Thought reasoning to determine if the AI's finding correctly describes or is a variant of the expected vulnerability.
+            Return a JSON object with two fields:
+            1. "reasoning": A string containing a step-by-step explanation of your thought process.
+            2. "match": A boolean indicating whether it is a match.
+            
+            Example: {{"reasoning": "The expected vulnerability is X. The AI found Y. X and Y are related because... therefore it matches.", "match": true}}
+        """
+        res = fetch_llm(prompt=prompt, model=None, jfmt=True)
+        return res.get("match", False)
+    except Exception as e:
+        print(f"[AI Error] {e}", file=sys.stderr)
+        return False
 
-def verify():
+def verify_manual(v, flaw, is_sca, target, target_basename, vtype):
+    fpath = str(flaw.get("path", "")).replace("\\", "/")
+    fpath_basename = Path(fpath).name.lower()
+    
+    path_match = target in fpath or target_basename == fpath_basename
+    
+    if not path_match:
+        return False
+        
+    if is_sca:
+        expected_cve = v.get("cve", "").upper()
+        fpkg = str(flaw.get("sca_package", "")).lower()
+        fcves = [str(x).upper() for x in flaw.get("cve", [])]
+        cve_match = expected_cve in fcves
+        pkg_match = vtype.lower() == fpkg
+        return cve_match or pkg_match
+
+    cwe = v.get("cwe", "").upper()
+    fid = str(flaw.get("id", "")).upper()
+    ftitle = str(flaw.get("title", "")).upper()
+    fmsg = str(flaw.get("message", "")).upper()
+    
+    fcwes = extract_cwes(flaw)
+    cwe_ids = flaw.get("cwe_ids", [])
+    cwe_id_match = any(cwe == f"CWE-{c_id}" for c_id in cwe_ids) if isinstance(cwe_ids, list) else False
+    has_cwe = cwe_id_match or any(cwe in str(c).upper() for c in fcwes)
+    fvuln_class = str(flaw.get("vuln_class", "")).upper()
+    
+    return (cwe in fid or cwe in ftitle or cwe in fmsg or vtype.upper() in ftitle or has_cwe or cwe in fvuln_class or vtype.upper() in fvuln_class)
+
+def render_table(name, details):
+    print(f"\n--- PROJECT: {name.upper()} ---")
+    print("-" * 115)
+    print(f"| {'CWE/CVE':<15} | {'File':<40} | {'Type':<25} | {'Manual':<8} | {'AI':<8} |")
+    print("-" * 115)
+    for d in details:
+        cwe_cve = d.get('cve') or d.get('cwe', '')
+        f = d.get('file', '')
+        if len(f) > 37:
+            f = "..." + f[-37:]
+        vtype = d.get('type', '')
+        if len(vtype) > 22:
+            vtype = vtype[:22] + "..."
+            
+        man_res = "PASS" if d.get('det_manual') else "FAIL"
+        ai_res = "PASS" if d.get('det_ai') else "FAIL"
+        print(f"| {cwe_cve:<15} | {f:<40} | {vtype:<25} | {man_res:<8} | {ai_res:<8} |")
+    print("-" * 115)
+
+def render_conclusion(total_exp, total_manual, total_ai):
+    man_rate = (total_manual / total_exp * 100) if total_exp > 0 else 0
+    ai_rate = (total_ai / total_exp * 100) if total_exp > 0 else 0
+    sys_rate = (man_rate + ai_rate) / 2
+
+    print("\n" + "=" * 50)
+    print("FINAL".center(50))
+    print("=" * 50)
+    print(f"Total Vulnerabilities: {total_exp}")
+    print(f"Detected by Manual: {total_manual} ({man_rate:.1f}%)")
+    print(f"Detected by AI:     {total_ai} ({ai_rate:.1f}%)")
+    print("-" * 50)
+    print(f"System Detection Rate: {sys_rate:.1f}%".center(50))
+    print("=" * 50 + "\n")
+
+def main():
     root = Path(__file__).resolve().parent
-    
-    render_header()
-    
-    # Totals for ALL benchmarks (including NO REPORT)
     total_exp = 0
-    total_det_rule = 0
-    total_det_ai = 0
-    total_proj = 0
-    missing_count = 0
-
-    # Totals only for benchmarks that HAVE a report (used for final verdict rate)
-    scanned_exp = 0
-    scanned_det_rule = 0
-    scanned_det_ai = 0
-    
-    stats = []
-    projects = []
+    total_manual = 0
+    total_ai = 0
     
     global_findings = []
     root_reports = root.parent / "reports"
@@ -230,10 +132,10 @@ def verify():
             try:
                 with open(glatest, "r", encoding="utf-8") as f:
                     gscan = json.load(f)
-                    global_findings = gscan.get("data", {}).get("findings", []) if "data" in gscan else gscan.get("findings", [])
+                    global_findings = gscan.get("data", {}).get("sast", []) if "data" in gscan else gscan.get("sast", [])
             except Exception:
                 pass
-    
+                
     for proj in sorted(root.iterdir()):
         if not proj.is_dir():
             continue
@@ -249,156 +151,100 @@ def verify():
         if not vulns:
             continue
             
-        total_proj += 1
-        lang = truth.get("language", "unknown")
-        exp_count = len(vulns)
-        total_exp += exp_count
+        findings = []
+        has_report = False
         
         rdir = proj / "reports"
         rfiles = glob.glob(str(rdir / "sinful_report_*.json")) if rdir.exists() else []
-        
-        findings = []
-        has_report = False
         if rfiles:
             has_report = True
             latest = max(rfiles, key=os.path.getmtime)
             try:
                 with open(latest, "r", encoding="utf-8") as f:
                     lscan = json.load(f)
-                    findings = lscan.get("data", {}).get("findings", []) if "data" in lscan else lscan.get("findings", [])
-                    cves = lscan.get("data", {}).get("cves", []) if "data" in lscan else lscan.get("cves", [])
-                    manis = find_manifests(proj)
+                    findings = lscan.get("data", {}).get("sast", []) if "data" in lscan else lscan.get("sast", [])
+                    cves = lscan.get("data", {}).get("sca", []) if "data" in lscan else lscan.get("sca", [])
+
                     seen_sca = set()
                     for c in cves:
                         pkg = c.get("package", "")
                         if pkg in seen_sca:
                             continue
                         seen_sca.add(pkg)
-                        cve_list = c.get("cve", [])
                         findings.append({
-                            "path": manis.get(c.get("ecosystem", ""), ""),
+                            "path": c.get("manifest_file", ""),
                             "id": c.get("vuln_id", ""),
                             "title": pkg,
                             "sca_package": pkg,
-                            "cve": cve_list,
+                            "cve": c.get("cve", []),
                         })
             except Exception:
-                stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "det_rule": 0, "det_ai": 0, "status": "INVALID REPORT"})
-                projects.append({"name": proj.name, "details": [], "status": "INVALID REPORT"})
-                continue
+                pass
         elif global_findings:
-            # Filter global findings to this project by path
             proj_marker = f"/benchmark/{proj.name}/"
             proj_name_lower = proj.name.lower()
             proj_findings = []
             for gf in global_findings:
                 fpath_norm = str(gf.get("path", "")).replace("\\", "/")
-                if proj_marker in fpath_norm:
-                    proj_findings.append(gf)
-                    has_report = True
-                elif proj_name_lower in fpath_norm.lower():
+                if proj_marker in fpath_norm or proj_name_lower in fpath_norm.lower():
                     proj_findings.append(gf)
                     has_report = True
             findings = proj_findings
-        
+            
         if not has_report:
-            stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "det_rule": 0, "det_ai": 0, "status": "NO REPORT"})
-            projects.append({"name": proj.name, "details": [], "status": "NO REPORT"})
-            missing_count += 1
+            details = []
+            for v in vulns:
+                v_entry = v.copy()
+                v_entry['det_manual'] = False
+                v_entry['det_ai'] = False
+                details.append(v_entry)
+            render_table(proj.name + " (NO REPORT)", details)
             continue
-        
-        det_count_rule = 0
-        det_count_ai = 0
+            
         details = []
-        
         for v in vulns:
+            is_sca = "cve" in v
             cwe = v.get("cwe", "").upper()
-            is_sca = "cve" in v  # SCA entries use 'cve' key instead of 'cwe'
             target = v.get("file", "")
-            vtype = v.get("type", "")  # package name for SCA, vuln type for SAST
+            vtype = v.get("type", "")
             target_basename = Path(target).name.lower()
             
-            det_rule = False
+            det_manual = False
             det_ai = False
+            
             for flaw in findings:
+                if verify_manual(v, flaw, is_sca, target, target_basename, vtype):
+                    det_manual = True
+                    det_ai = True
+                    break
+                    
                 fpath = str(flaw.get("path", "")).replace("\\", "/")
                 fpath_basename = Path(fpath).name.lower()
-                
-                # Match by full path suffix OR just basename (for relative-path findings)
                 path_match = target in fpath or target_basename == fpath_basename
-                
-                if path_match:
-                    if is_sca:
-                        # For SCA: match by CVE ID in the cve list or package name
-                        expected_cve = v.get("cve", "").upper()
-                        fpkg = str(flaw.get("sca_package", "")).lower()
-                        fcves = [str(x).upper() for x in flaw.get("cve", [])]
-                        cve_match = expected_cve in fcves
-                        pkg_match = vtype.lower() == fpkg
-                        if cve_match or pkg_match:
-                            det_rule = True
-                            det_ai = True
-                        continue
-
+                if path_match and not is_sca and not det_ai:
                     fid = str(flaw.get("id", "")).upper()
                     ftitle = str(flaw.get("title", "")).upper()
                     fmsg = str(flaw.get("message", "")).upper()
-                    
-                    fcwes = extract_cwes(flaw)
-                    cwe_ids = flaw.get("cwe_ids", [])
-                    cwe_id_match = any(cwe == f"CWE-{c_id}" for c_id in cwe_ids) if isinstance(cwe_ids, list) else False
-                    has_cwe = cwe_id_match or any(cwe in str(c).upper() for c in fcwes)
                     fvuln_class = str(flaw.get("vuln_class", "")).upper()
-                    
-                    if not det_rule and (cwe in fid or cwe in ftitle or cwe in fmsg or vtype.upper() in ftitle or has_cwe or cwe in fvuln_class or vtype.upper() in fvuln_class):
-                        det_rule = True
-                        
-                    if not det_ai:
-                        if det_rule:
-                            det_ai = True
-                        else:
-                            ai_result = ai_judge(cwe, vtype, ftitle, fmsg, fvuln_class, cwe_ids)
-                            if ai_result:
-                                det_ai = True
-                        
-                    if det_rule and det_ai:
+                    cwe_ids = flaw.get("cwe_ids", [])
+                    if verify_ai(cwe, vtype, ftitle, fmsg, fvuln_class, cwe_ids):
+                        det_ai = True
                         break
-            
-            if det_rule:
-                det_count_rule += 1
+                        
+            if det_manual:
+                total_manual += 1
             if det_ai:
-                det_count_ai += 1
-                
-            details.append({
-                "cwe": cwe,
-                "file": target,
-                "type": vtype,
-                "det_rule": det_rule,
-                "det_ai": det_ai
-            })
+                total_ai += 1
+            total_exp += 1
             
-        total_det_rule += det_count_rule
-        total_det_ai += det_count_ai
-        scanned_exp += exp_count
-        scanned_det_rule += det_count_rule
-        scanned_det_ai += det_count_ai
-        stats.append({"name": proj.name, "lang": lang, "expected": exp_count, "det_rule": det_count_rule, "det_ai": det_count_ai, "status": "OK"})
-        projects.append({"name": proj.name, "details": details, "status": "OK"})
+            v_entry = v.copy()
+            v_entry['det_manual'] = det_manual
+            v_entry['det_ai'] = det_ai
+            details.append(v_entry)
+            
+        render_table(proj.name, details)
         
-    render_summary(total_proj, total_exp, total_det_rule, total_det_ai, missing_count)
-    
-    if stats:
-        render_overview(stats)
-        
-    for pd in projects:
-        render_details(pd["name"], pd["details"], pd["status"])
-
-    # Final verdict uses only scanned benchmarks (NO REPORT ones don't penalize the rate)
-    console.print()
-    if missing_count > 0:
-        console.print(f"  [dim]ℹ  {missing_count} benchmark(s) have no report and are excluded from the detection rate.[/dim]")
-        console.print()
-    render_verdict(scanned_exp, scanned_det_rule, scanned_det_ai)
+    render_conclusion(total_exp, total_manual, total_ai)
 
 if __name__ == "__main__":
-    verify()
+    main()

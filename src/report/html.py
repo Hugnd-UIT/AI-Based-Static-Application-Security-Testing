@@ -44,7 +44,7 @@ def report_html(findings: list, target: str, out: str) -> str:
             html.append(f"<p><strong>File:</strong> {escape(str(file))} (Line: {escape(str(line))})</p>")
             html.append(f"<p><strong>Message:</strong> {escape(str(msg))}</p>")
 
-            cwes = f.get('cwe_ids') or f.get('cwe')
+            cwes = f.get('cwe')
             if cwes:
                 html.append(f"<p><strong>CWE:</strong> {escape(', '.join(str(c) for c in cwes))}</p>")
 
@@ -53,7 +53,7 @@ def report_html(findings: list, target: str, out: str) -> str:
                 html.append("<p><strong>Code:</strong></p>")
                 html.append(f"<pre><code>{escape(str(code))}</code></pre>")
 
-            dflow = f.get("data_flow")
+            dflow = f.get("flow")
             if dflow and isinstance(dflow, list):
                 html.append("<p><strong>Data Flow:</strong></p>")
                 html.append("<ul>")

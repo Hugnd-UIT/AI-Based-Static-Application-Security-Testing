@@ -40,13 +40,10 @@ def run_scan(path, rules=None, model=None, fix=False):
     temp = None
     res = {
         "status": "processing",
-        "languages": {},
-        "language_versions": {},
+        "languages": [],
         "dependencies": [],
-        "findings": [],
-        "cves": [],
-        "nvd": [],
-        "rag_summaries": [],
+        "sast": [],
+        "sca": [],
         "unverified": 0,
     }
 
@@ -93,8 +90,7 @@ def run_scan(path, rules=None, model=None, fix=False):
 
     langs = detector.detect_langs(str(sdir))
     vers = detector.get_versions(langs)
-    res["languages"] = langs
-    res["language_versions"] = vers
+    res["languages"] = [{"name": k, "files": v, "version": vers.get(k, "Unknown")} for k, v in langs.items()]
     detector.report_langs(langs, vers)
 
     deps = dep_parser.parse_deps(str(sdir))
@@ -144,7 +140,7 @@ def run_scan(path, rules=None, model=None, fix=False):
         if f.get("verdict", "").upper() == "VULNERABLE":
             final_flaws.append(f)
             
-    res['findings'] = final_flaws
+    res['sast'] = final_flaws
     flaws = final_flaws
 
     if temp:
@@ -160,8 +156,9 @@ def run_scan(path, rules=None, model=None, fix=False):
     logger.blank()
     table = Table(show_header=False, box=None, padding=(0, 2))
     
-    langs = len(res.get("languages", {}))
-    files = sum(res.get("languages", {}).values())
+    langs_list = res.get("languages", [])
+    langs = len(langs_list)
+    files = sum(l.get("files", 0) for l in langs_list)
     cdeps = len(res.get("dependencies", []))
     dur = logger.get_time()
     cfinds = len(flaws)
@@ -219,14 +216,14 @@ def run_scan(path, rules=None, model=None, fix=False):
     def ccvss(val):
         try:
 
-            return float(val.get("cvss_estimate", 0))
+            return float(val.get("cvss", 0))
 
         except (TypeError, ValueError):
 
             return 0.0
 
     flaws.sort(key=ccvss, reverse=True)
-    res["findings"] = flaws
+    res["sast"] = flaws
 
     return {"status": "success", "data": res}
 

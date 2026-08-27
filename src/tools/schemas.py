@@ -120,7 +120,7 @@ COMMON = {
         "type": "integer",
         "description": "Confidence score 0-100 - Must be >= 70 to submit VULNERABLE",
     },
-    "reasoning": {
+    "reason": {
         "type": "string",
         "description": "Chain-of-custody reasoning: source -> alias chain -> sink",
     },
@@ -128,14 +128,7 @@ COMMON = {
 
 # Trường riêng của agent theo dõi luồng dữ liệu
 TRACE_PROPS = {
-    "source_identified": {"type": "boolean"},
-    "source_variable": {"type": "string"},
-    "sink_identified": {"type": "boolean"},
-    "sink_function": {
-        "type": "string",
-        "description": "Bare name of the sink function (e.g. 'ExecuteReader', not 'SqlCommand.ExecuteReader')",
-    },
-    "data_flow": {
+    "flow": {
         "type": "array",
         "description": "One entry per hop, in chronological order from source to sink",
         "items": {
@@ -148,16 +141,14 @@ TRACE_PROPS = {
             },
         },
     },
-    "hops_traced": {"type": "integer"},
-    "cross_file": {"type": "boolean"},
-    "flow_unbroken": {"type": "boolean"},
-    "surr": {
+    "broken_flow": {"type": "boolean"},
+    "surrogate": {
         "type": "boolean",
         "description": "True when the flow is broken and you are proposing a surrogate sink instead",
     },
     "surrogate_function": {
         "type": "string",
-        "description": "Upstream caller to treat as the new sink when 'surr' is true",
+        "description": "Upstream caller to treat as the new sink when 'surrogate' is true",
     },
 }
 
@@ -168,29 +159,17 @@ RISK_PROPS = {
         "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
         "description": "Severity based on CVSS impact",
     },
-    "cvss_estimate": {
+    "cvss": {
         "type": "number",
         "description": "CVSS v3.1 base score estimate (0.0 - 10.0)",
-    },
-    "vuln_class": {
-        "type": "string",
-        "description": "Vulnerability name/class (e.g., 'SQL Injection')",
-    },
-    "sink_file": {
-        "type": "string",
-        "description": "The EXACT path to the file where the sink function is located (e.g. 'src/db.cpp')",
-    },
-    "sink_function": {"type": "string"},
-    "cwe_ids": {
-        "type": "array",
-        "items": {"type": "integer"},
-        "description": "An array of only integer CWE IDs (e.g. [89, 79]). NEVER include the string 'CWE'.",
     },
     "attack_vector": {
         "type": "string",
         "description": "(Optional) A concrete attack example",
     },
-    "data_flow": TRACE_PROPS["data_flow"],
+    "source_variable": {"type": "string"},
+    "sink_function": {"type": "string"},
+    "flow": TRACE_PROPS["flow"],
     "source_is_false_positive": {
         "type": "boolean",
         "description": "True if the reported source is NOT attacker controlled (hardcoded value, config file, trusted internal caller). Setting this forces the finding to SAFE.",
@@ -262,10 +241,10 @@ def make_verdict(props: dict, desc: str) -> dict:
         },
     }
 
-SCAN_VERDICT   = make_verdict(TRACE_PROPS, "Submit the traced data flow to terminate the analysis loop - Fill 'data_flow' with every hop you proved, or set 'surr' if the flow is broken")
+SCAN_VERDICT   = make_verdict(TRACE_PROPS, "Submit the traced data flow to terminate the analysis loop - Fill 'flow' with every hop you proved, or set 'surrogate' if the flow is broken")
 AUDIT_VERDICT  = make_verdict(RISK_PROPS, "Submit the final verdict to terminate the analysis loop - MUST be called with concrete evidence gathered from other tools")
 FIX_VERDICT    = make_verdict(PATCH_PROPS, "Submit the patches to terminate the analysis loop - 'old_code' must match the file character-for-character")
-POC_VERDICT    = make_verdict(POC_PROPS, "Submit the exploitability decision to terminate the analysis loop - Say exactly what you searched for in 'reasoning'")
+POC_VERDICT    = make_verdict(POC_PROPS, "Submit the exploitability decision to terminate the analysis loop - Say exactly what you searched for in 'reason'")
 EXPAND_VERDICT = make_verdict(SINK_PROPS, "Submit the new sink patterns to terminate the analysis loop - Only include patterns you verified with search_pattern")
 
 EXPAND_TOOLS = [SEARCH_SCHEMA, EXPAND_VERDICT]

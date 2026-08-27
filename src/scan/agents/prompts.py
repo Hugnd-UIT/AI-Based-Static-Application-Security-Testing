@@ -15,14 +15,14 @@ Trace the exact path of untrusted data from its SOURCE to the dangerous SINK ste
 If you cannot trace the data flow from the source to the sink directly because the flow is broken or lost:
 1. Identify the function that contains the sink.
 2. Call `find_callers(function_name)` to find out who calls this function.
-3. Select the most relevant upstream caller and propose it as a `surrogate_sink` and `surrogate_function` in `submit_verdict()`.
-4. Set `surr = true` and leave `data_flow` empty.
+3. Select the most relevant upstream caller and propose it as a `surrogate` and `surrogate_function` in `submit_verdict()`.
+4. Set `surrogate = true` and leave `flow` empty.
 
 # Tool Usage
 - Call `trace_variable()` to find where a variable is assigned, mutated, or aliased.
 - Call `find_function()` if an argument comes from a function call.
 - Call `find_callers()` to trace who supplies tainted data interprocedurally.
-- Call `submit_verdict()` with the full `data_flow` array if the trace is successful, OR with `surr = true` if handling broken flows.
+- Call `submit_verdict()` with the full `flow` array if the trace is successful, OR with `surrogate = true` if handling broken flows.
 
 # Decision Rules
 - Set `verdict = "VULNERABLE"` if the source is external and untrusted, or if proposing a surrogate sink.
@@ -56,5 +56,5 @@ File: {path}
 # Action
 Begin tracing.
 Call tools as needed.
-Call `submit_verdict()` with the complete `data_flow` array.
+Call `submit_verdict()` with the complete `flow` array.
 """

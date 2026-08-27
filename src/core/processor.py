@@ -59,21 +59,21 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
                     module=use_module,
                 )
                 
-                if trace and trace.get("data_flow"):
-                    item["dataflow_trace"] = json.dumps(trace["data_flow"], indent=2)
-                    hops = len(trace["data_flow"])
+                if trace and trace.get("flow"):
+                    item["dataflow_trace"] = json.dumps(trace["flow"], indent=2)
+                    hops = len(trace["flow"])
 
-                    if trace.get("source_identified"):
+                    if trace.get("source_variable") or trace.get("sink_function"):
                         console.print(f"  ├─ [cyan]◆ Source:[/cyan] [dim]{trace.get('source_variable', 'Unknown')}[/dim]")
                         console.print(f"  ├─ [cyan]◆ Sink:[/cyan] [dim]{trace.get('sink_function', 'Unknown')}[/dim]")
 
-                        for hop in trace["data_flow"]:
+                        for hop in trace["flow"]:
                             console.print(f"  │  [dim]Hop {hop.get('step')}: {hop.get('variable')} -> {hop.get('operation')}[/dim]")
 
                     console.print(f"  └─ [bold green]✔ {hops} Hops[/bold green]")
                     break
                 
-                elif trace and trace.get("surr"):
+                elif trace and trace.get("surrogate"):
                     surr = trace.get("surrogate_function", "Unknown")
                     item["sink_context"] = f"Original sink was unreachable. We are now treating '{surr}' as the sink. Use find_callers('{surr}') if needed."
                     rcount += 1
@@ -169,7 +169,7 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
                 console.print(f"  ├─ [dim]↷ Pruned: {prune}[/dim]")
 
             vuln = verdict_str == "VULNERABLE"
-            reason = verdict.get("reasoning", "")
+            reason = verdict.get("reason", "")
 
             if reason:
                 width = max(60, console.width - 10)
@@ -179,18 +179,24 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
             conf = verdict.get("confidence", 0)
             if vuln:
                 console.print(f"  ├─ [bold red]✖ VULNERABLE[/bold red]")
-                console.print(f"  ├─ [dim][CVSS: {verdict.get('cvss_estimate', 'N/A')}] [{verdict.get('severity', 'UNKNOWN')}][/dim]")
+                console.print(f"  ├─ [dim][CVSS: {verdict.get('cvss', 'N/A')}] [{verdict.get('severity', 'UNKNOWN')}][/dim]")
                 console.print(f"  ├─ [dim][Confidence: {verdict.get('confidence', 'N/A')}%][/dim]")
-                if "cwe_ids" in verdict:
-                    console.print(f"  ├─ [dim][CWEs: {verdict.get('cwe_ids', [])}][/dim]")
-                console.print(f"  └─ [dim][Class: {verdict.get('vuln_class', 'N/A')}][/dim]")
                 res["vuln"] = True
                 vuln = True
                 item.update(verdict)
 
                 # Nếu agent phán quyết không nêu luồng dữ liệu thì lấy lại của agent quét
-                if not item.get("data_flow") and trace.get("data_flow"):
-                    item["data_flow"] = trace["data_flow"]
+                if not item.get("flow") and trace.get("flow"):
+                    item["flow"] = trace["flow"]
+
+                # Remove redundant fields to match target schema exactly
+                fields_to_drop = [
+                    "lines", "start_col", "end_col", "shortlink", "ast", "technology", 
+                    "owasp", "category", "impact", "likelihood", "vulnerability_class", 
+                    "dataflow_trace", "sink_context"
+                ]
+                for field in fields_to_drop:
+                    item.pop(field, None)
 
                 if sink_fn:
                     cache[key] = verdict
@@ -203,7 +209,7 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
                 console.print(f"  └─ [bold yellow]⚠ UNKNOWN[/bold yellow]")
 
                 # Không có phán quyết vì hạ tầng lỗi thì đánh dấu để pipeline không kết luận là an toàn
-                if broke(verdict.get("reasoning", "")):
+                if broke(verdict.get("reason", "")) or broke(verdict.get("reasoning", "")):
                     res["unverified"] = res.get("unverified", 0) + 1
 
         except Exception as e:

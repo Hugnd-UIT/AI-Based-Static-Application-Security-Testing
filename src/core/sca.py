@@ -29,7 +29,7 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
         cves = usage.check_usage(str(sdir), cves, use_module)
 
         # Dep khai báo trong manifest mà có cve thì vẫn phải báo, reachable chỉ dùng để chọn cái đem đi phân tích sâu
-        res["cves"] = cves
+        res["sca"] = cves
         osv.report_osv(cves)
 
         hot = []
@@ -92,29 +92,40 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
                     except Exception as e:
                         console.print(f"  [dim]Failed to fetch {cid}: {e}[/dim]")
 
+            nvd_results = []
             for cid in ids:
                 nres = done.get(cid)
                 if nres:
                     console.print("")
                     nvd.report_nvd(nres)
-                    res["nvd"].append(nres)
+                    nvd_results.append(nres)
 
     parts = []
     tag = fr" [[cyan]{model}[/cyan]]"
     
-    if res["nvd"] or hot:
+    if nvd_results or hot:
         pcves = []
-        fnvd = {n.get("cve_id"): n for n in res.get("nvd", []) if n.get("cve_id")}
+        fnvd = {n.get("cve_id"): n for n in nvd_results if n.get("cve_id")}
+
+        for base in cves:
+            aliases = base.get("cve", [])
+            for alias in aliases:
+                if alias in fnvd:
+                    if "cvss_v3" in fnvd[alias]:
+                        base["cvss"] = fnvd[alias]["cvss_v3"]
+                    break
 
         for base in hot:
             mcve = dict(base)
             aliases = mcve.get("cve", [])
-
             for alias in aliases:
                 if alias in fnvd:
                     mcve.update(fnvd[alias])
                     break
             pcves.append(mcve)
+
+        # Cập nhật mảng sca với điểm cvss
+        res["sca"] = cves
 
         # SCA
         logger.section("SCA")
@@ -125,12 +136,11 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
             
             jstr = json.dumps({
                 "cve_info": data,
-                "runtimes": res.get("language_versions")
+                "runtimes": res.get("languages")
             }, indent=2)
             
             try:
                 rsum = rag_agents.start_rag(jstr, model=model) # RAG Agent Role
-                res["rag_summaries"].append(rsum)
                 rags.append(rsum)
 
                 if "ccve" in rsum and rsum["ccve"] not in ["None", "Unknown"]:
@@ -299,7 +309,7 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
 
     ctx_final = "\n\n---\n\n".join(parts) if parts else "No relevant supply chain vulnerabilities found in project dependencies."
     if cves:
-        res['cves'] = cves
+        res['sca'] = cves
     process_flaws(sca_flaws, 'SCA', sdir, ctx_final, use_module, cache, res, model, fix)
     
     return sca_flaws

@@ -36,7 +36,6 @@ Reason step by step and act by calling tools to gather concrete evidence before 
 - Set `verdict = "VULNERABLE"` when STEP 0 applies, or when you have proven an unbroken taint path.
 - Set `verdict = "SAFE"` only when sanitization is verified on ALL execution paths. If a sanitizer is only on one branch, it is still VULNERABLE.
 - Authorization checks are NOT sanitization. A permission check does not clean tainted data.
-- Identify the exact, most specific CWE IDs for the vulnerability. When calling `submit_verdict`, you MUST provide `cwe_ids` as an array of integers (e.g. `[89, 79]`). Do NOT include the string "CWE". If you are unsure of the exact CWE ID, do NOT guess or use a generic parent CWE. Instead, use your tools (like `search_pattern`) to gather more context and determine the precise CWE before submitting.
 - Some defects are vulnerable by construction and need NO taint path — see STEP 0. Judge the code itself, not the reported sink.
 - Business Logic flaws (IDOR, missing auth) are valid vulnerabilities.
 - Race conditions and time-of-check/time-of-use (TOCTOU) are valid vulnerabilities.

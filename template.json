@@ -1,0 +1,77 @@
+{
+  "status": "...",
+  "data": {
+    "languages": [
+      {
+        "name": "...",
+        "files": "...",
+        "version": "..."
+      }
+    ],
+    "dependencies": [
+      {
+        "ecosystem": "...",
+        "package": "...",
+        "version": "..."
+      }
+    ],
+    "sast": [
+      {
+        "id": "...",
+        "path": "...",
+        "start_line": "...",
+        "end_line": "...",
+        "severity": "...",
+        "message": "...",
+        "cwe": [
+          "..."
+        ],
+        "confidence": "...",
+        "references": [
+          "..."
+        ],
+        "class": [
+          "..."
+        ],
+        "fix": "...",
+        "regex": "...",
+        "verdict": "...",
+        "cvss": "...",
+        "reason": "...",
+        "attack_vector": "...",
+        "source_variable": "...",
+        "sink_function": "...",
+        "flow": [
+          {
+            "file": "...",
+            "start_line": "...",
+            "end_line": "...",
+            "variable": "...",
+            "action": "..."
+          }
+        ],
+        "surrogate": "...",
+        "surrogate_function": "...",
+        "broken_flow": "..."
+      }
+    ],
+    "sca": [
+      {
+        "package": "...",
+        "version": "...",
+        "ecosystem": "...",
+        "id": "...",
+        "cve": [
+          "..."
+        ],
+        "summary": "...",
+        "details": "...",
+        "references": [
+          "..."
+        ],
+        "cvss": "..."
+      }
+    ],
+    "vuln": "..."
+  }
+}
