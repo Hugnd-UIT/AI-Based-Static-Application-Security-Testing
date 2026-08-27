@@ -3,7 +3,7 @@ class LogicService
 
   def self.buy_item(quantity)
     price = 100
-    # Business Logic Flaw (Negative Quantity) [CWE-840]
+    # Business Logic Flaw [CWE-840]
     total_cost = price * quantity
 
     if @balance >= total_cost
@@ -15,7 +15,7 @@ class LogicService
   end
 
   def self.view_profile(profile_id)
-    # Improper Access Control / IDOR [CWE-284]
+    # Improper Access Control [CWE-284]
     db = { "1" => "Admin Profile", "2" => "User Profile" }
     db[profile_id] || "Profile not found"
   end

@@ -8,9 +8,8 @@ import java.io.ByteArrayInputStream;
 public class XmlService {
     public void parseXml(String xmlData) {
         try {
-            // XML External Entity (XXE) [CWE-611]
+            // XML External Entity [CWE-611]
             DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-            // Not disabling external entities makes it vulnerable
             DocumentBuilder builder = factory.newDocumentBuilder();
             Document doc = builder.parse(new ByteArrayInputStream(xmlData.getBytes()));
         } catch (Exception e) {

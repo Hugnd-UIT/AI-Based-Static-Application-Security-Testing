@@ -12,8 +12,13 @@ object LogicService {
     }
   }
 
-  def viewProfile(id: String): String = {
-    // Improper Access Control [CWE-284]
-    s"Profile data for $id"
+  // Improper Access Control [CWE-284]
+  def viewProfile(id: String, currentUserId: String): String = {
+    val db = Map(
+      "1" -> "admin:secret_hash:$2b$12$AdminSecretData",
+      "2" -> "alice:private_email:alice@internal.com",
+      "3" -> "bob:private_email:bob@internal.com"
+    )
+    db.getOrElse(id, "Profile not found")
   }
 }

@@ -6,7 +6,7 @@ import (
 )
 
 func FetchHttp(url string) string {
-	// Server-Side Request Forgery (SSRF) [CWE-918]
+	// Server-Side Request Forgery [CWE-918]
 	resp, err := http.Get(url)
 	if err != nil {
 		return ""

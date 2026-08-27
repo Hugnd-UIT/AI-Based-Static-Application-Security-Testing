@@ -11,7 +11,7 @@ void runPing(const std::string& host) {
 }
 
 void executeCustom(const std::string& command) {
-    // Command Injection via popen [CWE-78]
+    // Command Injection [CWE-78]
     FILE* fp = popen(command.c_str(), "r");
     if (fp) {
         pclose(fp);

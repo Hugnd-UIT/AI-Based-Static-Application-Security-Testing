@@ -12,7 +12,7 @@ exports.getUser = (req, res) => {
 
 exports.greetUser = (req, res) => {
     const name = req.query.name;
-    // XSS [CWE-79]
+    // Cross-Site Scripting [CWE-79]
     res.send("<html><body>Hello " + name + "</body></html>");
 };
 

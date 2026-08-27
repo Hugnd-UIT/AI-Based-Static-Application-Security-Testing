@@ -5,19 +5,19 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <!-- Vulnerable Dependency: Newtonsoft.Json 12.0.1 (Known issues with deserialization) -->
+    <!-- Newtonsoft.Json [CVE-2024-21907] -->
     <PackageReference Include="Newtonsoft.Json" Version="12.0.1" />
     
-    <!-- Vulnerable Dependency: log4net 2.0.8 -->
+    <!-- log4net [CVE-2018-1285] -->
     <PackageReference Include="log4net" Version="2.0.8" />
     
-    <!-- Vulnerable Dependency: System.Data.SqlClient 4.6.0 -->
+    <!-- System.Data.SqlClient [CVE-2024-0056] -->
     <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
 
-    <!-- Vulnerable Dependency: System.Text.Encodings.Web 4.7.1 (CVE-2021-26701) -->
+    <!-- System.Text.Encodings.Web [CVE-2021-26701] -->
     <PackageReference Include="System.Text.Encodings.Web" Version="4.7.1" />
 
-    <!-- Vulnerable Dependency: System.Net.Http 4.3.0 (CVE-2017-0247) -->
+    <!-- System.Net.Http [CVE-2017-0247] -->
     <PackageReference Include="System.Net.Http" Version="4.3.0" />
   </ItemGroup>
 

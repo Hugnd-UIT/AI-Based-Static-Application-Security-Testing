@@ -6,7 +6,7 @@ namespace Benchmark.CSharp.Services
     {
         public void ParseXmlData(string xmlInput)
         {
-            // XML External Entity (XXE) [CWE-611]
+            // XML External Entity [CWE-611]
             XmlReaderSettings settings = new XmlReaderSettings();
             settings.DtdProcessing = DtdProcessing.Parse; 
             

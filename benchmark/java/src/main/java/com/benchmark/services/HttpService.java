@@ -7,7 +7,7 @@ import java.io.InputStream;
 public class HttpService {
     public void fetchUrl(String targetUrl) {
         try {
-            // Server-Side Request Forgery (SSRF) [CWE-918]
+            // Server-Side Request Forgery [CWE-918]
             URL url = new URL(targetUrl);
             URLConnection connection = url.openConnection();
             InputStream in = connection.getInputStream();

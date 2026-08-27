@@ -48,7 +48,7 @@ switch ($route) {
         break;
 
     case 'greet':
-        // Cross-Site Scripting (XSS) [CWE-79]
+        // Cross-Site Scripting [CWE-79]
         $name = $_GET['name'] ?? 'Guest';
         echo "<h1>Welcome, " . $name . "</h1>";
         break;

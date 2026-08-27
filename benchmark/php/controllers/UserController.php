@@ -9,7 +9,7 @@ class UserController {
         if ($user) {
             $expectedHash = $user['hash'];
             
-            // Incorrect Comparison / Type Juggling [CWE-697]
+            // Incorrect Comparison [CWE-697]
             if ($providedHash == $expectedHash) {
                 echo "Logged in successfully!";
             } else {
@@ -19,7 +19,7 @@ class UserController {
     }
 
     public function adminPanel() {
-        // Reliance on Untrusted Inputs in a Security Decision [CWE-807]
+        // Reliance on Untrusted Inputs [CWE-807]
         if (isset($_COOKIE['role']) && $_COOKIE['role'] == 'admin') {
             echo "Welcome to the secret admin panel!";
         } else {
