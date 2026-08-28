@@ -21,7 +21,7 @@ load_dotenv()
 
 from cli.views import logger
 
-# Khởi tạo công cụ phân tích cú pháp Tree-sitter
+# Init AST
 def init_sitter():
     sitter_path = Path(__file__).resolve().parent / "src" / "ast" / "tree-sitter.py"
     load_spec = importlib.util.spec_from_file_location("ts_module", str(sitter_path))
@@ -30,11 +30,11 @@ def init_sitter():
 
     return use_module
 
-# Khởi chạy toàn bộ quy trình quét bảo mật
+# Run full scan
 def run_scan(path, rules=None, model=None, fix=False):
     m = model or os.environ["AI_MODEL"]
 
-    # Đặt lại đồng hồ để thời lượng tính từ lúc bắt đầu quét
+    # Reset timer
     logger.reset_timer()
 
     temp = None
@@ -125,8 +125,6 @@ def run_scan(path, rules=None, model=None, fix=False):
 
     flaws = sca_flaws + sgres
     
-    # Filter out duplicates (handled by cache) and non-vulnerable findings (SAFE or UNKNOWN)
-    # The audit agent only adds 'verdict': 'VULNERABLE' if it confirmed the flaw.
     final_flaws = []
     for f in flaws:
         if f.get("is_duplicate"):
@@ -171,7 +169,7 @@ def run_scan(path, rules=None, model=None, fix=False):
     vuln = res.get("vuln", False) or cfinds > 0
     lost = res.get("unverified", 0)
 
-    # Mất phán quyết thì chưa kết luận được, báo an toàn lúc này là dương tính giả ngược
+    # Handle unverified
     if vuln:
         msg = "[bold red]✖ VULNERABLE[/bold red]"
 
@@ -218,30 +216,29 @@ def run_scan(path, rules=None, model=None, fix=False):
 
     flaws.sort(key=ccvss, reverse=True)
     res["sast"] = flaws
+    res["vuln"] = vuln
 
     return {"status": "success", "data": res}
 
-
-
-# Khởi động ứng dụng CLI hoặc quét thư mục
+# Start CLI or Scan
 def start_app():
     parser = argparse.ArgumentParser(description="Sinful AI-Based SAST")
     parser.add_argument("target", nargs="?", help="Target directory OR Git URL to scan")
     args = parser.parse_args()
 
-    # Nếu không có target, mở giao diện dòng lệnh
+    # Fallback CLI
     if not args.target:
         from cli.main import start_cli
         start_cli()
         return
 
-    # Nếu có target, chạy quét trực tiếp
+    # Direct scan
     res = run_scan(args.target, None, None)
 
     if res["status"] == "error":
         print(res["message"])
         sys.exit(1)
 
-# Điểm vào chính của chương trình
+# Main entry
 if __name__ == "__main__":
     start_app()
