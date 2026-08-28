@@ -345,22 +345,66 @@ def parse_nuget(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-        section_suffix = section.split(".")[-1].strip().strip("'\"")
-        if section_suffix not in ("dependencies", "dev-dependencies", "build-dependencies"):
-            continue
+# Parse Rust Cargo dependencies
+def parse_cargo(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
 
-        if val.startswith("{"):
-            ver = re.search(r'version\s*=\s*[\'"]([^\'"]+)[\'"]', val)
+        section = ""
+        entry = {}
 
-        else:
-            ver = re.match(r'^[\'"]([^\'"]+)[\'"]', val)
+        for line in content.splitlines():
+            line = line.strip()
+            if not line or line.startswith("#"):
+                continue
 
-        if ver:
-            deps.append({"ecosystem": "crates.io", "package": key, "version": ver.group(1).strip('^~<>="')})
+            if line.startswith("[[") and line.endswith("]]"):
+                if entry.get("package") and entry.get("version"):
+                    deps.append({"ecosystem": "crates.io", **entry})
+                entry = {}
+                section = "package_list"
+                continue
+                
+            if line.startswith("[") and line.endswith("]"):
+                if entry.get("package") and entry.get("version"):
+                    deps.append({"ecosystem": "crates.io", **entry})
+                entry = {}
+                section = line[1:-1]
+                continue
 
-    if entry.get("package") and entry.get("version"):
-        deps.append({"ecosystem": "crates.io", **entry})
+            if "=" in line:
+                parts = line.split("=", 1)
+                key = parts[0].strip(' \'"')
+                val = parts[1].strip()
 
+                if section == "package_list":
+                    if key == "name":
+                        entry["package"] = val.strip(' \'"')
+                    elif key == "version":
+                        entry["version"] = val.strip(' \'"')
+                    continue
+
+                section_suffix = section.split(".")[-1].strip().strip("'\"")
+                if section_suffix not in ("dependencies", "dev-dependencies", "build-dependencies"):
+                    continue
+
+                if val.startswith("{"):
+                    ver = re.search(r'version\s*=\s*[\'"]([^\'"]+)[\'"]', val)
+                else:
+                    ver = re.match(r'^[\'"]([^\'"]+)[\'"]', val)
+
+                if ver:
+                    deps.append({"ecosystem": "crates.io", "package": key, "version": ver.group(1).strip('^~<>="')})
+
+        if entry.get("package") and entry.get("version"):
+            deps.append({"ecosystem": "crates.io", **entry})
+            
+    except Exception:
+        pass
+        
     return deps
 
 # Parse Dart/Flutter pubspec dependencies
