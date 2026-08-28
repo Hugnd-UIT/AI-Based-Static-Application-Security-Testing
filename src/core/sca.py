@@ -28,27 +28,15 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
         from src.rag import usage
         cves = usage.check_usage(str(sdir), cves, use_module)
 
-        # Dep khai báo trong manifest mà có cve thì vẫn phải báo, reachable chỉ dùng để chọn cái đem đi phân tích sâu
+        # Report all CVEs
         res["sca"] = cves
         osv.report_osv(cves)
 
         hot = []
 
-        # Phân tích sâu tốn nhiều request nên chặn trần và dàn đều theo package để repo nhiều dep không chạy hàng giờ
-        cap = int(os.getenv("SINFUL_SCA_DEEP") or "10")
-        per = {}
-
         for cve in cves:
-            if not cve.get("reachable", True):
-                continue
-
-            pkg = str(cve.get("package", "")).lower()
-
-            if len(hot) >= cap or per.get(pkg, 0) >= 2:
-                continue
-
-            per[pkg] = per.get(pkg, 0) + 1
-            hot.append(cve)
+            if cve.get("reachable", True):
+                hot.append(cve)
 
         scves = set()
         for cve in hot:
@@ -79,7 +67,7 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
 
                 return ndata
 
-            # Mỗi cve tốn 1 nvd + 2 firecrawl + 1 github nên chạy song song cho đỡ lâu
+            # Fetch concurrently
             ids = list(scves)
             done = {}
 
@@ -135,7 +123,7 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
                     break
             pcves.append(mcve)
 
-        # Cập nhật mảng sca với điểm cvss
+        # Update CVSS
         res["sca"] = cves
 
         # SCA

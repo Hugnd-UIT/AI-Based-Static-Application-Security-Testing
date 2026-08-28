@@ -4,7 +4,7 @@ import subprocess
 import argparse
 from pathlib import Path
 
-# Thư mục gốc của project
+# Root dir
 root = Path(__file__).resolve().parent.parent.parent
 sys.path.append(str(root))
 
@@ -17,7 +17,7 @@ except ImportError:
     print("Error: Required 'rich' library is not installed.")
     sys.exit(1)
 
-# In header màn hình
+# Print header
 def show_header():
     console.print()
     console.print(Panel(
@@ -27,7 +27,7 @@ def show_header():
     ))
     console.print()
 
-# In lỗi khi triển khai thất bại
+# Print error
 def show_failure(cmd, code, msg):
     console.print("[cyan]━ ━ ━  CD WORKFLOW ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ ━ [/cyan]\n")
     console.print("Environment     [green]✔ VERIFIED[/green]")
@@ -44,7 +44,7 @@ def show_failure(cmd, code, msg):
     console.print(f"[dim]Exit code: {code}[/dim]")
     sys.exit(code)
 
-# Chạy lệnh triển khai
+# Exec deploy
 def run_cd(cmd):
     show_header()
 
@@ -61,7 +61,7 @@ def run_cd(cmd):
     console.print("Deployment      [cyan]● RUNNING[/cyan]\n")
 
     try:
-        # Chạy process
+        # Run process
         proc = subprocess.Popen(
             cmd, 
             shell=True, 
@@ -70,7 +70,7 @@ def run_cd(cmd):
         )
         proc.communicate()
         
-        # Kiểm tra kết quả
+        # Check result
         if proc.returncode != 0:
             console.print()
             show_failure(cmd, proc.returncode, f"Deployment command exited with code {proc.returncode}.")

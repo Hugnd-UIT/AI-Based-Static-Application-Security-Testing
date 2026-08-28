@@ -7,7 +7,6 @@ from src.scan.agents import models as scan_agents
 from src.audit.agents import models as audit_agents
 from cli.views import logger
 
-# Mất phán quyết vì hạ tầng lỗi khác hẳn model kết luận không rõ, phải đếm riêng để khỏi báo an toàn oan
 def broke(txt: str) -> bool:
     low = str(txt).lower()
 
@@ -73,6 +72,7 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
                     console.print(f"  └─ [bold green]✔ {hops} Hops[/bold green]")
                     break
                 
+                # Surrogate check
                 elif trace and trace.get("surrogate"):
                     surr = trace.get("surrogate_function", "Unknown")
                     item["sink_context"] = f"Original sink was unreachable. We are now treating '{surr}' as the sink. Use find_callers('{surr}') if needed."
@@ -85,22 +85,23 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
                     break
             
             if rcount >= retries:
-                item["dataflow_trace"] = "No trace available (max retries reached)"
+                item["dataflow_trace"] = "No trace available"
                 console.print(f"  └─ [bold yellow]⚠ Data flow untraceable after {retries} retries[/bold yellow]")
 
         except Exception as e:
-            console.print(f"  └─ [bold red]✖ Data Flow Tracing failed: {e}[/bold red]")
+            console.print(f"  └─ [bold red]✖ Tracing failed: {e}[/bold red]")
             item["dataflow_trace"] = f"Trace Error: {e}"
 
         vuln = False
 
-        # Build cache key from AI-determined sink and the surrounding function
+        # Cache key
         sink_fn = trace.get("sink_function", "") if trace else ""
-        # Normalize: "SqlCommand.ExecuteReader" → "ExecuteReader" to handle AI inconsistency
+
+        # Normalize sink
         if sink_fn:
             sink_fn = sink_fn.strip().split(".")[-1]
         
-        # Get source function using tree-sitter to avoid false negatives in same file
+        # Get source fn
         try:
             fpath = str(sdir / item["path"]) if item["path"] != str(sdir) else str(sdir)
             source_fn = use_module.get_function_at(fpath, item["start_line"])
@@ -108,16 +109,16 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
             source_fn = "Unknown"
 
         key = (os.path.basename(item.get('path', '')).lower(), source_fn, sink_fn)
-        # Fallback partial key used when scan fails to identify sink (sink_fn="")
+
+        # Partial key
         partial_key = (os.path.basename(item.get('path', '')).lower(), source_fn)
 
         if (key in cache and sink_fn) or (not sink_fn and partial_key in cache):
-            # Duplicate detected — skip audit entirely
-            reason = f"duplicate sink '{sink_fn}'" if sink_fn else f"same source fn '{source_fn}' already audited"
+            # Skip duplicate
+            reason = f"duplicate sink '{sink_fn}'" if sink_fn else f"same source '{source_fn}'"
             console.print(f"  [dim]↷ Skipped {reason}[/dim]")
             logger.blank()
             continue
-
 
         try:
             logger.blank()
@@ -132,19 +133,19 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
 
             verdict_str = verdict.get("verdict", "UNKNOWN").upper()
 
-            # Model lỗi tạm thời làm mất phán quyết nên thử lại một lần
+            # Retry audit
             if verdict_str == "UNKNOWN" and "did not complete" in str(verdict.get("reasoning", "")):
                 why = str(verdict.get("reasoning", "")).lower()
 
-                # Hết quota thì thử lại chắc chắn vẫn lỗi, chỉ tốn thêm thời gian chờ
+                # Skip quota error
                 if "quota" in why:
                     console.print("  ├─ [dim]↷ Skip retry, daily token quota exhausted[/dim]")
 
                 else:
-                    console.print("  ├─ [dim]↻ Audit interrupted, retrying[/dim]")
+                    console.print("  ├─ [dim]↻ Something wrong, retrying[/dim]")
 
-                    # Thử lại ngay sẽ đâm vào đúng cửa sổ chặn nhịp nên phải hạ nhiệt trước
-                    time.sleep(float(os.getenv("SINFUL_AUDIT_COOLDOWN") or "20"))
+                    # Cooldown
+                    time.sleep(10)
 
                     verdict = audit_agents.start_audit(
                         item, ast, ctx,
@@ -154,7 +155,7 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
                     )
                     verdict_str = verdict.get("verdict", "UNKNOWN").upper()
 
-            # Cắt tỉa dương tính giả bằng hai câu hỏi riêng về source và sink
+            # Prune FP
             prune = ""
 
             if verdict.get("fp_source"):
@@ -166,7 +167,7 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
             if prune and verdict_str == "VULNERABLE":
                 verdict["verdict"] = "SAFE"
                 verdict_str = "SAFE"
-                console.print(f"  ├─ [dim]↷ Pruned: {prune}[/dim]")
+                console.print(f"  ├─ [dim]↷ False positive: {prune}[/dim]")
 
             vuln = verdict_str == "VULNERABLE"
             reason = verdict.get("reason", "")
@@ -185,11 +186,11 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
                 vuln = True
                 item.update(verdict)
 
-                # Nếu agent phán quyết không nêu luồng dữ liệu thì lấy lại của agent quét
+                # Fallback flow
                 if not item.get("flow") and trace.get("flow"):
                     item["flow"] = trace["flow"]
 
-                # Remove redundant fields to match target schema exactly
+                # Remove redundant
                 fields_to_drop = [
                     "ast", "dataflow_trace", "sink_context"
                 ]
@@ -198,7 +199,7 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
 
                 if sink_fn:
                     cache[key] = verdict
-                # Always store partial_key so scan-failed duplicates are caught
+                # Cache partial key
                 cache[partial_key] = verdict
 
             elif verdict_str == "SAFE":
@@ -206,12 +207,12 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
             else:
                 console.print(f"  └─ [bold yellow]⚠ UNKNOWN[/bold yellow]")
 
-                # Không có phán quyết vì hạ tầng lỗi thì đánh dấu để pipeline không kết luận là an toàn
+                # Mark unverified
                 if broke(verdict.get("reason", "")) or broke(verdict.get("reasoning", "")):
                     res["unverified"] = res.get("unverified", 0) + 1
 
         except Exception as e:
-            console.print(f"  ├─ [bold red]✖ Auditor Agent failed: {e}[/bold red]")
+            console.print(f"  ├─ [bold red]✖ Audit Agent failed: {e}[/bold red]")
             res["unverified"] = res.get("unverified", 0) + 1
 
         if fix:
@@ -238,9 +239,9 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
 
                     console.print(f"  └─ [bold green]✔ Generated {len(fixres['patches'])} patch(es)[/bold green]")
                 else:
-                    console.print(f"  └─ [bold yellow]⚠ Failed to generate fix[/bold yellow]")
+                    console.print(f"  └─ [bold yellow]⚠ Failed to fix[/bold yellow]")
 
             except Exception as e:
-                console.print(f"  └─ [bold red]✖ Fixer Agent failed: {e}[/bold red]")
+                console.print(f"  └─ [bold red]✖ Fix Agent failed: {e}[/bold red]")
 
         logger.blank()

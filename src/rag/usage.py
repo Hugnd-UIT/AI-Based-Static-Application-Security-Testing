@@ -5,18 +5,15 @@ from typing import List, Dict, Any
 
 SKIPS = {".git", "node_modules", "vendor", ".venv", "venv", "__pycache__", "target", "build", "dist", "bin", "obj", ".idea", ".vs"}
 
-# Dòng khai báo phụ thuộc của 10 ngôn ngữ, gom về một chỗ thay vì regex riêng cho từng cách viết
 HEAD = re.compile(
-    r"""(?:\#\s*include|\bimport\b|\bfrom\b|\brequire(?:_relative|_once)?\b|\binclude_once\b|\buse\b|\busing\b|\bextern\s+crate\b)""",
+    r"""^\s*(?:\#\s*include|\bimport\b|\bfrom\b|\brequire(?:_relative|_once)?\b|\binclude_once\b|\buse\b|\busing\b|\bextern\s+crate\b)""",
     re.IGNORECASE,
 )
 
-# Trong go/scala mỗi phụ thuộc là một dòng chuỗi trần nằm trong khối import
 BARE = re.compile(r"""^\s*[\w.]*\s*['\"][^'\"]{3,}['\"]\s*,?\s*$""")
 
-_IMPORTS: Dict[str, str] = {}
+IMPORTS: Dict[str, str] = {}
 
-# Chuẩn hóa mọi kiểu ngăn cách tên gói về một dấu để so được chéo ngôn ngữ
 def flat(txt: str) -> str:
     low = str(txt).lower()
     low = low.replace("::", "/")
@@ -29,8 +26,7 @@ def flat(txt: str) -> str:
 
     return low
 
-# Tọa độ trong manifest hiếm khi trùng tên viết trong code nên phải tách ra nhiều biến thể
-def aliases(pkg: str) -> List[str]:
+def gen_alias(pkg: str) -> List[str]:
     raw = str(pkg).strip()
 
     if not raw:
@@ -38,26 +34,22 @@ def aliases(pkg: str) -> List[str]:
 
     out = {flat(raw)}
 
-    # group:artifact của maven/sbt, vendor/name của composer, đường dẫn module của go
     for part in re.split(r"[:/]", raw):
         part = part.strip()
 
         if len(part) > 2:
             out.add(flat(part))
 
-    # Tên phân phối thường có tiền tố mà code không dùng, ví dụ PyYAML import là yaml
     for one in list(out):
         for pre in ("py/", "python/", "go/", "node/", "rb/", "ruby/", "php/", "lib"):
-
             if one.startswith(pre) and len(one) - len(pre) > 2:
                 out.add(one[len(pre):])
 
     return [a for a in out if len(a) > 2]
 
-# Đọc cả cây một lần rồi giữ lại, vì mỗi lần quét lại toàn bộ file cho từng gói rất chậm
-def import_text(target: str) -> str:
-    if target in _IMPORTS:
-        return _IMPORTS[target]
+def gen_cache(target: str) -> str:
+    if target in IMPORTS:
+        return IMPORTS[target]
 
     lines = []
 
@@ -65,7 +57,6 @@ def import_text(target: str) -> str:
         dirs[:] = [d for d in dirs if d not in SKIPS and not d.startswith(".")]
 
         for name in files:
-
             try:
                 with open(os.path.join(root, name), "r", encoding="utf-8", errors="ignore") as fp:
                     body = fp.read()
@@ -73,30 +64,28 @@ def import_text(target: str) -> str:
                 continue
 
             for line in body.splitlines():
-
                 if len(line) > 400:
                     continue
 
                 if HEAD.search(line) or BARE.match(line):
                     lines.append(flat(line))
 
-    _IMPORTS[target] = "\n".join(lines)
+    IMPORTS[target] = "\n".join(lines)
+    return IMPORTS[target]
 
-    return _IMPORTS[target]
-
-# Hàm kiểm tra package được sử dụng hay không
-def is_imported(target: str, pkg: str) -> bool:
+# Check if imported
+def check_imported(target: str, pkg: str) -> bool:
     if not pkg:
         return True
 
-    text = import_text(target)
+    text = gen_cache(target)
 
     if not text:
         return False
 
-    return any(alias in text for alias in aliases(pkg))
+    return any(re.search(rf"\b{re.escape(alias)}\b", text) for alias in gen_alias(pkg))
 
-# Hàm kiểm tra khả năng dính lỗ hổng
+# Check reachability
 def check_usage(target: str, cves: List[Dict[str, Any]], ts) -> List[Dict[str, Any]]:
     if not cves or not os.path.exists(target):
         return cves
@@ -104,7 +93,8 @@ def check_usage(target: str, cves: List[Dict[str, Any]], ts) -> List[Dict[str, A
     for cve in cves:
         pkg_obj = cve.get("package", {})
         pkg = pkg_obj.get("name") if isinstance(pkg_obj, dict) else pkg_obj
-        if pkg and not is_imported(target, pkg):
+        
+        if pkg and not check_imported(target, pkg):
             cve["reachable"] = False
             continue
             
@@ -158,7 +148,7 @@ def check_usage(target: str, cves: List[Dict[str, Any]], ts) -> List[Dict[str, A
                                     code = fp.read()
                                 code_bytes = code.encode("utf-8")
                                 tree = parser.parse(code_bytes)
-                                caller = ts.find_callers(tree.root_node, token, code_bytes)
+                                caller = ts.find_callers(tree.root_node, token, code_bytes, ext)
                                 if caller:
                                     reachable = True
                                     break

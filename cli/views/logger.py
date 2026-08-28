@@ -4,7 +4,7 @@ from rich.console import Console
 from rich.theme import Theme
 from rich.text import Text
 
-# Cấu hình encoding cho Windows
+# Windows encoding
 if sys.platform == "win32":
     try:
         sys.stdout.reconfigure(encoding="utf-8")
@@ -12,7 +12,7 @@ if sys.platform == "win32":
     except Exception:
         pass
 
-# Giao diện màu sắc cho logger
+# Theme colors
 theme = Theme({
     "dim": "dim #9ca3af",
     "cyan": "bright_cyan",
@@ -33,23 +33,23 @@ theme = Theme({
 console = Console(theme=theme)
 timer = time.time()
 
-# Lấy nhãn thời gian hiện tại
+# Current time
 def _get_timestamp() -> str:
     diff = int(time.time() - timer)
     mins = diff // 60
     secs = diff % 60
     return f"[{mins:02d}:{secs:02d}]"
 
-# Đặt lại thời gian
+# Reset time
 def reset_timer():
     global timer
     timer = time.time()
 
-# Lấy số giây đã trôi qua
+# Elapsed time
 def get_time() -> float:
     return round(time.time() - timer, 1)
 
-# In một phân đoạn mới
+# Print section
 def section(title: str):
     text = Text(_get_timestamp(), style="dim")
     text.append(f" ── {title} ", style="cyan bold")
@@ -62,31 +62,31 @@ def section(title: str):
     console.print(text)
     console.print()
 
-# In lỗi nghiêm trọng
+# Print fatal
 def log_critical(msg: str):
     console.print(f"{_get_timestamp()} {msg}", style="critical")
 
-# In lỗi cao
+# Print error
 def log_high(msg: str):
     console.print(f"{_get_timestamp()} {msg}", style="high")
 
-# In cảnh báo
+# Print warn
 def log_warning(msg: str):
     console.print(f"{_get_timestamp()} {msg}", style="warning")
 
-# In thành công
+# Print success
 def log_success(msg: str):
     console.print(f"{_get_timestamp()} {msg}", style="success")
 
-# In thông tin
+# Print info
 def log_info(msg: str):
     console.print(f"{_get_timestamp()} {msg}", style="info")
 
-# In bình thường
+# Print text
 def log_default(msg: str):
     console.print(f"{_get_timestamp()} {msg}", style="default")
 
-# In dòng trống
+# Print blank
 def blank_line():
     console.print()
 

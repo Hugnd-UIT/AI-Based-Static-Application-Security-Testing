@@ -4,7 +4,7 @@ from rich.live import Live
 from rich.spinner import Spinner
 from rich.table import Table
 
-# Hiển thị biểu tượng tải chờ xử lý
+# Show spinner
 def show_spinner(msg: str, func, *args, **kwargs):
     grid = Table.grid(padding=(0, 1))
     grid.add_row(" ", Spinner("dots12"), f"[bold cyan]{msg}...")

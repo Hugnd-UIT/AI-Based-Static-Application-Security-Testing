@@ -7,41 +7,41 @@ import src.fix.agents.models as ai_agents
 from src.tools.actions import resolve_path
 from cli.views import logger
 
-# Bắt đầu quét thư mục
+# Start scan
 def execute_scan(path: str, fix: bool = False):
     logger.log_info(f"Starting Sinful on {path}...")
     logger.blank_line()
 
-    # Không bọc spinner vì tiến trình quét đã tự in ra console
+    # Skip spinner for scan
     res = run_scan(path, fix=fix)
     logger.blank_line()
 
-    # Nếu có lỗi
+    # If error
     if res.get("status") == "error":
         logger.log_critical(f"Error: {res.get('message')}")
         return
 
-    # Trích xuất dữ liệu
+    # Extract data
     data = res.get("data", {})
     finds = data.get("sast", [])
     lost = data.get("unverified", 0)
 
-    # Mất phán quyết thì chưa kết luận được, báo sạch lúc này là bỏ lọt lỗ hổng
+    # Handle unverified
     if not finds and lost:
         logger.log_warning(f"Inconclusive: {lost} finding(s) could not be audited, so this is not a clean bill of health.")
 
-    # Nếu không tìm thấy lỗi
+    # If no vulns
     elif not finds:
         logger.log_success("No vulnerabilities found! You're clean.")
         return
 
-    # Nếu chọn tự động sửa lỗi
+    # If auto fix
     if fix:
         logger.blank_line()
         logger.log_info("Auto-fix vulnerabilities...")
         allow = False
 
-        # Hiển thị menu cho người dùng chọn
+        # Show menu
         def get_confirm(name: str) -> str:
             from prompt_toolkit import Application
             from prompt_toolkit.key_binding import KeyBindings
@@ -77,7 +77,7 @@ def execute_scan(path: str, fix: bool = False):
             def cancel_selection(event):
                 event.app.exit(result="n")
 
-            # Định dạng UI cho menu chọn
+            # UI theme
             def format_prompt():
                 lines = [("class:title", f"Apply this patch to {name}?\n")]
                 for oidx, (val, desc) in enumerate(opts):
@@ -98,7 +98,7 @@ def execute_scan(path: str, fix: bool = False):
             app = Application(layout=layout, key_bindings=keys, style=pstyle, full_screen=False, erase_when_done=True)
             return app.run()
 
-        # Duyệt qua từng lỗ hổng tìm được
+        # Loop vulns
         for find in finds:
             fpath = find.get("path")
             if not fpath:
@@ -113,7 +113,7 @@ def execute_scan(path: str, fix: bool = False):
                 logger.blank_line()
 
             try:
-                # Duyệt qua các bản vá
+                # Loop patches
                 for patch in patches:
                     old = patch.get("old_code", "")
                     new = patch.get("new_code", "")
@@ -121,7 +121,7 @@ def execute_scan(path: str, fix: bool = False):
                     if not old or not new:
                         continue
 
-                    # Chặn AI vá ra ngoài thư mục được quét
+                    # Sandbox fix
                     try:
                         ppath = str(resolve_path(path, patch.get("file_path") or fpath))
 
@@ -129,7 +129,7 @@ def execute_scan(path: str, fix: bool = False):
                         logger.log_warning(f"Patch rejected, path escapes the target: {patch.get('file_path')}")
                         continue
 
-                    # Nếu AI trả sai đường dẫn thì thử tìm theo tên file
+                    # Fallback name
                     if not os.path.exists(ppath):
                         alt = os.path.join(path, os.path.basename(ppath))
 
@@ -139,7 +139,7 @@ def execute_scan(path: str, fix: bool = False):
                     display_diff(ppath, old, new)
                     logger.blank_line()
 
-                    # Kiểm tra xem có áp dụng tự động toàn bộ không
+                    # Check auto-apply
                     if allow:
                         ans = "y"
                     else:
@@ -148,7 +148,7 @@ def execute_scan(path: str, fix: bool = False):
                             allow = True
                             ans = "y"
 
-                    # Áp dụng bản vá
+                    # Apply patch
                     if ans == "y":
                         if patcher.apply_patch(ppath, old, new):
                             logger.log_success("Patch applied successfully.")
@@ -159,7 +159,7 @@ def execute_scan(path: str, fix: bool = False):
             except Exception as err:
                 logger.log_critical(f"Failed to apply fix for {find.get('id', 'Unknown')}: {err}")
 
-    # Xuất báo cáo
+    # Export report
     from src.report.json import report_json
     from src.report.sarif import report_sarif
     from src.report.html import report_html

@@ -3,7 +3,7 @@ from rich.syntax import Syntax
 from cli.views.console import console
 import difflib
 
-# Hiển thị sự khác biệt giữa code cũ và mới
+# Print diff
 def display_diff(path: str, old: str, new: str):
     lines = list(
         difflib.unified_diff(
@@ -17,12 +17,12 @@ def display_diff(path: str, old: str, new: str):
 
     text = "".join(lines)
 
-    # Nếu không có thay đổi
+    # If no diff
     if not text:
         console.print("[warning]No changes detected.[/warning]")
         return
 
-    # In phần diff ra console
+    # Output diff
     syn = Syntax(text, "diff", theme="monokai", line_numbers=False)
     panel = Panel(syn, title=f"Patch for [bold]{path}[/bold]", border_style="cyan")
 

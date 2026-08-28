@@ -1,6 +1,6 @@
 from cli.views.console import console
 
-# Hiển thị menu trợ giúp
+# Show help menu
 def display_help():
     console.print("\n[bold orange1]Available commands:[/bold orange1]")
     console.print("  [cyan]/scan <path>[/cyan]     Run a standard security scan without fixing.")

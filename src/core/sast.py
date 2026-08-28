@@ -9,13 +9,28 @@ from src.scan.agents.classifier import classify
 from src.scan.agents.generator import generate
 from src.core.processor import process_flaws
 
+# Deduplicate findings
+def deduplicate(findings):
+    seen = set()
+    deduped = []
+
+    for f in findings:
+        key = (f.get("path"), f.get("start_line"), f.get("message"))
+        
+        if key not in seen:
+            seen.add(key)
+            deduped.append(f)
+            
+    return deduped
+
 def run_sast(sdir, rules, model, ctx, use_module, cache, res, fix):
     sgres = []
+
     try:
         logger.section("SAST")
         console.print(f"  [bold magenta]● GENERATING AGENT[/bold magenta]")
 
-        # Xóa rule cũ trong thư mục làm việc để không bị trùng
+        # Remove stale rules
         stale = os.path.join(str(sdir), "custom-rules.yml")
         if os.path.exists(stale):
             os.remove(stale)
@@ -33,25 +48,29 @@ def run_sast(sdir, rules, model, ctx, use_module, cache, res, fix):
 
             if dynamic_rule_path and os.path.exists(dynamic_rule_path):
                 console.print(f"  └─ [bold green]✔ Generate completed: {os.path.basename(dynamic_rule_path)}[/bold green]")
+                
                 if rules is None:
                     rules = pick_rules(res.get("languages", {}))
                 elif isinstance(rules, str):
                     rules = [rules]
+                    
                 rules.append(dynamic_rule_path)
             else:
                 console.print("  └─ [dim]No rules generated[/dim]")
-        else:
-            console.print("  └─ [dim]No APIs extracted.[/dim]")
-    except Exception as e:
-        console.print(f"  └─ [bold red]✖ Generator failed: {e}[/bold red]")
 
-    # Nếu không có rule chỉ định thì chọn theo ngôn ngữ đã phát hiện
+        else:
+            console.print("  └─ [dim]No APIs extracted[/dim]")
+
+    except Exception as e:
+        console.print(f"  └─ [bold red]✖ Generate Agent failed: {e}[/bold red]")
+
+    # Pick rules by language
     if rules is None:
         rules = pick_rules(res.get("languages", {}))
 
     sgres = semgrep.scan_code(str(sdir), rules)
     
-    # Inject direct vulnerabilities from classification
+    # Inject direct vulnerabilities
     if 'classifications' in locals() and classifications:
         for item in classifications:
             if item.get('type') == 'vuln':
@@ -65,21 +84,12 @@ def run_sast(sdir, rules, model, ctx, use_module, cache, res, fix):
                     "dataflow_trace": "[DIRECT VULNERABILITY DETECTED]\nNo taint path required. Structural defect found in function body."
                 })
 
-    # Deduplicate findings
-    def deduplicate(findings):
-        seen = set()
-        deduped = []
-        for f in findings:
-            key = (f.get("path"), f.get("start_line"), f.get("message"))
-            if key not in seen:
-                seen.add(key)
-                deduped.append(f)
-        return deduped
-
     sgres = deduplicate(sgres)
 
     console.print(f'  └─ [bold green]✔ Scan completed: {len(sgres)} vulnerabilities[/bold green]')
+    
     semgrep.report_scan(sgres)
+    
     process_flaws(sgres, 'SAST', sdir, ctx, use_module, cache, res, model, fix)
     
     return sgres

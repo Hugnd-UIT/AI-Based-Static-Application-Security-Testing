@@ -3,10 +3,10 @@ import os
 import sys
 from pathlib import Path
 
-# Chạy trực tiếp file này thì gốc repo chưa có trong sys.path
+# Add path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
-# Cấu hình encoding stdout/stderr
+# Set encoding
 if hasattr(sys.stdout, 'reconfigure'):
     sys.stdout.reconfigure(encoding='utf-8')
 if hasattr(sys.stderr, 'reconfigure'):
@@ -25,7 +25,7 @@ app = typer.Typer(
     add_completion=False,
 )
 
-# Hiển thị phần giới thiệu
+# Show header
 def display_header():
     wdir = os.getcwd()
     text = Text()
@@ -66,7 +66,7 @@ def start_cli():
             from prompt_toolkit.completion import Completer, Completion
             from prompt_toolkit.output.color_depth import ColorDepth
 
-            # Lớp xử lý auto complete
+            # Autocomplete class
             class CommandCompleter(Completer):
                 def __init__(self):
                     self.cmds = {
@@ -129,7 +129,7 @@ def start_cli():
             })
 
             try:
-                # Terminal không dựng được prompt_toolkit thì rơi xuống input thường
+                # Fallback input
                 tapp = Application(
                     layout=layout,
                     key_bindings=keys,
@@ -152,7 +152,7 @@ def start_cli():
 
             from cli.commands.fix import process_command
 
-            # Thực thi lệnh
+            # Exec cmd
             run = process_command(cmd)
 
             if not run:
