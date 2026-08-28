@@ -2,7 +2,7 @@ from src.fix.agents.prompts import SYSTEM, USER
 from src.tools.handlers import run_agent
 from src.tools.schemas import FIX_TOOLS
 
-# Hàm xử lý fix lỗi
+# Call fix agent
 def start_fix(
     item: dict,
     code: str,

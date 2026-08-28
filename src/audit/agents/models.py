@@ -2,7 +2,7 @@ from src.audit.agents.prompts import SYSTEM, USER
 from src.tools.handlers import run_agent
 from src.tools.schemas import AUDIT_TOOLS
 
-# Hàm xử lý phán quyết
+# Call audit agent
 def start_audit(
     item: dict,
     code: str,

@@ -47,7 +47,8 @@ EXCLUDES = {
     "obj",
 }
 
-# Hàm nhận dạng ngôn ngữ lập trình
+
+# Detect programming languages
 def detect_langs(target: str) -> Dict[str, int]:
     path = Path(target)
 
@@ -68,9 +69,11 @@ def detect_langs(target: str) -> Dict[str, int]:
 
     return counts
 
+
 import subprocess
 
-# Hàm lấy phiên bản của ngôn ngữ lập trình
+
+# Get the installed runtime version
 def get_versions(counts: Dict[str, int]) -> Dict[str, str]:
     versions = {}
     cmds = {
@@ -87,29 +90,36 @@ def get_versions(counts: Dict[str, int]) -> Dict[str, str]:
         "c": ["gcc", "--version"],
         "c++": ["g++", "--version"],
     }
-    
+
     for lang in counts.keys():
 
         if lang in cmds:
 
             try:
-                res = subprocess.run(cmds[lang], capture_output=True, text=True, timeout=5)
+                res = subprocess.run(
+                    cmds[lang],
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
+                )
                 out = res.stdout.strip() if res.stdout.strip() else res.stderr.strip()
 
                 if out:
-                    versions[lang] = out.split('\n')[0].strip()
+                    versions[lang] = out.split("\n")[0].strip()
 
                 else:
                     versions[lang] = "Unknown"
 
             except (FileNotFoundError, subprocess.TimeoutExpired):
                 versions[lang] = "Not Installed"
-                
+
     return versions
+
 
 from cli.views import logger
 
-# Hàm báo cáo kết quả
+
+# Report detected languages
 def report_langs(counts: Dict[str, int], versions: Dict[str, str] = None):
     logger.section("LANGUAGES")
 
@@ -119,7 +129,7 @@ def report_langs(counts: Dict[str, int], versions: Dict[str, str] = None):
 
     from cli.views.logger import console
     items = sorted(counts.items(), key=lambda i: i[1], reverse=True)
-    
+
     console.print(f"  [cyan]{len(counts)}[/cyan] languages detected")
     console.print()
 
@@ -130,5 +140,5 @@ def report_langs(counts: Dict[str, int], versions: Dict[str, str] = None):
             ver = versions[lang]
             short = ver[:30] + "..." if len(ver) > 30 else ver
             msg = f" [dim]- Runtime: {short}[/dim]"
-            
+
         console.print(f"  - [yellow]{lang.capitalize()}[/yellow]: {count} files{msg}")

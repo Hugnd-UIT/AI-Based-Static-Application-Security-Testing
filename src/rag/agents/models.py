@@ -1,7 +1,7 @@
 from src.rag.agents.prompts import RAG
 from src.llm import fetch_llm
 
-# Hàm Retrieval-Augmented Generation
+# Call RAG agent
 def start_rag(context: str, model: str = None) -> dict:
 
     prompt = RAG.replace("{context}", context)

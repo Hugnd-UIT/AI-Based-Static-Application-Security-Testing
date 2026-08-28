@@ -1,4 +1,4 @@
-﻿import os
+import os
 import re
 
 EXTS = {
@@ -54,16 +54,63 @@ def load_ts():
     except Exception:
         return None
 
-def check_func_node(kind: str) -> bool:
-    return (
-        kind in (
-            "function_definition", "function_declaration",
-            "method_declaration", "method_definition",
-            "function_item", "func_declaration",
-        )
-        or "function" in kind
-        or "method" in kind
-    )
+QUERIES: dict[str, str] = {
+    "python": """
+        (function_definition name: (identifier) @name) @func
+        (lambda) @func
+    """,
+    "javascript": """
+        (function_declaration name: (identifier) @name) @func
+        (function name: (identifier) @name) @func
+        (arrow_function) @func
+        (method_definition name: (property_identifier) @name) @func
+    """,
+    "typescript": """
+        (function_declaration name: (identifier) @name) @func
+        (function name: (identifier) @name) @func
+        (arrow_function) @func
+        (method_definition name: (property_identifier) @name) @func
+    """,
+    "java": """
+        (method_declaration name: (identifier) @name) @func
+        (constructor_declaration name: (identifier) @name) @func
+        (lambda_expression) @func
+    """,
+    "ruby": """
+        (method name: (identifier) @name) @func
+        (singleton_method name: (identifier) @name) @func
+        (lambda) @func
+    """,
+    "rust": """
+        (function_item name: (identifier) @name) @func
+        (closure_expression) @func
+    """,
+    "go": """
+        (function_declaration name: (identifier) @name) @func
+        (method_declaration name: (field_identifier) @name) @func
+        (func_literal) @func
+    """,
+    "php": """
+        (function_definition name: (name) @name) @func
+        (method_declaration name: (name) @name) @func
+        (arrow_function) @func
+    """,
+    "csharp": """
+        (method_declaration name: (identifier) @name) @func
+        (constructor_declaration name: (identifier) @name) @func
+        (lambda_expression) @func
+        (anonymous_method_expression) @func
+    """,
+    "scala": """
+        (function_definition name: (identifier) @name) @func
+    """,
+    "cpp": """
+        (function_definition declarator: (function_declarator declarator: (identifier) @name)) @func
+    """,
+    "c": """
+        (function_definition declarator: (function_declarator declarator: (identifier) @name)) @func
+    """,
+}
 
 def get_name_node(node, code: bytes) -> str:
     name_node = node.child_by_field_name('name')
@@ -83,41 +130,62 @@ def get_name_node(node, code: bytes) -> str:
                 
     return ""
 
-# Extract functions using tree-sitter AST
+# Extract functions using tree-sitter API
 def extract_ts(fpath: str, lang_obj, code: bytes, lang: str, rel: str) -> list:
-    from tree_sitter import Parser, Language
-    parser = Parser(Language(lang_obj))
+    from tree_sitter import Parser, Language, Query
+    language = Language(lang_obj)
+    parser = Parser(language)
     tree = parser.parse(code)
     results = []
     seen = set()
 
-    def visit(node):
-        kind = node.type.lower()
+    query_src = QUERIES.get(lang, "")
+    if not query_src.strip():
+        return []
 
-        if check_func_node(kind):
-            name = get_name_node(node, code)
-            if name and name not in seen:
-                seen.add(name)
-                sig_bytes = code[node.start_byte:node.end_byte]
-                sig_lines = sig_bytes.decode("utf-8", errors="ignore").splitlines()
-                sig = sig_lines[0].strip() if sig_lines else name
-                body = "\n".join(sig_lines[1:min(11, len(sig_lines))])
-                results.append({
-                    "file":      rel,
-                    "function":  name,
-                    "signature": sig,
-                    "context":   "",
-                    "body":      body,
-                    "language":  lang,
-                    "kind":      "definition",
-                    "start_line": node.start_point[0] + 1,
-                    "end_line":   node.end_point[0] + 1,
-                })
+    try:
+        query = language.query(query_src)
+        captures = query.captures(tree.root_node)
+    except Exception:
+        return []
 
-        for ch in node.children:
-            visit(ch)
+    func_nodes = captures.get("func", [])
+    name_nodes = {n.start_byte: n for n in captures.get("name", [])}
 
-    visit(tree.root_node)
+    for node in func_nodes:
+        # Find the @name node that starts inside this @func node
+        name = ""
+        for nbyte, nnode in name_nodes.items():
+            if node.start_byte <= nbyte <= node.end_byte:
+                name = code[nnode.start_byte:nnode.end_byte].decode("utf-8", errors="ignore")
+                break
+
+        if not name:
+            name = f"[anonymous:{node.start_point[0]+1}]"
+
+        if name in seen:
+            continue
+        seen.add(name)
+
+        sig_lines = code[node.start_byte:node.end_byte].decode("utf-8", errors="ignore").splitlines()
+        sig  = sig_lines[0].strip() if sig_lines else name
+        
+        # Truncate body at 2000 chars
+        full = "\n".join(sig_lines[1:])
+        body = full[:2000] + (" ..." if len(full) > 2000 else "")
+
+        results.append({
+            "file":       rel,
+            "function":   name,
+            "signature":  sig,
+            "context":    "",
+            "body":       body,
+            "language":   lang,
+            "kind":       "definition",
+            "start_line": node.start_point[0] + 1,
+            "end_line":   node.end_point[0] + 1,
+        })
+
     return results
 
 # Extract functions using regex fallback
@@ -138,7 +206,9 @@ def extract_regex(fpath: str, content: str, lang: str, rel: str) -> list:
         body = ""
         b = content.find('{', start)
         if b != -1:
-            body = "\n".join(content[b:b + 400].split("\n")[:10])
+            # Truncate body at 2000 chars   
+            raw = content[b:b + 2000]
+            body = raw + (" ..." if len(content) - b > 2000 else "")
 
         sl = content[:start].count('\n') + 1
 
@@ -183,6 +253,27 @@ def extract_functions(target_dir: str) -> list:
                     items = extract_regex(fpath, content, lang, rel)
 
                 results.extend(items)
+
+                # Collect global variables and code outside functions
+                func_lines = {ln for item in items for ln in range(item["start_line"], item["end_line"] + 1)}
+                global_lines = [
+                    line for i, line in enumerate(content.splitlines(), 1)
+                    if i not in func_lines and line.strip() and not line.strip().startswith("#")
+                ]
+
+                if global_lines:
+                    body = "\n".join(global_lines)
+                    results.append({
+                        "file":       rel,
+                        "function":   "[global]",
+                        "signature":  f"[global scope of {fname}]",
+                        "context":    "",
+                        "body":       body[:2000] + (" ..." if len(body) > 2000 else ""),
+                        "language":   lang,
+                        "kind":       "global",
+                        "start_line": 1,
+                        "end_line":   content.count("\n") + 1,
+                    })
 
             except Exception:
                 pass

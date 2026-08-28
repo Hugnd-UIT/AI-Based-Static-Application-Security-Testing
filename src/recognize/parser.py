@@ -8,29 +8,64 @@ from typing import Dict, List
 from src.recognize.detector import EXCLUDES
 
 DEPS = {
-    "composer.json": "packagist",
-    "package.json": "npm",
-    "package-lock.json": "npm",
-    "yarn.lock": "npm",
-    "requirements.txt": "pypi",
-    "pyproject.toml": "pypi",
-    "poetry.lock": "pypi",
-    "pom.xml": "maven",
-    "go.mod": "go",
-    "Gemfile": "rubygems",
-    "packages.config": "nuget",
-    "Cargo.toml": "crates.io",
-    "Cargo.lock": "crates.io",
-    "pubspec.yaml": "pub",
-    "pubspec.lock": "pub",
-    "mix.exs": "hex",
-    "mix.lock": "hex",
-    "vcpkg.json": "vcpkg",
-    "conanfile.txt": "conan",
-    "build.sbt": "maven",
+    # PHP
+    "composer.json":      "packagist",
+    "composer.lock":      "packagist",
+
+    # JavaScript / TypeScript
+    "package.json":       "npm",
+    "package-lock.json":  "npm",
+    "yarn.lock":          "npm",
+    "pnpm-lock.yaml":     "npm",
+    
+    # Python
+    "requirements.txt":   "pypi",
+    "pyproject.toml":     "pypi",
+    "poetry.lock":        "pypi",
+    "Pipfile":            "pypi",
+    "Pipfile.lock":       "pypi",
+    "setup.cfg":          "pypi",
+    "environment.yml":    "pypi",
+    
+    # Java / Kotlin / Android
+    "pom.xml":            "maven",
+    "build.gradle":       "maven",
+    "build.gradle.kts":   "maven",
+    
+    # Go
+    "go.mod":             "go",
+    
+    # Ruby
+    "Gemfile":            "rubygems",
+    "Gemfile.lock":       "rubygems",
+    
+    # C#
+    "packages.config":    "nuget",
+    
+    # Rust
+    "Cargo.toml":         "crates.io",
+    "Cargo.lock":         "crates.io",
+    
+    # Dart / Flutter
+    "pubspec.yaml":       "pub",
+    "pubspec.lock":       "pub",
+    
+    # Elixir
+    "mix.exs":            "hex",
+    "mix.lock":           "hex",
+    
+    # C++ (vcpkg)
+    "vcpkg.json":         "vcpkg",
+    
+    # C++ (Conan)
+    "conanfile.txt":      "conan",
+    "conanfile.py":       "conan",
+    
+    # Scala
+    "build.sbt":          "maven",
 }
 
-# Hàm phân tích thư viện php
+# Parse PHP dependencies
 def parse_php(path: str) -> List[Dict[str, str]]:
     deps = []
 
@@ -57,7 +92,7 @@ def parse_php(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Hàm phân tích thư viện npm
+# Parse NPM dependencies
 def parse_npm(path: str) -> List[Dict[str, str]]:
     deps = []
 
@@ -76,9 +111,10 @@ def parse_npm(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Hàm phân tích thư viện package lock
+# Parse NPM package-lock.json dependencies
 def parse_package_lock(path: str) -> List[Dict[str, str]]:
     deps = []
+    
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -94,11 +130,13 @@ def parse_package_lock(path: str) -> List[Dict[str, str]]:
                         deps.append({"ecosystem": "npm", "package": pkg, "version": info["version"]})
     except Exception:
         pass
+    
     return deps
 
-# Hàm phân tích thư viện yarn lock
+# Parse Yarn yarn.lock dependencies
 def parse_yarn_lock(path: str) -> List[Dict[str, str]]:
     deps = []
+    
     try:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
@@ -107,9 +145,10 @@ def parse_yarn_lock(path: str) -> List[Dict[str, str]]:
                 deps.append({"ecosystem": "npm", "package": pkg, "version": ver})
     except Exception:
         pass
+    
     return deps
 
-# Hàm phân tích thư viện pypi
+# Parse Python PyPI dependencies
 def parse_pypi(path: str) -> List[Dict[str, str]]:
     deps = []
 
@@ -156,9 +195,10 @@ def parse_pypi(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Hàm phân tích thư viện pyproject
+# Parse Python pyproject.toml dependencies
 def parse_pyproject(path: str) -> List[Dict[str, str]]:
     deps = []
+    
     try:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
@@ -167,11 +207,13 @@ def parse_pyproject(path: str) -> List[Dict[str, str]]:
                 deps.append({"ecosystem": "pypi", "package": pkg, "version": ver.strip('^~<>="')})
     except Exception:
         pass
+    
     return deps
 
-# Hàm phân tích thư viện poetry lock
+# Parse Python poetry.lock dependencies
 def parse_poetry_lock(path: str) -> List[Dict[str, str]]:
     deps = []
+
     try:
         with open(path, "r", encoding="utf-8") as f:
             blocks = f.read().split("[[package]]")
@@ -182,9 +224,10 @@ def parse_poetry_lock(path: str) -> List[Dict[str, str]]:
                     deps.append({"ecosystem": "pypi", "package": n_match.group(1), "version": v_match.group(1)})
     except Exception:
         pass
+    
     return deps
 
-# Hàm phân tích thư viện maven
+# Parse Java Maven dependencies
 def parse_maven(path: str) -> List[Dict[str, str]]:
     deps = []
 
@@ -214,7 +257,7 @@ def parse_maven(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Hàm phân tích thư viện go
+# Parse Go modules dependencies
 def parse_go(path: str) -> List[Dict[str, str]]:
     deps = []
 
@@ -233,7 +276,7 @@ def parse_go(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Hàm phân tích thư viện ruby
+# Parse RubyGems dependencies
 def parse_ruby(path: str) -> List[Dict[str, str]]:
     deps = []
 
@@ -262,7 +305,7 @@ def parse_ruby(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Hàm phân tích thư viện csproj
+# Parse C# .csproj dependencies
 def parse_csproj(path: str) -> List[Dict[str, str]]:
     deps = []
 
@@ -282,7 +325,7 @@ def parse_csproj(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Hàm phân tích thư viện nuget
+# Parse C# NuGet dependencies
 def parse_nuget(path: str) -> List[Dict[str, str]]:
     deps = []
 
@@ -302,61 +345,8 @@ def parse_nuget(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Sections that hold real crates, including [target.'cfg(...)'.dependencies]
-CARGO_DEP_SECTIONS = ("dependencies", "dev-dependencies", "build-dependencies")
-
-
-# Whether a TOML section header declares crates rather than metadata
-def is_cargo_deps(section: str) -> bool:
-    return section.split(".")[-1].strip().strip("'\"") in CARGO_DEP_SECTIONS
-
-
-# Parse Cargo.toml and Cargo.lock, which use two different layouts
-def parse_cargo(path: str) -> List[Dict[str, str]]:
-    deps = []
-
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            lines = f.read().splitlines()
-
-    except Exception:
-        return deps
-
-    is_lock = path.endswith(".lock")
-    section = ""
-    entry = {}
-
-    for raw in lines:
-        line = raw.strip()
-
-        if not line or line.startswith("#"):
-            continue
-
-        # A new header closes the [[package]] block Cargo.lock spreads over several lines
-        if line.startswith("["):
-            if entry.get("package") and entry.get("version"):
-                deps.append({"ecosystem": "crates.io", **entry})
-
-            entry = {}
-            section = line.strip("[]").strip()
-            continue
-
-        pair = re.match(r'^([A-Za-z0-9_\-]+)\s*=\s*(.+)$', line)
-
-        if not pair:
-            continue
-
-        key, val = pair.group(1), pair.group(2).strip()
-
-        # Cargo.lock lists name and version as separate keys inside one [[package]]
-        if is_lock and section == "package":
-            if key in ("name", "version"):
-                entry["package" if key == "name" else "version"] = val.strip("'\"")
-
-            continue
-
-        # Skipping non-dependency sections keeps [package] name/version/edition out of the results
-        if not is_cargo_deps(section):
+        section_suffix = section.split(".")[-1].strip().strip("'\"")
+        if section_suffix not in ("dependencies", "dev-dependencies", "build-dependencies"):
             continue
 
         if val.startswith("{"):
@@ -373,7 +363,7 @@ def parse_cargo(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Hàm phân tích thư viện pubspec
+# Parse Dart/Flutter pubspec dependencies
 def parse_pubspec(path: str) -> List[Dict[str, str]]:
     deps = []
     
@@ -389,7 +379,7 @@ def parse_pubspec(path: str) -> List[Dict[str, str]]:
     
     return deps
 
-# Hàm phân tích thư viện mix
+# Parse Elixir Mix dependencies
 def parse_mix(path: str) -> List[Dict[str, str]]:
     deps = []
     
@@ -403,13 +393,12 @@ def parse_mix(path: str) -> List[Dict[str, str]]:
     
     except Exception:
         pass
-    
+
     return deps
 
-# Hàm phân tích thư viện vcpkg
+# Parse C++ vcpkg dependencies
 def parse_vcpkg(path: str) -> List[Dict[str, str]]:
     deps = []
-
     try:
         with open(path, "r", encoding="utf-8") as f:
             data = json.load(f)
@@ -419,13 +408,11 @@ def parse_vcpkg(path: str) -> List[Dict[str, str]]:
                 elif isinstance(item, dict) and "name" in item:
                     ver = item.get("version>=", item.get("version", ""))
                     deps.append({"ecosystem": "vcpkg", "package": item["name"], "version": ver})
-    
     except Exception:
         pass
-    
     return deps
 
-# Hàm phân tích thư viện conan
+# Parse C++ conan dependencies
 def parse_conan(path: str) -> List[Dict[str, str]]:
     deps = []
     
@@ -450,14 +437,14 @@ def parse_conan(path: str) -> List[Dict[str, str]]:
     
     return deps
 
-# Hàm phân tích thư viện sbt
+# Parse Scala sbt dependencies
 def parse_sbt(path: str) -> List[Dict[str, str]]:
     deps = []
 
     try:
         with open(path, "r", encoding="utf-8") as f:
             content = f.read()
-            # "group" % "artifact" % "version", chấp nhận cả %% của scala
+            # Parse "group" % "artifact" % "version" syntax
             pat = r'"([\w.\-]+)"\s*%{1,3}\s*"([\w.\-]+)"\s*%\s*"([\w.\-]+)"'
 
             for group, artifact, ver in re.findall(pat, content):
@@ -468,7 +455,220 @@ def parse_sbt(path: str) -> List[Dict[str, str]]:
 
     return deps
 
-# Hàm phân tích thư viện
+# Parse strange dependencies
+def parse_generic(path: str, ecosystem: str) -> List[Dict[str, str]]:
+    try:
+        with open(path, "r", encoding="utf-8", errors="replace") as f:
+            content = f.read()
+    except Exception:
+        return []
+
+    deps = []
+
+    # --- JSON ---
+    if path.endswith(".json"):
+        try:
+            data = json.loads(content)
+
+            # Look for any dict value whose key contains "depend", "require", "package"
+            for key, val in data.items():
+                if any(k in key.lower() for k in ("depend", "require", "package", "lib")) and isinstance(val, dict):
+                    for pkg, ver in val.items():
+                        if isinstance(ver, str):
+                            deps.append({"ecosystem": ecosystem, "package": pkg, "version": ver.strip("^~<>=")})
+                        elif isinstance(ver, dict) and "version" in ver:
+                            deps.append({"ecosystem": ecosystem, "package": pkg, "version": str(ver["version"]).strip("^~<>=")})
+        except Exception:
+            pass
+        return deps
+
+    # --- TOML ---
+    if path.endswith((".toml",)):
+
+        # Simple TOML: look for [*dependencies*] sections then key = "version" lines
+        section = ""
+        for line in content.splitlines():
+            line = line.strip()
+            if line.startswith("["):
+                section = line.strip("[]").strip()
+            elif "depend" in section.lower() and "=" in line:
+                pair = re.match(r'^([A-Za-z0-9_\-\.]+)\s*=\s*["\']?([^\'"{\s]+)', line)
+                if pair:
+                    deps.append({"ecosystem": ecosystem, "package": pair.group(1), "version": pair.group(2).strip("^~<>=")})
+        return deps
+
+    # --- YAML ---
+    if path.endswith((".yaml", ".yml")):
+
+        # Look for lines like "  - package==version" or "  package: version"
+        for line in content.splitlines():
+        
+            # npm/pip style inline: "  package: version"
+            m = re.match(r'^\s{1,6}([A-Za-z0-9_\-\.]+):\s+["\']?([0-9][^\s"\']+)', line)
+            if m:
+                deps.append({"ecosystem": ecosystem, "package": m.group(1), "version": m.group(2).strip("^~<>=")})
+        return deps
+
+    # --- Plain text ---
+    for line in content.splitlines():
+        line = line.strip()
+        if not line or line.startswith("#"):
+            continue
+
+        # name==1.0 / name>=1.0 / name 1.0
+        m = re.match(r'^([A-Za-z0-9_\-\.]+)\s*[=><~!]+\s*([0-9][^\s,;]*)', line) or \
+            re.match(r'^([A-Za-z0-9_\-\.]+)\s+([0-9][^\s,;]*)', line)
+        if m:
+            deps.append({"ecosystem": ecosystem, "package": m.group(1), "version": m.group(2).strip("^~<>=")})
+
+    return deps
+
+# Parse Java/Kotlin/Android Gradle dependencies
+def parse_gradle(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            content = f.read()
+            
+        # Matches: implementation 'group:artifact:version' or implementation("group:artifact:version")
+        for m in re.finditer(r'''(?:implementation|api|compile|runtimeOnly|testImplementation|classpath)\s*[\('\"]([A-Za-z0-9_\-\.]+:[A-Za-z0-9_\-\.]+):([^\s'")\n]+)''', content):
+            parts = m.group(1).split(":")
+            pkg   = ":".join(parts)  # keep group:artifact as package name
+            ver   = m.group(2).strip("'\")")
+            deps.append({"ecosystem": "maven", "package": pkg, "version": ver.strip("^~<>=")})
+    
+    except Exception:
+        pass
+    
+    return deps
+
+# Parse Ruby Gemfile.lock
+def parse_gemfile_lock(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            in_specs = False
+            for line in f:
+                stripped = line.rstrip()
+                if stripped.strip() == "specs:":
+                    in_specs = True
+                    continue
+                if in_specs:
+                    
+                    # Specs lines are indented: "    gem_name (version)"
+                    m = re.match(r'^    ([A-Za-z0-9_\-\.]+)\s+\(([^\)]+)\)', stripped)
+                    if m:
+                        deps.append({"ecosystem": "rubygems", "package": m.group(1), "version": m.group(2).split(",")[0].strip()})
+                    elif stripped and not stripped.startswith(" "):
+                        in_specs = False
+    
+    except Exception:
+        pass
+    
+    return deps
+
+# Parse PHP composer.lock
+def parse_composer_lock(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for section in ("packages", "packages-dev"):
+            for pkg in data.get(section, []):
+                if "name" in pkg and "version" in pkg:
+                    deps.append({"ecosystem": "packagist", "package": pkg["name"], "version": pkg["version"].lstrip("v")})
+    
+    except Exception:
+        pass
+    
+    return deps
+
+# Parse Python Pipfile 
+def parse_pipfile(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            section = ""
+            for line in f:
+                line = line.strip()
+                if line.startswith("["):
+                    section = line.strip("[]").strip()
+                elif section in ("packages", "dev-packages") and "=" in line:
+                    m = re.match(r'^([A-Za-z0-9_\-\.]+)\s*=\s*["\']?([^"\'{\s]+)', line)
+                    if m and m.group(2) != "*":
+                        deps.append({"ecosystem": "pypi", "package": m.group(1), "version": m.group(2).strip("^~<>=")})
+    
+    except Exception:
+        pass
+    
+    return deps
+
+# Parse Python Pipfile.lock
+def parse_pipfile_lock(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            data = json.load(f)
+        for section in ("default", "develop"):
+            for pkg, info in data.get(section, {}).items():
+                ver = info.get("version", "").lstrip("=")
+                if ver:
+                    deps.append({"ecosystem": "pypi", "package": pkg, "version": ver})
+    
+    except Exception:
+        pass
+    
+    return deps
+
+# Parse Python setup.cfg
+def parse_setup_cfg(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            in_requires = False
+            for line in f:
+                stripped = line.strip()
+                if stripped in ("install_requires =", "install_requires="):
+                    in_requires = True
+                    continue
+                if in_requires:
+                    if not stripped or stripped.startswith("["):
+                        in_requires = False
+                        continue
+                    m = re.match(r'^([A-Za-z0-9_\-\.]+)\s*([>=<!~^]+\s*[0-9][^\s,;]*)?', stripped)
+                    if m:
+                        ver = (m.group(2) or "").strip()
+                        deps.append({"ecosystem": "pypi", "package": m.group(1), "version": re.sub(r'^[>=<!~^]+', '', ver).strip() or "unknown"})
+    
+    except Exception:
+        pass
+    
+    return deps
+
+# Parse JavaScript pnpm-lock.yaml
+def parse_pnpm_lock(path: str) -> List[Dict[str, str]]:
+    deps = []
+    
+    try:
+        with open(path, "r", encoding="utf-8") as f:
+            for line in f:
+                
+                # pnpm-lock format: /package-name@version: or /scope/package@version:
+                m = re.match(r'^/(.+?)@([0-9][^:\s]+):', line)
+                if m:
+                    deps.append({"ecosystem": "npm", "package": m.group(1), "version": m.group(2).split("(")[0].strip()})
+    
+    except Exception:
+        pass
+    
+    return deps
+
 def parse_deps(target: str) -> List[Dict[str, str]]:
     path = Path(target)
 
@@ -537,6 +737,30 @@ def parse_deps(target: str) -> List[Dict[str, str]]:
                 elif name == "build.sbt":
                     manifests.extend(parse_sbt(full))
 
+                elif name in ["build.gradle", "build.gradle.kts"]:
+                    manifests.extend(parse_gradle(full))
+
+                elif name == "Gemfile.lock":
+                    locks.extend(parse_gemfile_lock(full))
+
+                elif name == "composer.lock":
+                    locks.extend(parse_composer_lock(full))
+
+                elif name == "Pipfile":
+                    manifests.extend(parse_pipfile(full))
+
+                elif name == "Pipfile.lock":
+                    locks.extend(parse_pipfile_lock(full))
+
+                elif name == "setup.cfg":
+                    manifests.extend(parse_setup_cfg(full))
+
+                elif name == "pnpm-lock.yaml":
+                    locks.extend(parse_pnpm_lock(full))
+
+                else:
+                    manifests.extend(parse_generic(full, DEPS[name]))
+
             elif name.endswith(".csproj"):
                 manifests.extend(parse_csproj(full))
 
@@ -559,7 +783,7 @@ def parse_deps(target: str) -> List[Dict[str, str]]:
 
 from cli.views import logger
 
-# Hàm báo cáo kết quả
+# Report results
 def report_deps(deps: List[Dict[str, str]]):
     logger.section("DEPENDENCIES")
 
