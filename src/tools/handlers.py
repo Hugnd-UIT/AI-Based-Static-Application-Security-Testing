@@ -1,11 +1,10 @@
-import json
+﻿import json
 import logging
 from src.llm import fetch_tools
 from src.tools import actions
 
 logger = logging.getLogger(__name__)
 
-# Hàm điều phối agent
 def run_agent(
     prompt: str,
     message: str,
@@ -23,7 +22,7 @@ def run_agent(
 
     for current in range(1, steps + 1):
         try:
-            # Gửi công cụ đến AI
+            # Send tools to AI
             msg, used_model = fetch_tools(
                 msg=history,
                 schemas=schemas,
@@ -31,11 +30,11 @@ def run_agent(
                 tool="auto",
             )
         
-        # Nếu gửi request lỗi thì trả về kết quả cuối cùng
+        # Return final result if request fails
         except RuntimeError as err:
             return fallback_verdict(error=str(err))
             
-        # Nếu nhận response lỗi thì gửi lại request
+        # Retry request if response is invalid
         if not msg or (not getattr(msg, 'tool_calls', None) and not (getattr(msg, 'content', None) or "").strip()):
             import time
             time.sleep(1)
@@ -44,7 +43,7 @@ def run_agent(
         assistant: dict = {"role": "assistant", "content": getattr(msg, 'content', "") or ""}
 
         if msg.tool_calls:
-            # Lấy thông tin về công cụ
+            # Extract tool call information
             assistant["tool_calls"] = [
                 {
                     "id": tc.id,
@@ -58,17 +57,17 @@ def run_agent(
                 for tc in msg.tool_calls
             ]
         
-        # Lưu thông tin về công cụ vào lịch sử
+        # Append tool info to history
         history.append(assistant)
 
-        # Nếu AI trả về JSON hợp lệ
+        # If AI returns valid JSON
         if msg.tool_calls:
             vresult = None
 
             for tcall in msg.tool_calls:
                 tname = tcall.function.name
 
-                # Kiểm tra tham số của công cụ
+                # Parse tool arguments
                 try:
                     targs = json.loads(tcall.function.arguments)
 
@@ -78,7 +77,7 @@ def run_agent(
                 try:
                     from cli.views.logger import console
                     
-                    # Nếu AI không gọi công cụ nộp kết quả thì hiển thị hành động
+                    # Print action if AI did not submit verdict
                     if tname != "submit_verdict":
                         from src.tools.actions import TOOLS
                         
@@ -91,7 +90,7 @@ def run_agent(
                 except ImportError:
                     pass
 
-                # Nếu AI gọi công cụ nộp kết quả thì ngắt vòng lặp
+                # Break loop if AI submits verdict
                 if tname == "submit_verdict":
                     history.append({
                         "role": "tool",
@@ -101,10 +100,10 @@ def run_agent(
                     vresult = normalise_verdict(targs)
                     continue
 
-                # Nếu AI gọi công cụ thường thì thực thi công cụ
+                # Execute tool if it is a regular tool call
                 result = actions.execute_tool(tname, targs, directory, module)
 
-                # Lưu kết quả vào lịch sử
+                # Append tool result to history
                 history.append({
                     "role": "tool",
                     "tool_call_id": tcall.id,
@@ -115,7 +114,7 @@ def run_agent(
 
                 return vresult
 
-        # Nếu AI không trả về JSON hợp lệ
+        # If AI did not return valid JSON tool calls
         else:
             text = (msg.content or "").strip()
             logger.debug("[%s] Plain text response on step %d", agent, current)
@@ -130,7 +129,7 @@ def run_agent(
 
     return fallback_verdict(reason="steps exceeded")
 
-# Hàm chuẩn hóa kết quả
+# Normalize verdict function
 def normalise_verdict(dval: dict) -> dict:
     final = dict(dval)
     final.setdefault("verdict", "UNKNOWN")
@@ -139,7 +138,7 @@ def normalise_verdict(dval: dict) -> dict:
     final.setdefault("reasoning", "")
     return final
 
-# Hàm xử lý kết quả
+# Fallback verdict function
 def fallback_verdict(error: str = "", reason: str = "", text: str = "") -> dict:
     return {
         "verdict": "UNKNOWN",
@@ -150,7 +149,7 @@ def fallback_verdict(error: str = "", reason: str = "", text: str = "") -> dict:
         "response": text[:500] if text else "",
     }
 
-# Hàm trích xuất kết quả
+# Extract verdict function
 def extract_verdict(text: str) -> dict | None:
     import re
     fenced = re.search(r"```json\s*(\{.*?\})\s*```", text, re.DOTALL)

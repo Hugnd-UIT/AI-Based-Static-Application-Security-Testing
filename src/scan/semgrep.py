@@ -4,7 +4,6 @@ from pathlib import Path
 from typing import Dict, List, Any
 from typing import Dict, List, Any
 
-# Bộ quy tắc chung, luôn chạy
 CORE = [
     "p/owasp-top-ten",
     "p/security-audit",
@@ -12,8 +11,7 @@ CORE = [
     "p/default",
 ]
 
-# Bộ quy tắc theo từng ngôn ngữ
-BY_LANG = {
+LANG = {
     "python": ["p/python", "p/django", "p/flask", "p/fastapi"],
     "javascript": ["p/javascript", "p/nodejs", "p/react"],
     "typescript": ["p/typescript", "p/nodejs", "p/react"],
@@ -28,7 +26,6 @@ BY_LANG = {
     "c#": ["p/csharp"],
 }
 
-# Bộ quy tắc bổ sung khi không biết ngôn ngữ
 EXTRA = [
     "p/xss",
     "p/sql-injection",
@@ -37,9 +34,9 @@ EXTRA = [
     "p/supply-chain",
 ]
 
-RULES = CORE + EXTRA + sorted({r for rs in BY_LANG.values() for r in rs})
+RULES = CORE + EXTRA + sorted({r for rs in LANG.values() for r in rs})
 
-# Hàm chọn quy tắc theo ngôn ngữ phát hiện được
+# Pick rules based on detected languages
 def pick_rules(langs) -> List[str]:
     if not langs:
         return list(RULES)
@@ -47,17 +44,16 @@ def pick_rules(langs) -> List[str]:
     picked = list(CORE)
 
     for lang in langs:
-        for rule in BY_LANG.get(str(lang).lower(), []):
+        for rule in LANG.get(str(lang).lower(), []):
             if rule not in picked:
                 picked.append(rule)
 
     return picked
 
-# Hàm quét mã nguồn
 def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
     path = Path(target)
 
-    # Kiểm tra đường dẫn
+    # Check path
     if not path.exists() or not path.is_dir():
         raise ValueError(f"[!] The path is invalid: {target}")
 
@@ -66,7 +62,7 @@ def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
     import sys
     import os
     
-    # Kiểm tra semgrep
+    # Check semgrep binary
     python = Path(sys.executable).parent
     binary = "semgrep.exe" if os.name == "nt" else "semgrep"
     exe = python / binary
@@ -77,7 +73,7 @@ def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
     else:
         exe = str(exe)
 
-    # Cấu hình semgrep
+    # Configure semgrep
     cmd = [exe, "scan", "--json", "--quiet", "--no-git-ignore"]
 
     for rule in rules:
@@ -91,7 +87,7 @@ def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
     cmd.append(str(path))
     
     try:
-        # Khởi động semgrep
+        # Start semgrep
         env = os.environ.copy()
         env["SEMGREP_SEND_METRICS"] = "off"
         
@@ -99,7 +95,7 @@ def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
 
         output = result.stdout.strip()
 
-        # Kiểm tra kết quả
+        # Check results
         if not output:
             if hasattr(result, "stderr") and result.stderr.strip():
                 print(f"[!] Semgrep failed: {result.stderr.strip()}")
@@ -116,7 +112,7 @@ def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
         cleaned = []
         seen = set()
 
-        # Làm sạch kết quả
+        # Clean results
         for item in findings:
             file = item.get("path")
             line = item.get("start", {}).get("line")
@@ -131,61 +127,51 @@ def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
             extra = item.get("extra", {})
             meta = extra.get("metadata", {})
 
-            # Bỏ tiền tố đường dẫn semgrep gắn vào id của rule tự sinh
+            # Remove semgrep path prefix added to dynamic rule IDs
             rid = item.get("check_id") or ""
-            if "dynamic-ai-" in rid:
-                rid = rid[rid.index("dynamic-ai-"):]
+            if "dynamic-rule-" in rid:
+                rid = rid[rid.index("dynamic-rule-"):]
 
             clean = {
                 "id": rid,
                 "path": item.get("path"),
                 "start_line": item.get("start", {}).get("line"),
-                "start_col": item.get("start", {}).get("col"),
                 "end_line": item.get("end", {}).get("line"),
-                "end_col": item.get("end", {}).get("col"),
                 "severity": extra.get("severity"),
                 "message": extra.get("message"),
-                "lines": extra.get("lines"),
                 "cwe": meta.get("cwe", []),
-                "owasp": meta.get("owasp", []),
-                "category": meta.get("category", ""),
-                "technology": meta.get("technology", []),
                 "confidence": meta.get("confidence", ""),
-                "impact": meta.get("impact", ""),
-                "likelihood": meta.get("likelihood", ""),
                 "references": meta.get("references", []),
-                "shortlink": meta.get("shortlink", ""),
-                "vulnerability_class": meta.get("vulnerability_class", []),
+                "class": meta.get("vulnerability_class", []),
                 "dataflow_trace": extra.get("dataflow_trace"),
                 "fix": extra.get("fix"),
-                "fix_regex": extra.get("fix_regex")
+                "regex": extra.get("fix_regex")
             }
 
             cleaned.append(clean)
 
         return cleaned
 
-
     except json.JSONDecodeError:
-        print("[!] Failed to parse Semgrep output")
+        print("[!] Failed to parse semgrep output")
         return []
 
     except FileNotFoundError:
-        print("[!] Semgrep not found. Please run: pip install semgrep")
+        print("[!] Semgrep not found!")
         return []
         
     except PermissionError:
-        print("[!] Permission denied when running Semgrep")
+        print("[!] Permission denied!")
         return []
 
 from cli.views import logger
 
-# Hàm báo cáo kết quả
+# Report scan results function
 def report_scan(findings: List[Dict[str, Any]]):
     from cli.views.logger import console
 
     if not findings:
-        console.print("  [green]- No vulnerabilities detected[/green]")
+        console.print("  [green][!] No vulnerabilities detected[/green]")
         return
 
     console.print(f"  [bold]{len(findings)} vulnerabilities detected[/bold]")

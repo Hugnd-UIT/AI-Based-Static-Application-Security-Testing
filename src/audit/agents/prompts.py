@@ -102,15 +102,15 @@ Rule ID: {rule}
 Message: {msg}
 File: {path}
 
-## Semgrep Dataflow Trace
+## Dataflow
 {dflow}
 
-## AST Code Context
+## Code Context
 ```
 {code}
 ```
 
-## RAG / CVE Context
+## CVE Context
 {cve}
 
 # Action

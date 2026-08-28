@@ -1,4 +1,4 @@
-﻿import os
+import os
 import json
 import time
 import textwrap
@@ -191,9 +191,7 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
 
                 # Remove redundant fields to match target schema exactly
                 fields_to_drop = [
-                    "lines", "start_col", "end_col", "shortlink", "ast", "technology", 
-                    "owasp", "category", "impact", "likelihood", "vulnerability_class", 
-                    "dataflow_trace", "sink_context"
+                    "ast", "dataflow_trace", "sink_context"
                 ]
                 for field in fields_to_drop:
                     item.pop(field, None)

@@ -1,10 +1,9 @@
-import os
+﻿import os
 import re
 import json
 import importlib
 from pathlib import Path
 
-# Danh sách công cụ
 TOOLS = {
     "read_file",
     "trace_variable",
@@ -14,7 +13,7 @@ TOOLS = {
     "submit_verdict",
 }
 
-# Khởi tạo tree-sitter
+# Initialize tree-sitter
 def start_sitter():
     import importlib.util
     from pathlib import Path
@@ -25,22 +24,22 @@ def start_sitter():
 
     return mod
 
-# Hàm xử lý đường dẫn
+# Path resolution function
 def resolve_path(target: str, rel: str) -> Path:
     root = Path(target).resolve()
     path = (root / rel).resolve()
 
-    # Chống path traversal
+    # Prevent path traversal
     if path != root and root not in path.parents:
         raise ValueError(f"Path traversal attempt: {rel}")
 
     return path
 
-# Công cụ đọc nội dung file
+# File reading tool
 def read_file(args: dict, target: str, module=None) -> str:
     rel = args.get("path", "")
 
-    # Kiểm tra đường dẫn
+    # Check path
     if not rel:
         return "[ERROR] 'path' is required."
 
@@ -66,7 +65,7 @@ def read_file(args: dict, target: str, module=None) -> str:
     except Exception as err:
         return f"[ERROR] Read file {rel}: {err}"
 
-# Công cụ theo dõi biến bằng AST
+# Variable tracing tool - AST
 def trace_variable(args: dict, target: str, module=None) -> str:
     var = args.get("var_name", "")
     file = args.get("file_path", "")
@@ -78,7 +77,7 @@ def trace_variable(args: dict, target: str, module=None) -> str:
         sitter = module or start_sitter()
         path = resolve_path(target, file)
         
-        # Dùng AST phân tích biến
+        # Use AST to analyze variable
         trace = sitter.resolve_aliases_chain(str(path), var)
 
         if trace:
@@ -86,14 +85,14 @@ def trace_variable(args: dict, target: str, module=None) -> str:
 
         return f"[NO ALIAS] '{var}' has no detected alias chain defined inline or not found."
 
-    # Nếu AST bị lỗi thì dùng Regex
+    # Use Regex if AST fails
     except AttributeError:
         return trace_fallback(var, file, target)
 
     except Exception as err:
         return f"[ERROR] trace_variable({var}): {err}"
 
-# Công cụ theo dõi biến bằng Regex
+# Variable tracing tool - Regex
 def trace_fallback(var: str, file: str, target: str) -> str:
     try:
         path = resolve_path(target, file)
@@ -110,7 +109,7 @@ def trace_fallback(var: str, file: str, target: str) -> str:
             if pattern.search(text):
                 hits.append(f"  line {num:4d}: {text.rstrip()}")
 
-            # Chỉ trả tối đa 150 kết quả
+            # Limit to 150 results
             if len(hits) >= 150:
                 hits.append("...")
                 break
@@ -123,7 +122,7 @@ def trace_fallback(var: str, file: str, target: str) -> str:
     except Exception as err:
         return f"[ERROR] trace_variable fallback: {err}"
 
-# Công cụ tìm hàm
+# Function finding tool
 def find_function(args: dict, target: str, module=None) -> str:
     func = args.get("function_name", "")
 
@@ -139,7 +138,7 @@ def find_function(args: dict, target: str, module=None) -> str:
     except Exception as err:
         return f"[ERROR] find_function({func}): {err}"
 
-# Công cụ tìm hàm gọi đến
+# Caller finding tool
 def find_callers(args: dict, target: str, module=None) -> str:
     func = args.get("function_name", "")
 
@@ -151,7 +150,7 @@ def find_callers(args: dict, target: str, module=None) -> str:
         callers = []
         skip = {".git", "node_modules", "vendor", ".venv", "__pycache__"}
 
-        # Duyệt toàn bộ cây thư mục
+        # Walk entire directory tree
         for root, dirs, files in os.walk(target):
             dirs[:] = [d for d in dirs if d not in skip]
 
@@ -159,7 +158,7 @@ def find_callers(args: dict, target: str, module=None) -> str:
                 path = Path(root) / name
                 ext = path.suffix.lower()
 
-                # Bỏ qua file không được hỗ trợ
+                # Skip unsupported files
                 if ext not in sitter.LANG:
                     continue
 
@@ -187,7 +186,7 @@ def find_callers(args: dict, target: str, module=None) -> str:
     except Exception as err:
         return f"[ERROR] find_callers({func}): {err}"
 
-# Công cụ tìm kiếm mẫu
+# Pattern search tool
 def search_pattern(args: dict, target: str, module=None) -> str:
     query = args.get("pattern", "")
     ext = args.get("file_ext", None)
@@ -195,7 +194,7 @@ def search_pattern(args: dict, target: str, module=None) -> str:
     if not query:
         return "[ERROR] search_pattern: 'pattern' is required."
 
-    # Xử lý Regex, nếu lỗi thì tìm kiếm chuỗi thuần túy
+    # Check regex, fallback to plain string search if invalid
     try:
         regex = re.compile(query)
     except re.error:
@@ -210,7 +209,7 @@ def search_pattern(args: dict, target: str, module=None) -> str:
 
             for name in files:
                 
-                # Bỏ qua nếu có yêu cầu lọc đuôi file
+                # Skip if file extension filter is active
                 if ext and not name.endswith(ext):
                     continue
 
@@ -220,12 +219,12 @@ def search_pattern(args: dict, target: str, module=None) -> str:
                     with open(path, "r", encoding="utf-8", errors="replace") as f:
                         for num, text in enumerate(f, 1):
                             
-                            # Nếu dòng đó có chứa từ khóa
+                            # If line contains keyword
                             if regex.search(text):
                                 rel = str(path.relative_to(target))
                                 matches.append(f"  {rel}:{num}: {text.rstrip()}")
 
-                                # Giới hạn 150 kết quả
+                                # Limit to 150 results
                                 if len(matches) >= 150:
                                     break
 
@@ -244,38 +243,37 @@ def search_pattern(args: dict, target: str, module=None) -> str:
     except Exception as err:
         return f"[ERROR] search_pattern: {err}"
 
-# Công cụ nộp kệt quả
+# Submit verdict tool
 def submit_verdict(args: dict, target: str, module=None) -> dict:
     return args
 
-# Bộ nhớ kết quả công cụ, tránh phân tích lại cùng một câu hỏi
-_memory = {}
-_LIMIT = 512
+# Cache rslts
+memory = {}
+LIMIT = 512
 
-# Hàm xóa bộ nhớ, gọi khi bắt đầu lượt quét mới vì file có thể đã đổi
+# Clear cache
 def reset_memory():
-    _memory.clear()
+    memory.clear()
 
-# Hàm chạy công cụ
+# Execute tool function
 def execute_tool(name: str, args: dict, target: str, module=None):
     if name not in TOOLS:
         return f"[ERROR] Unknown tool: '{name}'. Available: {list(TOOLS)}"
 
     func = globals().get(name)
 
-    # Phán quyết không phải công cụ chỉ đọc nên không lưu lại
     if name == "submit_verdict":
         return func(args, target, module)
 
     key = (target, name, json.dumps(args, sort_keys=True, default=str))
 
-    if key in _memory:
-        return _memory[key]
+    if key in memory:
+        return memory[key]
 
     result = func(args, target, module)
 
-    # Chỉ lưu kết quả đọc được, bỏ qua lỗi tạm thời
-    if isinstance(result, str) and not result.startswith("[ERROR]") and len(_memory) < _LIMIT:
-        _memory[key] = result
+    # Cache successful actions
+    if isinstance(result, str) and not result.startswith("[ERROR]") and len(memory) < LIMIT:
+        memory[key] = result
 
     return result

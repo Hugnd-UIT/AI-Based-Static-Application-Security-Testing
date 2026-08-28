@@ -26,10 +26,10 @@ def generate(data, templates=None, output=None):
             continue
             
         rule = base['rules'][0]
-        rule['id'] = f"dynamic-ai-{rule['id']}"
+        rule['id'] = f"dynamic-rule-{rule['id']}"
         
         search_rule = {
-            "id": f"dynamic-ai-search-{language}",
+            "id": f"dynamic-rule-search-{language}",
             "mode": "search",
             "message": "Potential vulnerability: dangerous function call or defect detected.",
             "severity": "WARNING",
