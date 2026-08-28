@@ -3,74 +3,86 @@ import json
 import time
 from openai import OpenAI
 
-def get_keys() -> list:
+
+MODELS = [
+    "deepseek/deepseek-v4-pro:free",
+    "qwen/qwen3.8-max:free",
+    "qwen/qwen3-coder-plus:free",
+    "mistralai/ministral-8b",
+    "minimax/minimax-m2.7"
+]
+
+
+def get_key(agent: str = "helper") -> str:
     env = os.environ.get("AI_API_KEY", "")
     keys = [k.strip() for k in env.split(",") if k.strip()]
     if not keys:
-        raise ValueError("Missing AI_API_KEY in .env!")
-    return keys
-
-def _key_at(idx: int) -> str:
-    keys = get_keys()
+        raise ValueError("Missing API key!")
+        
+    agent = agent.lower()
+    if "verifier" in agent or "expander" in agent or "rag" in agent: 
+        idx = 0
+    elif "scan" in agent: 
+        idx = 1
+    elif "audit" in agent: 
+        idx = 2
+    elif "fix" in agent: 
+        idx = 3
+    else: 
+        idx = 4
+        
     return keys[idx] if idx < len(keys) else keys[-1]
 
-def get_key_rag()    -> str: return _key_at(0)
-def get_key_scan()   -> str: return _key_at(1)
-def get_key_audit()  -> str: return _key_at(2)
-def get_key_fix()    -> str: return _key_at(3)
-def get_key_helper() -> str: return _key_at(4)
 
-# 429 needs longer wait than other errors, but cap at 30s to avoid hanging forever
-def wait_time(errors: str, attempt: int) -> float:
-    base = 4 if "429" in errors else 2
-    return min(30.0, base * (2 ** attempt))
-
-# Each AI role uses its own dedicated key, determined by the model name passed in
-def get_key_for_model(model_name: str) -> str:
-    name = model_name.lower()
-    if "rag"   in name: return get_key_rag()
-    if "scan"  in name: return get_key_scan()
-    if "audit" in name: return get_key_audit()
-    if "fix"   in name: return get_key_fix()
-    return get_key_helper()
-
-# Create an OpenAI-compatible client pointed at xkiro
-def create_client(api_key: str) -> OpenAI:
+def get_connect(api_key: str) -> OpenAI:
     base_url = os.environ["AI_URL"]
     default_headers = {"User-Agent": "Mozilla/5.0"}
     return OpenAI(api_key=api_key, base_url=base_url, default_headers=default_headers)
 
-# Check if the error is worth retrying
-def can_retry(errors: str) -> bool:
+
+# Check status if retryable
+def check_status(errors: str, attempt: int) -> float:
     low = errors.lower()
-    if is_quota(errors):
-        return False
-    return (
+    if check_quota(errors):
+        return 0.0
+        
+    retryable = (
         any(code in errors for code in ("403", "500", "502", "503", "504", "429"))
         or "<html"      in low
         or "<!doctype"  in low
         or "connection" in low
         or "timeout"    in low
     )
+    
+    if not retryable:
+        return 0.0
+        
+    base = 4 if "429" in errors else 2
+    return min(30.0, base * (2 ** attempt))
 
-# Quota exhaustion is permanent (for today) — no point retrying
-def is_quota(errors: str) -> bool:
+
+# Check quota if exhausted
+def check_quota(errors: str) -> bool:
     low = errors.lower()
     return "quota" in low or "insufficient_quota" in low or "billing" in low
 
-# Normalize raw error strings into a short readable message
-def norm_error(errors: str) -> str:
+
+# Normalize responses
+def normalize_msg(errors: str) -> str:
     code = ""
     if "Error code: " in errors:
         parts = errors.split("Error code: ")
         if len(parts) > 1:
             code = parts[1].split()[0].strip("- ")
 
-    if code == "403": return "403 Forbidden"
-    if code == "401": return "401 Unauthorized - Check your API Key"
+    if code == "403": 
+        return "403 Forbidden"
+    
+    if code == "401": 
+        return "401 Unauthorized"
 
-    if is_quota(errors):
-        return "429 Daily token quota exhausted"
+    if check_quota(errors):
+        return "429 Quota exhausted"
 
     if code:
         return f"HTTP Error {code}"
@@ -83,44 +95,41 @@ def norm_error(errors: str) -> str:
 
     return errors
 
-# Send a plain prompt to the AI and return JSON or raw text
-def fetch_llm(prompt: str, model: str = None, jfmt: bool = True):
+
+# Call LLM agent without tools
+def fetch_llm(prompt: str, model: str = None, jfmt: bool = True, agent: str = "helper"):
     primary = model or os.environ["AI_MODEL"]
-    
-    # 5 free xkiro fallback models
-    fallbacks = [
-        "google/gemini-1.5-flash",
-        "meta-llama/llama-3-8b-instruct",
-        "mistralai/mistral-7b-instruct-v0.3",
-        "qwen/qwen-2-7b-instruct",
-        "microsoft/phi-3-mini-128k-instruct"
-    ]
-    
-    models_to_try = [primary] + fallbacks
+    secondary = [primary] + MODELS
     errors = ""
 
-    for target in models_to_try:
-        actual_model = target.split(" ")[0]
+    for target in secondary:
+        target = target.split(" ")[0]
         retries = 3 if target == primary else 1
         
         for attempt in range(retries):
             try:
-                client = create_client(get_key_for_model(target))
+                client = get_connect(get_key(agent))
 
                 req = {
-                    "model":    actual_model,
+                    "model":    target,
                     "messages": [{"role": "system", "content": prompt}],
                 }
+                
                 if jfmt:
                     req["response_format"] = {"type": "json_object"}
 
-                resp = client.chat.completions.create(**req)
-                raw  = resp.choices[0].message.content.strip()
+                res = client.chat.completions.create(**req)
+                raw  = res.choices[0].message.content.strip()
 
                 if jfmt:
-                    if raw.startswith("```json"): raw = raw[7:]
-                    elif raw.startswith("```"):   raw = raw[3:]
-                    if raw.endswith("```"):       raw = raw[:-3]
+                    if raw.startswith("```json"): 
+                        raw = raw[7:]
+                    elif raw.startswith("```"):   
+                        raw = raw[3:]
+                    
+                    if raw.endswith("```"):       
+                        raw = raw[:-3]
+                    
                     return json.loads(raw.strip())
                 else:
                     return raw, target
@@ -128,12 +137,12 @@ def fetch_llm(prompt: str, model: str = None, jfmt: bool = True):
             except Exception as api_err:
                 errors = str(api_err)
 
-                if can_retry(errors) and attempt < retries - 1:
-                    time.sleep(wait_time(errors, attempt))
+                wait = check_status(errors, attempt)
+                if wait > 0 and attempt < retries - 1:
+                    time.sleep(wait)
                     continue
                 
-                errors = norm_error(errors)
-                # Break out of inner retry loop to try next fallback model
+                errors = normalize_msg(errors)
                 break
                 
     if not jfmt:
@@ -141,48 +150,39 @@ def fetch_llm(prompt: str, model: str = None, jfmt: bool = True):
 
     raise RuntimeError(f"[!] Error: Call AI failed. Last error: {errors}")
 
-# Send a tool-calling request to the AI
-def fetch_tools(msg: list, schemas: list, model: str = None, tool: str = "auto"):
+
+# Call LLM agent with tools
+def fetch_tools(msg: list, schemas: list, model: str = None, tool: str = "auto", agent: str = "helper"):
     primary = model or os.environ["AI_MODEL"]
-    
-    fallbacks = [
-        "google/gemini-1.5-flash",
-        "meta-llama/llama-3-8b-instruct",
-        "mistralai/mistral-7b-instruct-v0.3",
-        "qwen/qwen-2-7b-instruct",
-        "microsoft/phi-3-mini-128k-instruct"
-    ]
-    
-    models_to_try = [primary] + fallbacks
+    secondary = [primary] + MODELS
     errors = ""
 
-    for target in models_to_try:
+    for target in secondary:
         retries = 3 if target == primary else 1
         
         for attempt in range(retries):
             try:
-                client = create_client(get_key_for_model(target))
+                client = get_connect(get_key(agent))
 
-                resp = client.chat.completions.create(
+                res = client.chat.completions.create(
                     model=target,
                     messages=msg,
                     tools=schemas,
                     tool_choice=tool,
                 )
 
-                if not getattr(resp, "choices", None):
-                    raise RuntimeError(f"Invalid response: {resp}")
+                if not getattr(res, "choices", None):
+                    raise RuntimeError(f"Invalid response: {res}")
 
-                return resp.choices[0].message, target
+                return res.choices[0].message, target
 
             except Exception as api_err:
                 errors = str(api_err)
 
-                if can_retry(errors) and attempt < retries - 1:
-                    time.sleep(wait_time(errors, attempt))
+                wait_sec = check_status(errors, attempt)
+                if wait_sec > 0 and attempt < retries - 1:
+                    time.sleep(wait_sec)
                     continue
-                
-                # Break out of inner retry loop to try next fallback model
                 break
 
-    raise RuntimeError(f"[!] All models failed. Last Error: {norm_error(errors)}")
+    raise RuntimeError(f"[!] Error: Call AI failed. Last error: {normalize_msg(errors)}")
