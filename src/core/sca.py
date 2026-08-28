@@ -20,13 +20,14 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
     parts = []
     
     if deps:
+        from cli.views.spinner import show_spinner
         try:
-            cves = osv.check_osv(deps)
+            cves = show_spinner("Analyzing source code", osv.check_osv, deps)
         except AttributeError:
             cves = []
 
         from src.rag import usage
-        cves = usage.check_usage(str(sdir), cves, use_module)
+        cves = show_spinner("Analyzing source code", usage.check_usage, str(sdir), cves, use_module)
 
         # Report all CVEs
         res["sca"] = cves
@@ -55,8 +56,8 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
                     ndata["firecrawl_poc"] = ""
                     ndata["firecrawl_stats"] = []
                     for url in links[:2]:
-                        md = firecrawl.scrape_url(url)
-                        ndata["firecrawl_stats"].append({"url": url, "success": bool(md)})
+                        md, err = firecrawl.scrape_url(url)
+                        ndata["firecrawl_stats"].append({"url": url, "success": bool(md), "error": err})
                         if md:
                             ndata["firecrawl_poc"] += f"\n\nSource: {url}\n{md}"
 
@@ -69,35 +70,32 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
 
             # Fetch concurrently
             ids = list(scves)
-            done = {}
-
-            with ThreadPoolExecutor(max_workers=5) as pool:
-                jobs = {pool.submit(fetch_cve, cid): cid for cid in ids}
-
-                for num, job in enumerate(as_completed(jobs), 1):
-                    cid = jobs[job]
-                    console.print(f"  [dim]Enriching {num}/{len(ids)} {cid}[/dim]")
-
-                    try:
-                        done[cid] = job.result()
-                    except Exception as e:
-                        console.print(f"  [dim]Failed to fetch {cid}: {e}[/dim]")
-
             nvd_results = []
-            for cid in ids:
-                nres = done.get(cid)
-                if nres:
-                    console.print("")
-                    nvd.report_nvd(nres)
-                    firecrawl_stats = nres.get("firecrawl_stats", [])
-                    if firecrawl_stats:
-                        firecrawl.report_firecrawl(firecrawl_stats)
-                        
-                    gh = nres.get("github_stats")
-                    if gh is not None:
-                        github.report_github(cid, gh)
-                        
-                    nvd_results.append(nres)
+
+            with console.status("[bold cyan]Analyzing source code...[/bold cyan]", spinner="dots12"):
+                with ThreadPoolExecutor(max_workers=5) as pool:
+                    jobs = {pool.submit(fetch_cve, cid): cid for cid in ids}
+
+                    for num, job in enumerate(as_completed(jobs), 1):
+                        cid = jobs[job]
+                        console.print(f"  [dim]Enriching {num}/{len(ids)} {cid}[/dim]")
+
+                        try:
+                            nres = job.result()
+                            if nres:
+                                console.print("")
+                                nvd.report_nvd(nres)
+                                firecrawl_stats = nres.get("firecrawl_stats", [])
+                                if firecrawl_stats:
+                                    firecrawl.report_firecrawl(firecrawl_stats)
+                                    
+                                gh = nres.get("github_stats")
+                                if gh is not None:
+                                    github.report_github(cid, gh)
+                                    
+                                nvd_results.append(nres)
+                        except Exception as e:
+                            console.print(f"  [dim]Failed to fetch {cid}: {e}[/dim]")
 
     parts = []
     tag = fr" [[cyan]{model}[/cyan]]"

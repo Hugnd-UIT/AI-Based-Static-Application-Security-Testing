@@ -168,7 +168,7 @@ def execute_scan(path: str, fix: bool = False):
     try:
         json = report_json(res, rdir)
         sarif = report_sarif(finds, path, rdir)
-        html = report_html(finds, path, rdir)
+        html = report_html(res, path, rdir)
         
         logger.blank_line()
         logger.log_success("Reports saved to:")

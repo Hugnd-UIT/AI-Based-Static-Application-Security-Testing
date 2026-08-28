@@ -7,7 +7,7 @@ import time
 URL = "https://api.firecrawl.dev/v1/scrape"
 
 # Scrape URL via Firecrawl
-def scrape_url(target: str) -> Optional[str]:
+def scrape_url(target: str) -> tuple[Optional[str], Optional[str]]:
     payload = json.dumps({"url": target, "formats": ["markdown"]}).encode("utf-8")
     
     # Retry mechanism
@@ -29,20 +29,20 @@ def scrape_url(target: str) -> Optional[str]:
                 data = json.loads(resp.read().decode("utf-8"))
 
                 if data.get("success"):
-                    return data.get("data", {}).get("markdown")
+                    return data.get("data", {}).get("markdown"), None
                 else:
-                    return None
+                    return None, "API_ERR"
 
         except urllib.error.HTTPError as err:
             if err.code == 429 and attempt < retries - 1:
                 time.sleep(2 ** attempt)
                 continue
-            return None
+            return None, str(err.code)
 
         except Exception as err:
-            return None
+            return None, type(err).__name__
             
-    return None
+    return None, "429"
 
 # Report Firecrawl results function
 def report_firecrawl(stats: list):
@@ -53,6 +53,9 @@ def report_firecrawl(stats: list):
         char = "└─" if idx == len(stats) - 1 else "├─"
         url = stat["url"]
         short_url = url if len(url) <= 60 else url[:60] + "..."
-        status = "[green]OK[/green]" if stat["success"] else "[red]Failed[/red]"
+        success = stat["success"]
+        err = stat.get("error")
+        err_msg = f" \\[[dim]{err}[/dim]\\]" if not success and err else ""
+        status = "[green]OK[/green]" if success else f"[red]Failed[/red]{err_msg}"
         console.print(f"  {char} {status} [dim]{short_url}[/dim]")
     console.print()
