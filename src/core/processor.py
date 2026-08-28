@@ -244,4 +244,3 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
                 console.print(f"  └─ [bold red]✖ Fixer Agent failed: {e}[/bold red]")
 
         logger.blank()
-

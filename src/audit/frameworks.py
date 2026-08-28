@@ -62,7 +62,7 @@ EVENTS = {
     }
 }
 
-# Hàm kiểm tra entrypoint
+# Check entrypoint
 def check_entrypoint(code: str, ext: str) -> bool:
     patterns = ENTRIES.get(ext, [])
 
@@ -74,7 +74,7 @@ def check_entrypoint(code: str, ext: str) -> bool:
 
     return False
 
-# Hàm trích xuất events
+# Extract events
 def extract_events(code: str, ext: str):
     group = None
 

@@ -117,4 +117,3 @@ File: {path}
 Begin your investigation. Follow the mandatory protocol above.
 Call tools to gather evidence, then call `submit_verdict()` with your conclusion.
 """
-

@@ -6,3 +6,4 @@ from src.ast.core.utils import *
 from src.ast.core.analyzer import *
 from src.ast.core.builder import *
 from src.ast.core.resolver import *
+from src.ast.rule.queries import QUERIES

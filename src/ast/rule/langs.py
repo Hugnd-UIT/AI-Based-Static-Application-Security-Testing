@@ -37,3 +37,18 @@ LANG = {
     ".rs": ts_rust.language(),
     ".scala": ts_scala.language(),
 }
+
+EXT = {
+    ".py": "python",
+    ".js": "javascript", ".jsx": "javascript", ".mjs": "javascript", ".cjs": "javascript",
+    ".ts": "typescript", ".tsx": "typescript",
+    ".php": "php",
+    ".java": "java",
+    ".go": "go",
+    ".rb": "ruby",
+    ".cs": "csharp",
+    ".c": "c", ".h": "c",
+    ".cpp": "cpp", ".cc": "cpp", ".cxx": "cpp", ".hpp": "cpp",
+    ".rs": "rust",
+    ".scala": "scala",
+}

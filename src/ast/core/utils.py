@@ -3,68 +3,18 @@ from pathlib import Path
 from tree_sitter import Parser, Language
 from src.ast.rule.langs import LANG
 
-# Hàm trích xuất code
+# Extract code
 def extract_code(code: bytes, node) -> str:
     return code[node.start_byte : node.end_byte].decode("utf-8")
 
-# Hàm lấy node
+# Get node
 def get_node(node, code: bytes) -> str:
     for child in node.children:
-
         if child.type == "identifier" or child.type == "name":
-
             return extract_code(code, child)
-
     return None
 
-# Hàm tìm hàm
-def find_func(node, start: int, end: int):
-    idx_start = start - 1
-    idx_end = end - 1
-
-    match = None
-    groups = []
-
-    def traverse(curr):
-        nonlocal match
-
-        if curr.start_point[0] <= idx_start and curr.end_point[0] >= idx_end:
-            kind = curr.type.lower()
-
-            if "function" in kind or "method" in kind or "declaration" in kind:
-                match = curr
-
-            elif (
-                "if_statement" in kind
-                or "try_statement" in kind
-                or "for_statement" in kind
-                or "while_statement" in kind
-            ):
-
-                if kind not in groups:
-                    groups.append(kind)
-
-            for child in curr.children:
-                traverse(child)
-
-    traverse(node)
-
-    return match, groups
-
-# Hàm kiểm tra có phải là hàm
-def is_func(kind: str) -> bool:
-    return (
-
-        kind in (
-            "function_definition", "function_declaration",
-            "method_declaration", "method_definition",
-            "function_item", "func_declaration",
-        )
-        or "function" in kind
-        or "method" in kind
-    )
-
-# Hàm trích xuất khối code
+# Extract code chunk
 def extract_chunk(path: Path, start: int, end: int, pad: int = 15) -> str:
     with open(path, "r", encoding="utf-8") as f:
         lines = f.readlines()
@@ -76,23 +26,117 @@ def extract_chunk(path: Path, start: int, end: int, pad: int = 15) -> str:
 
 _parsers = {}
 
-# Hàm lấy parser theo đuôi file, cache lại cho nhanh
+# Get cached parser
 def get_parser(ext: str):
     if ext not in LANG: return None
     if ext not in _parsers:
         _parsers[ext] = Parser(Language(LANG[ext]))
     return _parsers[ext]
 
-# Hàm lấy tên hàm bao quanh một dòng code
+def get_func_nodes(root_node, ext: str, code: bytes) -> dict:
+    from src.ast.rule.queries import QUERIES
+    from src.ast.rule.langs import EXT, LANG
+    from tree_sitter import Language
+
+    lang_name = EXT.get(ext)
+    if not lang_name: return {}
+    
+    query_src = QUERIES.get(lang_name, "")
+    if not query_src.strip(): return {}
+
+    try:
+        lang_obj = LANG.get(ext)
+        if not lang_obj: return {}
+        language = Language(lang_obj)
+        query = language.query(query_src)
+        captures = query.captures(root_node)
+    except Exception:
+        return {}
+
+    func_nodes = captures.get("func", [])
+    name_nodes = {n.start_byte: n for n in captures.get("name", [])}
+
+    funcs = {}
+    for node in func_nodes:
+        name = ""
+        for nbyte, nnode in name_nodes.items():
+            if node.start_byte <= nbyte <= node.end_byte:
+                name = code[nnode.start_byte:nnode.end_byte].decode("utf-8", errors="ignore")
+                break
+        if not name:
+            name = f"[anonymous:{node.start_point[0]+1}]"
+        funcs[node] = name
+
+    return funcs
+
+def get_calls(node, content: bytes) -> dict:
+    calls = {}
+    
+    def traverse(curr):
+        kind = curr.type.lower()
+        if "call" in kind or "invocation" in kind:
+            ident = None
+            for child in curr.children:
+                if child.type == "identifier":
+                    ident = child
+                    break
+                elif child.type in ("attribute", "member_expression"):
+                    for gchild in child.children:
+                        if gchild.type in ("property_identifier", "identifier"):
+                            ident = gchild
+                            
+            if ident:
+                name = content[ident.start_byte:ident.end_byte].decode("utf-8", errors="ignore")
+                calls[curr] = name
+                
+        for child in curr.children:
+            traverse(child)
+
+    traverse(node)
+    return calls
+
+def find_func(root_node, start: int, end: int, ext: str, content: bytes):
+    idx_start = start - 1
+    idx_end = end - 1
+
+    match = None
+    groups = []
+    
+    func_nodes = get_func_nodes(root_node, ext, content)
+
+    def traverse(curr):
+        nonlocal match
+
+        if curr.start_point[0] <= idx_start and curr.end_point[0] >= idx_end:
+            if curr in func_nodes:
+                match = curr
+                
+            kind = curr.type.lower()
+            if (
+                "if_statement" in kind
+                or "try_statement" in kind
+                or "for_statement" in kind
+                or "while_statement" in kind
+            ):
+                if kind not in groups:
+                    groups.append(kind)
+
+            for child in curr.children:
+                traverse(child)
+
+    traverse(root_node)
+    return match, groups
+
 def get_function_at(path: str, line: int) -> str:
-    parser = get_parser(Path(path).suffix.lower())
+    ext = Path(path).suffix.lower()
+    parser = get_parser(ext)
     if not parser: return "Unknown"
 
     try:
         with open(path, "rb") as f:
             content = f.read()
 
-        match, _ = find_func(parser.parse(content).root_node, line, line)
+        match, _ = find_func(parser.parse(content).root_node, line, line, ext, content)
         if not match: return "Unknown"
 
         return get_node(match, content) or "Unknown"
@@ -102,7 +146,6 @@ def get_function_at(path: str, line: int) -> str:
 
 _code_cache = {}
 
-# Hàm lấy code implementation
 def get_code(dir: str, func: str) -> str:
     key = (dir, func)
     if key in _code_cache: return _code_cache[key]
@@ -120,58 +163,39 @@ def get_code(dir: str, func: str) -> str:
                 with open(path, "rb") as f:
                     content = f.read()
                 
-                if func.encode("utf-8") not in content:
+                if func != "[global]" and func.encode("utf-8") not in content:
                     continue
 
                 parser = get_parser(ext)
                 tree = parser.parse(content)
 
-                match = ""
+                func_nodes = get_func_nodes(tree.root_node, ext, content)
 
-                def find(node):
-                    nonlocal match
+                if func == "[global]":
+                    func_lines = set()
+                    for node in func_nodes:
+                        func_lines.update(range(node.start_point[0] + 1, node.end_point[0] + 2))
+                    
+                    text = content.decode("utf-8", errors="ignore")
+                    global_lines = [
+                        line for i, line in enumerate(text.splitlines(), 1)
+                        if i not in func_lines and line.strip() and not line.strip().startswith("#") and not line.strip().startswith("//")
+                    ]
+                    
+                    if global_lines:
+                        body = "\n".join(global_lines)
+                        _code_cache[key] = f"[IMPLEMENTATION OF [global] IN {file}]\n{body}"
+                        return _code_cache[key]
+                    continue
 
-                    if match: return
-                    kind = node.type.lower()
-
-                    if is_func(kind) and get_node(node, content) == func:
+                for node, name in func_nodes.items():
+                    if name == func:
                         match = content[node.start_byte:node.end_byte].decode("utf-8", errors="ignore")
-                        return
-
-                    for child in node.children:
-                        find(child)
-
-                find(tree.root_node)
-
-                if match:
-
-                    _code_cache[key] = f"[TRIỂN KHAI CỦA {func} TRONG {file}]\n{match}"
-                    return _code_cache[key]
+                        _code_cache[key] = f"[IMPLEMENTATION OF {func} IN {file}]\n{match}"
+                        return _code_cache[key]
 
             except Exception:
                 pass
 
-    _code_cache[key] = f"// Hàm {func} không tìm thấy trong kho mã nguồn."
+    _code_cache[key] = f"// Function {func} not found in repository."
     return _code_cache[key]
-
-# Hàm lấy tất cả các hàm gọi
-def get_all_calls(node):
-    calls = []
-    def traverse(n):
-        if "call" in n.type.lower() or "invocation" in n.type.lower():
-            calls.append(n)
-        for c in n.children:
-            traverse(c)
-    traverse(node)
-    return calls
-
-# Hàm lấy tên hàm gọi
-def get_call_name(node, content):
-    for child in node.children:
-        if child.type == "identifier":
-            return content[child.start_byte:child.end_byte].decode("utf-8", errors="ignore")
-        elif child.type in ("attribute", "member_expression"):
-            for gchild in child.children:
-                if gchild.type in ("property_identifier", "identifier"):
-                    return content[gchild.start_byte:gchild.end_byte].decode("utf-8", errors="ignore")
-    return None

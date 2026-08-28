@@ -5,7 +5,7 @@ from src.ast.core.utils import *
 from src.ast.rule.sanitizers import SANITIZERS
 from src.ast.core.analyzer import has_sink
 
-# Hàm tìm kiếm alias
+# Resolve aliases
 def resolve_aliases(path: str, var: str) -> str:
     import re
 
@@ -13,7 +13,7 @@ def resolve_aliases(path: str, var: str) -> str:
 
     if not dir.exists():
 
-        return f"Không tìm thấy tập tin: {path}"
+        return f"File not found: {path}"
 
     ext = dir.suffix.lower()
 
@@ -27,7 +27,7 @@ def resolve_aliases(path: str, var: str) -> str:
 
             return ""
 
-        return "\n".join(f"  dòng {num:4d}: {code}" for num, code in hits[:30])
+        return "\n".join(f"  line {num:4d}: {code}" for num, code in hits[:30])
 
     try:
         with open(dir, "rb") as f:
@@ -40,20 +40,15 @@ def resolve_aliases(path: str, var: str) -> str:
         bts = var.encode("utf-8")
 
         def visit(node):
-            if node.type in (
-                "assignment", "augmented_assignment",
-                "variable_declarator", "local_variable_declaration",
-                "expression_statement",
-                "declaration", "init_declarator", "assignment_expression",
-                "update_expression",
-                "short_var_declaration", "assignment_statement",
-                "call_expression", "call", "return_statement"
-            ):
+            kind = node.type.lower()
+            if any(k in kind for k in ("assign", "declar", "statement", "call", "invocation", "return")):
                 text = code[node.start_byte:node.end_byte]
 
                 if bts in text:
                     snippet = text.decode("utf-8", errors="ignore").strip()
-                    chain.append((node.start_point[0] + 1, snippet[:120]))
+                    line_num = node.start_point[0] + 1
+                    if not any(num == line_num for num, _ in chain):
+                        chain.append((line_num, snippet[:120]))
 
             for child in node.children:
                 visit(child)
@@ -64,15 +59,15 @@ def resolve_aliases(path: str, var: str) -> str:
 
             return ""
 
-        outputs = [f"  dòng {num:4d}: {snippet}" for num, snippet in chain]
+        outputs = [f"  line {num:4d}: {snippet}" for num, snippet in chain]
 
         return "\n".join(outputs)
 
     except Exception as err:
 
-        return f"[lỗi resolve_aliases] {err}"
+        return f"[resolve_aliases error] {err}"
 
-# Hàm tìm kiếm chuỗi alias
+# Resolve alias chain
 def resolve_aliases_chain(path: str, var: str, hops: int = 5) -> str:
     import re
     seen = set()
@@ -83,9 +78,9 @@ def resolve_aliases_chain(path: str, var: str, hops: int = 5) -> str:
             return
         seen.add(curr)
         raw = resolve_aliases(path, curr)
-        if not raw or raw.startswith("File not found") or raw.startswith("[lỗi resolve_aliases]"):
+        if not raw or raw.startswith("File not found") or raw.startswith("[resolve_aliases error]"):
             return
-        res.append(f"[BƯỚC {hop}] {curr}:\n{raw}")
+        res.append(f"[STEP {hop}] {curr}:\n{raw}")
         
         for line in raw.splitlines():
             match = re.search(r'=\s*([a-zA-Z_]\w*)\b', line)
@@ -99,7 +94,7 @@ def resolve_aliases_chain(path: str, var: str, hops: int = 5) -> str:
         return ""
     return "\n\n".join(res)
 
-# Hàm tìm kiếm sanitizer
+# Find sanitizer
 def find_sanitizer(
     path: str,
     start: int,
@@ -112,7 +107,7 @@ def find_sanitizer(
 
     if not dir.exists():
 
-        return f"Không tìm thấy tập tin: {path}"
+        return f"File not found: {path}"
 
     try:
         with open(dir, "r", encoding="utf-8", errors="replace") as f:
@@ -120,7 +115,7 @@ def find_sanitizer(
 
     except Exception as err:
 
-        return f"[lỗi find_sanitizer] {err}"
+        return f"[find_sanitizer error] {err}"
 
     idx_start = max(0, start - 1)
     idx_end   = min(len(lines), end)
@@ -131,7 +126,7 @@ def find_sanitizer(
     for i, text in enumerate(region, start=start):
         indent = len(text) - len(text.lstrip())
         
-        # BỎ COMMENT TRƯỚC KHI KIỂM TRA
+        # STRIP COMMENTS BEFORE CHECKING
         markers = {
             ".py": "#", ".js": "//", ".ts": "//", ".java": "//",
             ".go": "//", ".php": "//", ".cs": "//", ".c": "//", ".cpp": "//"
@@ -159,31 +154,30 @@ def find_sanitizer(
 
         return (
 
-            f"[KHÔNG CÓ SANITIZER] Không phát hiện sanitizer nào giữa các dòng "
-            f"{start}-{end} trong {dir.name}. "
-            "Đường dẫn taint có khả năng không được bảo vệ."
+            f"[NO SANITIZER] No sanitizer detected between lines "
+            f"{start}-{end} in {dir.name}. "
+            "Taint path is likely unprotected."
         )
 
     all_cond = all(hit["cond"] or hit["indent"] > 0 for hit in hits)
 
     summary = [
-        f"[PHÂN TÍCH SANITIZER] {dir.name} dòng {start}-{end}:"
+        f"[SANITIZER ANALYSIS] {dir.name} lines {start}-{end}:"
     ]
 
     for hit in hits:
-        flag = "CÓ ĐIỀU KIỆN" if hit["cond"] else "TRÊN ĐƯỜNG DẪN"
-        summary.append(f"  dòng {hit['line']:4d} [{flag}] {hit['text']}")
+        flag = "CONDITIONAL" if hit["cond"] else "ON PATH"
+        summary.append(f"  line {hit['line']:4d} [{flag}] {hit['text']}")
 
     if all_cond:
         summary.append(
-            "  CẢNH BÁO: Tất cả sanitizer đều nằm trong nhánh điều kiện "
-            "- taint có thể chạm đến điểm sink trên đường dẫn không được sanitize."
+            "  WARNING: All sanitizers are inside conditional branches "
+            "- taint may reach sink on unprotected path."
         )
 
     else:
         summary.append(
-            "  Ít nhất một sanitizer nằm trên đường dẫn thực thi trực tiếp."
+            "  At least one sanitizer is on the direct execution path."
         )
 
     return "\n".join(summary)
-

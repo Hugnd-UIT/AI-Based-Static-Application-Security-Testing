@@ -1,14 +1,14 @@
-# Hàm tìm kiếm và thay thế code
+# Replace code snippet
 def replace_code(content: str, old: str, new: str) -> str:
 
-    # Nếu code cũ trùng code mới thì thay thế ngay lập tức
+    # Fast exact match
     if old in content:
         return content.replace(old, new, 1)
         
     olds = [line.strip() for line in old.strip().split('\n')]
     lines = content.split('\n')
     
-    # Nếu code cũ không trùng code mới thì tìm kiếm và thay thế từng dòng
+    # Line-by-line matching
     if olds:
 
         for idx in range(len(lines) - len(olds) + 1):
@@ -38,7 +38,7 @@ def replace_code(content: str, old: str, new: str) -> str:
 
     raise ValueError("Could not find exact match for 'old' in the file")
 
-# Hàm áp dụng bản vá lỗi
+# Apply patch function
 def apply_patch(path: str, old: str, new: str) -> bool:
     try:
         with open(path, "r", encoding="utf-8") as f:

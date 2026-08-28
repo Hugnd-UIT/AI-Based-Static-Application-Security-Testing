@@ -1,5 +1,5 @@
 SINKS = [
-    # Đa ngôn ngữ
+    # Multi languages
     "execute", "query", "exec", "rawQuery", "ExecuteNonQuery", "ExecuteReader", "executeQuery", "executeUpdate",
 
     # Python

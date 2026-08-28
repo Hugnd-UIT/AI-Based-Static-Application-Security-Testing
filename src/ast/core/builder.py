@@ -7,7 +7,7 @@ from src.ast.core.analyzer import *
 
 from src.audit.frameworks import extract_events
 
-# Hàm xây dựng bản đồ pub/sub
+# Build pub/sub map
 def build_pubsub(dir: str) -> str:
     if not dir or not Path(dir).exists():
 
@@ -32,17 +32,17 @@ def build_pubsub(dir: str) -> str:
                 pubs, _subs = extract_events(text, ext)
 
                 if pubs:
-                    info.append(f"[BỘ PHÁT SỰ KIỆN TRONG {file}]\nPhát ra: {', '.join(pubs)}")
+                    info.append(f"[EVENT PUBLISHER IN {file}]\nEmits: {', '.join(pubs)}")
 
                 if _subs:
-                    info.append(f"[BỘ NHẬN SỰ KIỆN TRONG {file}]\nLắng nghe: {', '.join(_subs)}")
+                    info.append(f"[EVENT SUBSCRIBER IN {file}]\nListens: {', '.join(_subs)}")
 
             except Exception:
                 pass
                 
     return "\n\n".join(info)
 
-# Hàm xây dựng ngữ cảnh
+# Build context
 def build_context(dir: str) -> str:
     if not dir or not Path(dir).exists():
 
@@ -58,11 +58,11 @@ def build_context(dir: str) -> str:
         ctx += cross + "\n\n"
 
     if pubsub:
-        ctx += "=== KIẾN TRÚC EVENT BUS / PUB-SUB ===\n" + pubsub + "\n"
+        ctx += "EVENT BUS / PUB-SUB ARCHITECTURE\n" + pubsub + "\n"
         
     return ctx
 
-# Hàm trích xuất ngữ cảnh
+# Extract context
 def extract_context(
     path: str,
     start: int,
@@ -98,14 +98,14 @@ def extract_context(
         scode = extract_code(code, node)
 
         if groups:
-            meta = f"// Lỗ hổng nằm bên trong: {', '.join(groups)}\n"
+            meta = f"// Vulnerability inside: {', '.join(groups)}\n"
             scode = meta + scode
 
         sname = get_node(node, code)
 
         if not sname or depth < 1:
 
-            return f"[ĐIỂM SINK]\n{scode}"
+            return f"[SINK POINT]\n{scode}"
 
         ctx = ""
 
@@ -117,9 +117,9 @@ def extract_context(
 
             for cnode in callers:
                 ccode = extract_code(code, cnode)
-                ctx += f"[HÀM GỌI]\n{ccode}\n\n"
+                ctx += f"[CALLER]\n{ccode}\n\n"
 
-        ctx += f"[ĐIỂM SINK]\n{scode}"
+        ctx += f"[SINK POINT]\n{scode}"
 
         return ctx
 
