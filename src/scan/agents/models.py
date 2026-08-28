@@ -2,7 +2,7 @@ from src.scan.agents.prompts import SYSTEM, USER
 from src.tools.handlers import run_agent
 from src.tools.schemas import SCAN_TOOLS
 
-# Hàm gọi scanning agent
+# Call scan agent
 def start_scan(
     finding: dict,
     code: str,

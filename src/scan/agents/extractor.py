@@ -1,4 +1,4 @@
-import os
+﻿import os
 import re
 
 EXTS = {
@@ -39,9 +39,10 @@ REGEX = {
     "c":          re.compile(r'^\s*(?:static|inline|\s)*[\w\<\>\[\]\*\&]+\s+([a-zA-Z_]\w*)\s*\([^\)]*\)\s*\{', re.MULTILINE),
 }
 
-SKIP_DIRS = {'node_modules', 'vendor', 'target', 'build', 'dist', '.git', '__pycache__', 'venv', '.venv', 'bin', 'obj'}
+SKIP = {'node_modules', 'vendor', 'target', 'build', 'dist', '.git', '__pycache__', 'venv', '.venv', 'bin', 'obj'}
 
-def _load_ts():
+# Dynamically load tree-sitter module
+def load_ts():
     try:
         import importlib.util
         from pathlib import Path
@@ -53,7 +54,7 @@ def _load_ts():
     except Exception:
         return None
 
-def _is_func_node(kind: str) -> bool:
+def check_func_node(kind: str) -> bool:
     return (
         kind in (
             "function_definition", "function_declaration",
@@ -64,7 +65,7 @@ def _is_func_node(kind: str) -> bool:
         or "method" in kind
     )
 
-def _get_name(node, code: bytes) -> str:
+def get_name_node(node, code: bytes) -> str:
     name_node = node.child_by_field_name('name')
     if name_node and name_node.type in ("identifier", "name"):
         return code[name_node.start_byte:name_node.end_byte].decode("utf-8", errors="ignore")
@@ -82,7 +83,8 @@ def _get_name(node, code: bytes) -> str:
                 
     return ""
 
-def _extract_ts(fpath: str, lang_obj, code: bytes, lang: str, rel: str) -> list:
+# Extract functions using tree-sitter AST
+def extract_ts(fpath: str, lang_obj, code: bytes, lang: str, rel: str) -> list:
     from tree_sitter import Parser, Language
     parser = Parser(Language(lang_obj))
     tree = parser.parse(code)
@@ -92,8 +94,8 @@ def _extract_ts(fpath: str, lang_obj, code: bytes, lang: str, rel: str) -> list:
     def visit(node):
         kind = node.type.lower()
 
-        if _is_func_node(kind):
-            name = _get_name(node, code)
+        if check_func_node(kind):
+            name = get_name_node(node, code)
             if name and name not in seen:
                 seen.add(name)
                 sig_bytes = code[node.start_byte:node.end_byte]
@@ -118,7 +120,8 @@ def _extract_ts(fpath: str, lang_obj, code: bytes, lang: str, rel: str) -> list:
     visit(tree.root_node)
     return results
 
-def _extract_regex(fpath: str, content: str, lang: str, rel: str) -> list:
+# Extract functions using regex fallback
+def extract_regex(fpath: str, content: str, lang: str, rel: str) -> list:
     pat = REGEX.get(lang)
     if not pat:
         return []
@@ -152,12 +155,13 @@ def _extract_regex(fpath: str, content: str, lang: str, rel: str) -> list:
         })
     return results
 
+# Extract all functions in directory
 def extract_functions(target_dir: str) -> list:
-    ts = _load_ts()
+    ts = load_ts()
     results = []
 
     for root, dirs, files in os.walk(target_dir):
-        dirs[:] = [d for d in dirs if d not in SKIP_DIRS]
+        dirs[:] = [d for d in dirs if d not in SKIP]
 
         for fname in files:
             ext = os.path.splitext(fname)[1].lower()
@@ -174,9 +178,9 @@ def extract_functions(target_dir: str) -> list:
                 content = raw.decode("utf-8", errors="replace")
 
                 if ts and hasattr(ts, "LANG") and ext in ts.LANG:
-                    items = _extract_ts(fpath, ts.LANG[ext], raw, lang, rel)
+                    items = extract_ts(fpath, ts.LANG[ext], raw, lang, rel)
                 else:
-                    items = _extract_regex(fpath, content, lang, rel)
+                    items = extract_regex(fpath, content, lang, rel)
 
                 results.extend(items)
 

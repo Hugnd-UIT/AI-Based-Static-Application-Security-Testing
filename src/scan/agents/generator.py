@@ -29,7 +29,7 @@ def generate(data, templates=None, output=None):
         rule['id'] = f"dynamic-rule-{rule['id']}"
         
         search_rule = {
-            "id": f"dynamic-rule-search-{language}",
+            "id": f"dynamic-rule-{language}",
             "mode": "search",
             "message": "Potential vulnerability: dangerous function call or defect detected.",
             "severity": "WARNING",
@@ -41,9 +41,9 @@ def generate(data, templates=None, output=None):
             if item['language'] == language:
                 name = item['function']
                 if item['type'] == 'source':
-                    # Pattern bắt hàm trả về dữ liệu 
+                    # Pattern to catch functions returning data
                     rule['pattern-sources'].append({"pattern": f"{name}(...)"})
-                    
+                
                     if language in ["javascript", "typescript"]:
                         rule['pattern-sources'].append({
                             "pattern-inside": f"function {name}(..., $REQ, ...) {{\n  ...\n}}",
@@ -113,9 +113,8 @@ def generate(data, templates=None, output=None):
                             "pattern": "$REQ"
                         })
                 elif item['type'] == 'sink':
-                    # Pattern bắt hàm thực thi nguy hiểm (taint sink)
+                    # Pattern to catch dangerous execution functions 
                     rule['pattern-sinks'].append({"pattern": f"{name}(...)"})
-                    # Bắt luôn khi không chứng minh được luồng taint trong cùng file
                     search_rule['pattern-either'].append({"pattern": f"{name}(...)"})
 
         rules.append(rule)
