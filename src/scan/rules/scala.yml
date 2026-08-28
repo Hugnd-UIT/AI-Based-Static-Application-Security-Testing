@@ -1,11 +1,11 @@
-rules:
+﻿rules:
   - id: sinful-taint-scala
     mode: taint
     message: "Potential vulnerability: tainted data flows from user-controlled source to dangerous sink."
     severity: WARNING
     languages: [scala]
     pattern-sources:
-      # Tham số hàm, nối luồng khi nguồn nằm ở file khác
+      # Param flow
       - patterns:
           - pattern-inside: |
               def $FN(..., $P: $T, ...) = ...
@@ -113,7 +113,7 @@ rules:
       - pattern: $STR.toDouble
       - pattern: Integer.parseInt(...)
 
-  # Chuỗi SQL hoặc lệnh ghép từ biến, bắt cả khi sink nằm ngoài file
+  # Dynamic SQL/Cmd
   - id: sinful-strcat-scala
     message: "SQL or command string built from a variable; verify the value is not attacker controlled."
     severity: WARNING
@@ -122,14 +122,14 @@ rules:
       - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}(\$where|\b(select|insert|update|delete|drop|union|ping|curl|wget|nc|bash)\b)(?:\\.|[^"\n]){0,200}(\$\{|\$[a-z_]|#\{|\{\}|%[sdvq])'
       - pattern-regex: '(?i)"(?:\\.|[^"\n]){0,200}\b(select|insert|update|delete|drop|union|ping|curl|wget)\b(?:\\.|[^"\n]){0,200}"\s*[+.]\s*[a-z_$]'
 
-  # Thuật toán băm hoặc mã hóa yếu
+  # Weak crypto
   - id: sinful-weakcrypto-scala
     message: "Weak or broken cryptographic algorithm."
     severity: WARNING
     languages: [scala]
     pattern-regex: '(?i)\b(md5|sha1|des|rc4|ecb|md4)\b'
 
-  # Bí mật hardcode trong mã nguồn
+  # Hardcoded secret
   - id: sinful-secret-scala
     message: "Hardcoded credential or cryptographic key."
     severity: WARNING

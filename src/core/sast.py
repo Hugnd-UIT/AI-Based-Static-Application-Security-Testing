@@ -56,7 +56,7 @@ def run_sast(sdir, rules, model, ctx, use_module, cache, res, fix):
         for item in classifications:
             if item.get('type') == 'vuln':
                 sgres.append({
-                    "id": f"dynamic-ai-vuln-{item.get('function')}",
+                    "id": f"dynamic-rule-{item.get('function')}",
                     "message": f"AI Classifier detected structural vulnerability in {item.get('function')}",
                     "path": os.path.join(str(sdir), item.get('file', '')),
                     "start_line": item.get('start_line', 1),
