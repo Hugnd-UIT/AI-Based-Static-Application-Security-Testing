@@ -3,7 +3,6 @@ from src.rag.agents.prompts import VERIFY, VTMP
 from src.tools.handlers import run_agent
 from src.tools.schemas import VERIFY_TOOLS
 
-# Hàm kiểm tra PoC
 def start_verify(
     summary: str,
     model: str = None,

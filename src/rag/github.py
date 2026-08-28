@@ -1,7 +1,7 @@
 import os
 import requests
 
-# Hàm tìm kiếm trên github
+# Search GitHub issues
 def search_github(word: str) -> dict:
     headers = {
         "Authorization": f"token {os.environ['GITHUB_API_KEY']}",
@@ -59,15 +59,21 @@ def search_github(word: str) -> dict:
     except Exception as err:
         return {"error": str(err)}
 
-# Hàm báo cáo kết quả
-def report_github(data: dict):
-    from cli.views import logger
+# Report GitHub results function
+def report_github(cve: str, data: dict):
+    from cli.views.logger import console
 
     if "error" in data:
-        logger.warning(f"GitHub Scrape Error: {data['error']}")
+        console.print(f"  ● [bold magenta]GITHUB[/bold magenta] [red]Failed[/red] [dim]{cve}[/dim]")
         return
         
     items = data.get("github_issues", [])
 
     if items:
-        logger.console.print(f"  [dim]Found {len(items)} related GitHub issues.[/dim]")
+        console.print(f"  ● [bold magenta]GITHUB[/bold magenta] [cyan]{cve}[/cyan]")
+        for idx, item in enumerate(items):
+            char = "└─" if idx == len(items) - 1 else "├─"
+            url = item.get("url", "")
+            short_url = url if len(url) <= 60 else url[:60] + "..."
+            console.print(f"  {char} [dim]{short_url}[/dim]")
+        console.print()

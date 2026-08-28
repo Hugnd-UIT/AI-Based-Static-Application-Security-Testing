@@ -2,6 +2,8 @@ import json
 import urllib.request
 from typing import Dict, List, Any
 
+from src.rag.langs import expand_before_osv, expand_after_osv
+
 URL = "https://api.osv.dev/v1/querybatch"
 
 ECO = {
@@ -19,46 +21,29 @@ ECO = {
     "conan": "Conan",
 }
 
-GEMS = "https://rubygems.org/api/v2/rubygems/{}/versions/{}.json"
-
-# Gem tổng như rails không có advisory riêng, lỗ hổng nằm ở gem con nên phải mở ra theo version ghim
-def expand_gems(deps: List[Dict[str, str]]) -> List[Dict[str, str]]:
-    out = []
-
-    for dep in deps:
-        try:
-            with urllib.request.urlopen(GEMS.format(dep["package"], dep["version"]), timeout=15) as resp:
-                data = json.loads(resp.read().decode("utf-8"))
-
-        except Exception:
-            continue
-
-        for sub in data.get("dependencies", {}).get("runtime", []):
-            req = str(sub.get("requirements", "")).strip()
-
-            if not req.startswith("="):
-                continue
-
-            out.append({"ecosystem": "rubygems", "package": sub.get("name", ""), "version": req.lstrip("= ").strip()})
-
-    return [d for d in out if d["package"] and d["version"]]
-
-# Hàm kiểm tra lỗ hổng OSV
-def check_osv(deps: List[Dict[str, str]], depth: int = 0) -> List[Dict[str, Any]]:
+# Check OSV vulnerabilities
+def check_osv(deps: List[Dict[str, str]], _depth: int = 0) -> List[Dict[str, Any]]:
     if not deps:
         return []
+
+    # Expand transitive deps
+    if _depth == 0:
+        extra = expand_before_osv(deps)
+        if extra:
+            deps = deps + extra
 
     queries = []
     picked = []
     seen_dep = set()
 
-    # Map hệ sinh thái của hệ thống sang hệ sinh thái của osv
+    # Map ecosystems
     for dep in deps:
         if not dep.get("version"):
             continue
 
-        # Cùng package cùng version khai báo ở nhiều manifest thì chỉ hỏi osv một lần
+        # Filter duplicates
         tag = (dep["package"].lower(), dep["version"])
+        
         if tag in seen_dep:
             continue
         seen_dep.add(tag)
@@ -68,6 +53,7 @@ def check_osv(deps: List[Dict[str, str]], depth: int = 0) -> List[Dict[str, Any]
             "package": {"name": dep["package"]},
             "version": dep["version"],
         }
+        
         if eco not in ["vcpkg", "Conan"]:
             query["package"]["ecosystem"] = eco
         queries.append(query)
@@ -119,7 +105,7 @@ def check_osv(deps: List[Dict[str, str]], depth: int = 0) -> List[Dict[str, Any]
                             except Exception:
                                 pass
 
-                        # Nhiều bản ghi distro cùng trỏ về một cve nên gộp lại theo cve
+                        # Group by CVE
                         cves = [c for c in aliases if str(c).startswith("CVE-")]
                         tag = (info["package"].lower(), cves[0] if cves else vuln.get("id"))
                         if tag in seen_cve:
@@ -139,12 +125,12 @@ def check_osv(deps: List[Dict[str, str]], depth: int = 0) -> List[Dict[str, Any]
                             }
                         )
 
-            # Gem tổng không có advisory riêng nên mở thêm một lớp gem con rồi hỏi lại osv
-            if depth == 0:
-                metas = [picked[idx] for idx, r in enumerate(results) if not r.get("vulns") and picked[idx]["ecosystem"] == "rubygems"]
-
-                if metas:
-                    vulns.extend(check_osv(expand_gems(metas), depth + 1))
+            # Expand meta-packages
+            if _depth == 0:
+                zero_deps = [picked[idx] for idx, r in enumerate(results) if not r.get("vulns")]
+                extra     = expand_after_osv(zero_deps)
+                if extra:
+                    vulns.extend(check_osv(extra, _depth + 1))
 
             return vulns
 
@@ -154,7 +140,7 @@ def check_osv(deps: List[Dict[str, str]], depth: int = 0) -> List[Dict[str, Any]
 
 from cli.views import logger
 
-# Hàm báo cáo kết quả
+# Report OSV results function
 def report_osv(vulns: List[Dict[str, Any]]):
     from cli.views.logger import console
 

@@ -65,12 +65,15 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
                 links = ndata.get("references", [])
                 if links:
                     ndata["firecrawl_poc"] = ""
+                    ndata["firecrawl_stats"] = []
                     for url in links[:2]:
                         md = firecrawl.scrape_url(url)
+                        ndata["firecrawl_stats"].append({"url": url, "success": bool(md)})
                         if md:
                             ndata["firecrawl_poc"] += f"\n\nSource: {url}\n{md}"
 
                 gh = github.search_github(ccve)
+                ndata["github_stats"] = gh
                 if "error" not in gh:
                     ndata["github_issues"] = gh.get("github_issues", [])
 
@@ -98,6 +101,14 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
                 if nres:
                     console.print("")
                     nvd.report_nvd(nres)
+                    firecrawl_stats = nres.get("firecrawl_stats", [])
+                    if firecrawl_stats:
+                        firecrawl.report_firecrawl(firecrawl_stats)
+                        
+                    gh = nres.get("github_stats")
+                    if gh is not None:
+                        github.report_github(cid, gh)
+                        
                     nvd_results.append(nres)
 
     parts = []

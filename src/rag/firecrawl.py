@@ -6,11 +6,11 @@ import time
 
 URL = "https://api.firecrawl.dev/v1/scrape"
 
-# Hàm thu thập dữ liệu firecrawl
+# Scrape URL via Firecrawl
 def scrape_url(target: str) -> Optional[str]:
     payload = json.dumps({"url": target, "formats": ["markdown"]}).encode("utf-8")
     
-    # Thử 3 lần nếu thất bại
+    # Retry mechanism
     retries = 3
 
     for attempt in range(retries):
@@ -43,3 +43,16 @@ def scrape_url(target: str) -> Optional[str]:
             return None
             
     return None
+
+# Report Firecrawl results function
+def report_firecrawl(stats: list):
+    if not stats: return
+    from cli.views.logger import console
+    console.print(f"  ● [bold magenta]FIRECRAWL[/bold magenta]")
+    for idx, stat in enumerate(stats):
+        char = "└─" if idx == len(stats) - 1 else "├─"
+        url = stat["url"]
+        short_url = url if len(url) <= 60 else url[:60] + "..."
+        status = "[green]OK[/green]" if stat["success"] else "[red]Failed[/red]"
+        console.print(f"  {char} {status} [dim]{short_url}[/dim]")
+    console.print()

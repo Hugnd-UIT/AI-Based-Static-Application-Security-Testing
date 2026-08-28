@@ -6,7 +6,7 @@ from typing import Dict, Any, Optional
 
 URL = "https://services.nvd.nist.gov/rest/json/cves/2.0?cveId="
 
-# Hàm lấy thông tin từ NVD
+# Fetch CVE from NVD
 def fetch_cve(cve: str, retries: int = 2) -> Optional[Dict[str, Any]]:
     if not cve.startswith("CVE-"):
         return None
@@ -78,7 +78,7 @@ def fetch_cve(cve: str, retries: int = 2) -> Optional[Dict[str, Any]]:
 
     return None
 
-# Hàm báo cáo kết quả
+# Report NVD results function
 def report_nvd(data: Dict[str, Any]):
     if not data:
         return
@@ -92,20 +92,5 @@ def report_nvd(data: Dict[str, Any]):
 
     desc = data["description"]
     short = desc[:80] + "..." if len(desc) > 80 else desc
-    console.print(f"  ├─ Details: {short}")
-    console.print(f"  │")
-    
-    links = data.get("references", [])[:2] if data.get("references") else []
-
-    if links:
-        console.print(f"  ├─ [bold magenta]FIRECRAWL[/bold magenta]")
-
-        for idx, url in enumerate(links):
-            short_url = url if len(url) <= 60 else url[:60] + "..."
-            char = "└─" if idx == len(links) - 1 else "├─"
-            console.print(f"  │  {char} [dim]{short_url}[/dim]")
-        console.print(f"  │")
-            
-    cve = data.get('cve_id')
-    console.print(f"  └─ [bold magenta]GITHUB[/bold magenta] - {cve}")
+    console.print(f"  └─ Details: {short}")
     console.print()

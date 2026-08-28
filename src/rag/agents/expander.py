@@ -3,7 +3,6 @@ from src.rag.agents.prompts import EXPAND, ETMP
 from src.tools.handlers import run_agent
 from src.tools.schemas import EXPAND_TOOLS
 
-# Hàm mở rộng sink
 def start_expand(
     context: str,
     model: str = None,
