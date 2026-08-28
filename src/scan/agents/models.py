@@ -10,8 +10,8 @@ def start_scan(
     target: str = "",
     module=None,
 ) -> dict:
-    from src.config import MODELS, STEPS
-    resolved = model or MODELS[0]
+    import os
+    resolved = model or os.environ["AI_MODEL"]
 
     extra = ""
 
@@ -33,6 +33,6 @@ def start_scan(
         directory = target,
         module    = module,
         model     = resolved,
-        steps     = min(15, STEPS),
+        steps     = 15,
         agent     = "SCAN",
     )

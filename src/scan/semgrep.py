@@ -2,7 +2,7 @@ import json
 import subprocess
 from pathlib import Path
 from typing import Dict, List, Any
-from src.config import TIMEOUT
+from typing import Dict, List, Any
 
 # Bộ quy tắc chung, luôn chạy
 CORE = [
@@ -95,7 +95,7 @@ def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
         env = os.environ.copy()
         env["SEMGREP_SEND_METRICS"] = "off"
         
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=TIMEOUT, env=env)
+        result = subprocess.run(cmd, capture_output=True, text=True, env=env)
 
         output = result.stdout.strip()
 
@@ -165,9 +165,6 @@ def scan_code(target: str, rules: List[str] = None) -> List[Dict[str, Any]]:
 
         return cleaned
 
-    except subprocess.TimeoutExpired:
-        print("[!] Semgrep timed out")
-        return []
 
     except json.JSONDecodeError:
         print("[!] Failed to parse Semgrep output")

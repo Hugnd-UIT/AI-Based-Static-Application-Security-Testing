@@ -2,7 +2,6 @@ import os
 from cli.views.logger import console
 from cli.views import logger
 
-from src.config import get_work
 from src.scan import semgrep
 from src.scan.semgrep import pick_rules
 from src.scan.agents.extractor import extract_functions
@@ -17,7 +16,7 @@ def run_sast(sdir, rules, model, ctx, use_module, cache, res, fix):
         console.print(f"  [bold magenta]● GENERATING AGENT[/bold magenta]")
 
         # Xóa rule cũ trong thư mục làm việc để không bị trùng
-        stale = os.path.join(str(get_work()), "custom-rules.yml")
+        stale = os.path.join(str(sdir), "custom-rules.yml")
         if os.path.exists(stale):
             os.remove(stale)
 
@@ -30,7 +29,7 @@ def run_sast(sdir, rules, model, ctx, use_module, cache, res, fix):
             classifications = classify(apis, vuln_scope)
 
             console.print("  ├─ [cyan]◆ Generating rules...[/cyan]")
-            dynamic_rule_path = generate(classifications)
+            dynamic_rule_path = generate(classifications, output=str(sdir))
 
             if dynamic_rule_path and os.path.exists(dynamic_rule_path):
                 console.print(f"  └─ [bold green]✔ Generate completed: {os.path.basename(dynamic_rule_path)}[/bold green]")

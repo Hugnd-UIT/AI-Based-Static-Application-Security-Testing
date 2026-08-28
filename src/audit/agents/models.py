@@ -11,8 +11,8 @@ def start_audit(
     target: str = "",
     module=None,
 ) -> dict:
-    from src.config import MODELS, STEPS
-    use = model or MODELS[0]
+    import os
+    use = model or os.environ["AI_MODEL"]
 
     msg = USER.format(
         rule  = item.get("id", "N/A"),
@@ -31,6 +31,6 @@ def start_audit(
         directory      = target,
         module       = module,
         model      = use,
-        steps       = STEPS,
+        steps       = 20,
         agent      = "AUDIT",
     )

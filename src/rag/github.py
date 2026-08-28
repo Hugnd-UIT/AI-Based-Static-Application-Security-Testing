@@ -3,14 +3,12 @@ import requests
 
 # Hàm tìm kiếm trên github
 def search_github(word: str) -> dict:
-    token = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
-
     headers = {
-        "Authorization": f"token {token}",
+        "Authorization": f"token {os.environ['GITHUB_API_KEY']}",
         "Accept": "application/vnd.github.v3+json"
     }
 
-    url = f"https://ai-based-static-application-security.onrender.com/github/search/issues?q={word}+is:issue"
+    url = f"https://api.github.com/search/issues?q={word}+is:issue"
     
     try:
         resp = requests.get(url, headers=headers, timeout=10)

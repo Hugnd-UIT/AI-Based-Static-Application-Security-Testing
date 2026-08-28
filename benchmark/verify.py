@@ -236,7 +236,7 @@ def main():
                 # Manual verification
                 if verify_manually(expected_vuln, finding, is_sca_vuln, target_file, target_basename, vuln_type):
                     detected_manually = True
-                    detected_by_ai    = True  # manual PASS implies AI PASS
+                    detected_by_ai    = True
                     break
 
                 # LLM verification

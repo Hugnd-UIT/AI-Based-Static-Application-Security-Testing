@@ -2,15 +2,12 @@ import os
 import json
 import urllib.request
 from typing import Optional
-
-URL = "https://ai-based-static-application-security.onrender.com/firecrawl"
-
 import time
+
+URL = "https://api.firecrawl.dev/v1/scrape"
 
 # Hàm thu thập dữ liệu firecrawl
 def scrape_url(target: str) -> Optional[str]:
-    key = "pk-z28-zmljaw-eW91cnNlbGY-aGFja2Vy"
-
     payload = json.dumps({"url": target, "formats": ["markdown"]}).encode("utf-8")
     
     # Thử 3 lần nếu thất bại
@@ -22,8 +19,8 @@ def scrape_url(target: str) -> Optional[str]:
             data=payload,
             headers={
                 "Content-Type": "application/json", 
-                "Authorization": f"Bearer {key}",
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"
+                "Authorization": f"Bearer {os.environ['FIRECRAWL_API_KEY']}",
+                "User-Agent": "Mozilla/5.0"
             },
         )
 

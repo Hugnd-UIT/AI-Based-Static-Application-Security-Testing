@@ -20,11 +20,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 from cli.views import logger
-from src.config import MODELS, SITTER, skip_sca
 
 # Khởi tạo công cụ phân tích cú pháp Tree-sitter
 def init_sitter():
-    load_spec = importlib.util.spec_from_file_location("ts_module", str(SITTER))
+    sitter_path = Path(__file__).resolve().parent / "src" / "ast" / "tree-sitter.py"
+    load_spec = importlib.util.spec_from_file_location("ts_module", str(sitter_path))
     use_module = importlib.util.module_from_spec(load_spec)
     load_spec.loader.exec_module(use_module)
 
@@ -32,7 +32,7 @@ def init_sitter():
 
 # Khởi chạy toàn bộ quy trình quét bảo mật
 def run_scan(path, rules=None, model=None, fix=False):
-    m = model or MODELS[0]
+    m = model or os.environ["AI_MODEL"]
 
     # Đặt lại đồng hồ để thời lượng tính từ lúc bắt đầu quét
     logger.reset_timer()
@@ -118,13 +118,7 @@ def run_scan(path, rules=None, model=None, fix=False):
     from src.core.sast import run_sast
 
     # Run SCA
-    if skip_sca():
-        logger.section("SCA")
-        logger.console.print("  [dim]Skipped by SINFUL_SKIP_SCA[/dim]")
-        sca_flaws = []
-
-    else:
-        sca_flaws = run_sca(deps, sdir, use_module, res, m, cache, fix)
+    sca_flaws = run_sca(deps, sdir, use_module, res, m, cache, fix)
     
     # Run SAST
     sgres = run_sast(sdir, rules, m, ctx, use_module, cache, res, fix)

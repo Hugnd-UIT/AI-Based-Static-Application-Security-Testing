@@ -11,8 +11,8 @@ def start_fix(
     target: str = "",
     module=None,
 ) -> dict:
-    from src.config import MODELS, STEPS
-    use = model or MODELS[0]
+    import os
+    use = model or os.environ["AI_MODEL"]
 
     msg = USER.format(
         rule  = item.get("id", "Unknown Vulnerability"),
@@ -31,6 +31,6 @@ def start_fix(
         directory      = target,
         module       = module,
         model      = use,
-        steps       = min(5, STEPS),
+        steps       = 5,
         agent      = "FIX",
     )

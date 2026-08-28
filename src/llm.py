@@ -1,225 +1,188 @@
 import os
 import json
 import time
-import threading
 from openai import OpenAI
-from src.config import MODELS, BASE_URL, get_keys
 
-_KEY_IDX = 0
-_KEY_LOCK = threading.Lock()
+def get_keys() -> list:
+    env = os.environ.get("AI_API_KEY", "")
+    keys = [k.strip() for k in env.split(",") if k.strip()]
+    if not keys:
+        raise ValueError("Missing AI_API_KEY in .env!")
+    return keys
 
-_GAP_LOCK = threading.Lock()
-_LAST = 0.0
+def _key_at(idx: int) -> str:
+    keys = get_keys()
+    return keys[idx] if idx < len(keys) else keys[-1]
 
-# Khoảng cách tối thiểu giữa hai request, mặc định tắt để không làm chậm khi server không chặn
-GAP = float(os.getenv("SINFUL_LLM_GAP") or "0")
+def get_key_rag()    -> str: return _key_at(0)
+def get_key_scan()   -> str: return _key_at(1)
+def get_key_audit()  -> str: return _key_at(2)
+def get_key_fix()    -> str: return _key_at(3)
+def get_key_helper() -> str: return _key_at(4)
 
-# Hàm giữ nhịp gọi AI
-def pace():
-    global _LAST
-
-    if GAP <= 0:
-        return
-
-    with _GAP_LOCK:
-        wait = GAP - (time.time() - _LAST)
-
-        if wait > 0:
-            time.sleep(wait)
-
-        _LAST = time.time()
-
-# 429 tạm thời cần chờ lâu hơn lỗi khác, nhưng chặn trần để không biến lỗi nhanh thành treo
+# 429 needs longer wait than other errors, but cap at 30s to avoid hanging forever
 def wait_time(errors: str, attempt: int) -> float:
     base = 4 if "429" in errors else 2
-
     return min(30.0, base * (2 ** attempt))
 
-# Hàm lấy API key tiếp theo
-def get_next_key() -> str:
-    global _KEY_IDX
-    keys = get_keys()
+# Each AI role uses its own dedicated key, determined by the model name passed in
+def get_key_for_model(model_name: str) -> str:
+    name = model_name.lower()
+    if "rag"   in name: return get_key_rag()
+    if "scan"  in name: return get_key_scan()
+    if "audit" in name: return get_key_audit()
+    if "fix"   in name: return get_key_fix()
+    return get_key_helper()
 
-    with _KEY_LOCK:
-        key = keys[_KEY_IDX % len(keys)]
-        _KEY_IDX += 1
-    
-    return key
+# Create an OpenAI-compatible client pointed at xkiro
+def create_client(api_key: str) -> OpenAI:
+    base_url = os.environ["AI_URL"]
+    default_headers = {"User-Agent": "Mozilla/5.0"}
+    return OpenAI(api_key=api_key, base_url=base_url, default_headers=default_headers)
 
-# Hàm tạo kết nối đến server
-def create_client(api_key: str = None) -> OpenAI:
-    if not api_key:
-        api_key = get_next_key()
-
-    # Cấu hình url và headers
-    default_headers = {"User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36"}
-
-    return OpenAI(api_key=api_key, base_url=BASE_URL, default_headers=default_headers)
-
-# Hàm kiểm tra lỗi có thể thử lại
+# Check if the error is worth retrying
 def can_retry(errors: str) -> bool:
     low = errors.lower()
-
-    # Hết quota thì thử lại chỉ tốn thời gian
     if is_quota(errors):
         return False
-
     return (
         any(code in errors for code in ("403", "500", "502", "503", "504", "429"))
-        or "<html" in low
-        or "<!doctype" in low
+        or "<html"      in low
+        or "<!doctype"  in low
         or "connection" in low
-        or "timeout" in low
+        or "timeout"    in low
     )
 
-# Hết hạn mức token trong ngày, khác với chặn nhịp tạm thời
+# Quota exhaustion is permanent (for today) — no point retrying
 def is_quota(errors: str) -> bool:
     low = errors.lower()
-
     return "quota" in low or "insufficient_quota" in low or "billing" in low
 
-# Hàm chuẩn hóa thông báo lỗi
+# Normalize raw error strings into a short readable message
 def norm_error(errors: str) -> str:
     code = ""
-
-    # Kiểm tra mã lỗi từ AI
     if "Error code: " in errors:
         parts = errors.split("Error code: ")
-
         if len(parts) > 1:
             code = parts[1].split()[0].strip("- ")
 
-    if code == "403":
-        return "403 Forbidden"
+    if code == "403": return "403 Forbidden"
+    if code == "401": return "401 Unauthorized - Check your API Key"
 
-    if code == "401":
-        return "401 Unauthorized - Check your API Key"
-
-    # Hết quota ngày khác hẳn chặn nhịp nên phải nói rõ để người dùng biết đường xử lý
     if is_quota(errors):
-        return "429 Daily token quota exhausted - wait for the daily reset or use a paid model"
+        return "429 Daily token quota exhausted"
 
     if code:
         return f"HTTP Error {code}"
 
-    # Nếu server trả về trang html thay vì json
     if "<html" in errors.lower() or "<!doctype" in errors.lower():
         return "403 Forbidden"
 
-    # Nếu lỗi quá dài
     if len(errors) > 200:
         return errors[:200] + "..."
 
     return errors
 
-# Hàm gọi đến AI
+# Send a plain prompt to the AI and return JSON or raw text
 def fetch_llm(prompt: str, model: str = None, jfmt: bool = True):
-    target = model or MODELS[0]
-    actual_model = target.split(" ")[0]
-
-    retries = 5
-    errors = ""
+    primary = model or os.environ["AI_MODEL"]
     
-    for attempt in range(retries):
+    # 5 free xkiro fallback models
+    fallbacks = [
+        "google/gemini-1.5-flash",
+        "meta-llama/llama-3-8b-instruct",
+        "mistralai/mistral-7b-instruct-v0.3",
+        "qwen/qwen-2-7b-instruct",
+        "microsoft/phi-3-mini-128k-instruct"
+    ]
+    
+    models_to_try = [primary] + fallbacks
+    errors = ""
+
+    for target in models_to_try:
+        actual_model = target.split(" ")[0]
+        retries = 3 if target == primary else 1
         
-        try:
-            client = create_client()
+        for attempt in range(retries):
+            try:
+                client = create_client(get_key_for_model(target))
 
-            req = {
-                "model": actual_model,
-                "messages": [{"role": "system", "content": prompt}],
-            }
+                req = {
+                    "model":    actual_model,
+                    "messages": [{"role": "system", "content": prompt}],
+                }
+                if jfmt:
+                    req["response_format"] = {"type": "json_object"}
 
-            # Kiểm tra yêu cầu định dạng
-            if jfmt:
-                req["response_format"] = {"type": "json_object"}
+                resp = client.chat.completions.create(**req)
+                raw  = resp.choices[0].message.content.strip()
 
-            # Gửi request đến AI
-            pace()
-            resp = client.chat.completions.create(**req)
-            raw = resp.choices[0].message.content.strip()
-            
-            # Xử lý json từ AI
-            if jfmt:
+                if jfmt:
+                    if raw.startswith("```json"): raw = raw[7:]
+                    elif raw.startswith("```"):   raw = raw[3:]
+                    if raw.endswith("```"):       raw = raw[:-3]
+                    return json.loads(raw.strip())
+                else:
+                    return raw, target
 
-                if raw.startswith("```json"):
-                    raw = raw[7:]
+            except Exception as api_err:
+                errors = str(api_err)
 
-                elif raw.startswith("```"):
-                    raw = raw[3:]
-
-                if raw.endswith("```"):
-                    raw = raw[:-3]
+                if can_retry(errors) and attempt < retries - 1:
+                    time.sleep(wait_time(errors, attempt))
+                    continue
                 
-                return json.loads(raw.strip())
-
-            else:
-
-                return raw, target
-
-        except Exception as api_err:
-            errors = str(api_err)
-
-            # Nếu lỗi tạm thời thì chờ rồi thử lại
-            if can_retry(errors) and attempt < retries - 1:
-                time.sleep(wait_time(errors, attempt))
-                continue
-
-            errors = norm_error(errors)
-
-            if not jfmt:
-
-                return f"[!] Error: Call AI failed. Last error: {errors}", "None"
-
-            raise RuntimeError(f"[!] Error: Call AI failed. Last error: {errors}")
-
+                errors = norm_error(errors)
+                # Break out of inner retry loop to try next fallback model
+                break
+                
     if not jfmt:
-
         return f"[!] Error: Call AI failed. Last error: {errors}", "None"
 
     raise RuntimeError(f"[!] Error: Call AI failed. Last error: {errors}")
 
-# Hàm gửi công cụ đến AI
-def fetch_tools(
-    msg: list,
-    schemas: list,
-    model: str = None,
-    tool: str = "auto",
-):
-    target = model or MODELS[0]
-
-    retries = 5
+# Send a tool-calling request to the AI
+def fetch_tools(msg: list, schemas: list, model: str = None, tool: str = "auto"):
+    primary = model or os.environ["AI_MODEL"]
+    
+    fallbacks = [
+        "google/gemini-1.5-flash",
+        "meta-llama/llama-3-8b-instruct",
+        "mistralai/mistral-7b-instruct-v0.3",
+        "qwen/qwen-2-7b-instruct",
+        "microsoft/phi-3-mini-128k-instruct"
+    ]
+    
+    models_to_try = [primary] + fallbacks
     errors = ""
 
-    for attempt in range(retries):
+    for target in models_to_try:
+        retries = 3 if target == primary else 1
+        
+        for attempt in range(retries):
+            try:
+                client = create_client(get_key_for_model(target))
 
-        try:
-            key = get_next_key()
-            client = create_client(key)
+                resp = client.chat.completions.create(
+                    model=target,
+                    messages=msg,
+                    tools=schemas,
+                    tool_choice=tool,
+                )
 
-            # Gửi request đến AI
-            pace()
-            resp = client.chat.completions.create(
-                model=target,
-                messages=msg,
-                tools=schemas,
-                tool_choice=tool,
-            )
+                if not getattr(resp, "choices", None):
+                    raise RuntimeError(f"Invalid response: {resp}")
 
-            # Kiểm tra lựa chọn của AI
-            if not getattr(resp, 'choices', None):
-                raise RuntimeError(f"Invalid response: {resp}")
+                return resp.choices[0].message, target
 
-            return resp.choices[0].message, target
+            except Exception as api_err:
+                errors = str(api_err)
 
-        except Exception as api_err:
-            errors = str(api_err)
+                if can_retry(errors) and attempt < retries - 1:
+                    time.sleep(wait_time(errors, attempt))
+                    continue
+                
+                # Break out of inner retry loop to try next fallback model
+                break
 
-            # Nếu lỗi tạm thời thì chờ rồi thử lại
-            if can_retry(errors) and attempt < retries - 1:
-                time.sleep(wait_time(errors, attempt))
-                continue
-
-            raise RuntimeError(f"[!] Model {target} failed. Error: {norm_error(errors)}")
-
-    raise RuntimeError(f"[!] Model {target} failed. Error: {norm_error(errors)}")
+    raise RuntimeError(f"[!] All models failed. Last Error: {norm_error(errors)}")

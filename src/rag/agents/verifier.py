@@ -10,8 +10,8 @@ def start_verify(
     target: str = "",
     module=None,
 ) -> dict:
-    from src.config import MODELS, STEPS
-    use = model or MODELS[0]
+    import os
+    use = model or os.environ["AI_MODEL"]
 
     msg = VTMP.format(
         summary=summary
@@ -25,6 +25,6 @@ def start_verify(
         directory      = target,
         module       = module,
         model      = use,
-        steps       = STEPS,
+        steps       = 20,
         agent      = "POC_VERIFIER",
     )

@@ -1,13 +1,12 @@
 import os
 import yaml
-from src.config import TEMPLATES, get_work
 
 def generate(data, templates=None, output=None):
     if not data:
         return None
 
-    templates = str(templates or TEMPLATES)
-    output = str(output or get_work())
+    templates = str(templates or os.path.join(os.path.dirname(os.path.dirname(__file__)), "rules"))
+    output = str(output or os.getcwd())
 
     rules = []
     languages = list(set([item['language'] for item in data]))
