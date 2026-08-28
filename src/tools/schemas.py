@@ -1,4 +1,4 @@
-# Công cụ đọc file
+﻿# File reading tool
 READ_SCHEMA = {
     "type": "function",
     "function": {
@@ -25,7 +25,7 @@ READ_SCHEMA = {
     },
 }
 
-# Công cụ theo dõi biến
+# Variable tracing tool
 TRACE_SCHEMA = {
     "type": "function",
     "function": {
@@ -48,7 +48,7 @@ TRACE_SCHEMA = {
     },
 }
 
-# Công cụ tìm hàm
+# Function finding tool
 FUNC_SCHEMA = {
     "type": "function",
     "function": {
@@ -67,7 +67,7 @@ FUNC_SCHEMA = {
     },
 }
 
-# Công cụ tìm hàm gọi đến
+# Caller finding tool
 CALLER_SCHEMA = {
     "type": "function",
     "function": {
@@ -86,7 +86,7 @@ CALLER_SCHEMA = {
     },
 }
 
-# Công cụ tìm kiếm mẫu
+# Pattern search tool
 SEARCH_SCHEMA = {
     "type": "function",
     "function": {
@@ -109,8 +109,8 @@ SEARCH_SCHEMA = {
     },
 }
 
-# Trường dùng chung cho mọi phán quyết
-COMMON = {
+# Shared data fields
+SHARE_PROPS = {
     "verdict": {
         "type": "string",
         "enum": ["VULNERABLE", "SAFE"],
@@ -126,8 +126,8 @@ COMMON = {
     },
 }
 
-# Trường riêng của agent theo dõi luồng dữ liệu
-TRACE_PROPS = {
+# Scan agent specific data fields
+SCAN_PROPS = {
     "flow": {
         "type": "array",
         "description": "One entry per hop, in chronological order from source to sink",
@@ -152,8 +152,8 @@ TRACE_PROPS = {
     },
 }
 
-# Trường riêng của agent phán quyết
-RISK_PROPS = {
+# Audit agent specific data fields
+AUDIT_PROPS = {
     "severity": {
         "type": "string",
         "enum": ["CRITICAL", "HIGH", "MEDIUM", "LOW", "INFO"],
@@ -169,19 +169,19 @@ RISK_PROPS = {
     },
     "source_variable": {"type": "string"},
     "sink_function": {"type": "string"},
-    "flow": TRACE_PROPS["flow"],
-    "source_is_false_positive": {
+    "flow": SCAN_PROPS["flow"],
+    "fp_source": {
         "type": "boolean",
         "description": "True if the reported source is NOT attacker controlled (hardcoded value, config file, trusted internal caller). Setting this forces the finding to SAFE.",
     },
-    "sink_is_false_positive": {
+    "fp_sink": {
         "type": "boolean",
         "description": "True if the reported sink is NOT actually dangerous with this argument (parameterized query, logging only, escaped by the framework). Setting this forces the finding to SAFE.",
     },
 }
 
-# Trường riêng của agent vá lỗi
-PATCH_PROPS = {
+# Fix agent specific data fields
+FIX_PROPS = {
     "explanation": {
         "type": "string",
         "description": "Why this fix works and what it prevents",
@@ -199,19 +199,19 @@ PATCH_PROPS = {
     },
 }
 
-# Trường riêng của agent kiểm tra PoC
-POC_PROPS = {
+# Verify agent specific data fields
+VERIFY_PROPS = {
     "exploitable": {
         "type": "boolean",
         "description": "True if the CVE can be exploited in the current context",
     },
-    "poc_type": {"type": "string"},
+    "poc": {"type": "string"},
     "payload": {"type": "string"},
     "description": {"type": "string"},
 }
 
-# Trường riêng của agent mở rộng sink
-SINK_PROPS = {
+# Expand agent specific data fields
+EXPAND_PROPS = {
     "extra_sinks": {
         "type": "array",
         "description": "New dangerous sink patterns discovered from the CVE context",
@@ -226,8 +226,8 @@ SINK_PROPS = {
     },
 }
 
-# Hàm tạo công cụ nộp kết quả riêng cho từng agent
-def make_verdict(props: dict, desc: str) -> dict:
+# Verdict function
+def verdict(props: dict, desc: str) -> dict:
     return {
         "type": "function",
         "function": {
@@ -235,20 +235,71 @@ def make_verdict(props: dict, desc: str) -> dict:
             "description": desc,
             "parameters": {
                 "type": "object",
-                "properties": {**COMMON, **props},
-                "required": ["verdict", "confidence", "reasoning"],
+                "properties": {**SHARE_PROPS, **props},
+                "required": ["verdict", "confidence", "reason"],
             },
         },
     }
 
-SCAN_VERDICT   = make_verdict(TRACE_PROPS, "Submit the traced data flow to terminate the analysis loop - Fill 'flow' with every hop you proved, or set 'surrogate' if the flow is broken")
-AUDIT_VERDICT  = make_verdict(RISK_PROPS, "Submit the final verdict to terminate the analysis loop - MUST be called with concrete evidence gathered from other tools")
-FIX_VERDICT    = make_verdict(PATCH_PROPS, "Submit the patches to terminate the analysis loop - 'old_code' must match the file character-for-character")
-POC_VERDICT    = make_verdict(POC_PROPS, "Submit the exploitability decision to terminate the analysis loop - Say exactly what you searched for in 'reason'")
-EXPAND_VERDICT = make_verdict(SINK_PROPS, "Submit the new sink patterns to terminate the analysis loop - Only include patterns you verified with search_pattern")
+SCAN_VERDICT   = verdict(
+    SCAN_PROPS,
+    "Submit the traced data flow to terminate the analysis loop - Fill 'flow' with every hop you proved, or set 'surrogate' if the flow is broken",
+)
 
-EXPAND_TOOLS = [SEARCH_SCHEMA, EXPAND_VERDICT]
-SCAN_TOOLS   = [READ_SCHEMA, TRACE_SCHEMA, FUNC_SCHEMA, CALLER_SCHEMA, SCAN_VERDICT]
-FIX_TOOLS    = [READ_SCHEMA, SEARCH_SCHEMA, FUNC_SCHEMA, FIX_VERDICT]
-VERIFY_TOOLS = [READ_SCHEMA, SEARCH_SCHEMA, FUNC_SCHEMA, CALLER_SCHEMA, POC_VERDICT]
-AUDIT_TOOLS  = [READ_SCHEMA, TRACE_SCHEMA, FUNC_SCHEMA, CALLER_SCHEMA, SEARCH_SCHEMA, AUDIT_VERDICT]
+AUDIT_VERDICT  = verdict(
+    AUDIT_PROPS,
+    "Submit the final verdict to terminate the analysis loop - MUST be called with concrete evidence gathered from other tools",
+)
+
+FIX_VERDICT    = verdict(
+    FIX_PROPS,
+    "Submit the patches to terminate the analysis loop - 'old_code' must match the file character-for-character",
+)
+
+VERIFY_VERDICT = verdict(
+    VERIFY_PROPS,
+    "Submit the exploitability decision to terminate the analysis loop - Say exactly what you searched for in 'reason'",
+)
+
+EXPAND_VERDICT = verdict(
+    EXPAND_PROPS,
+    "Submit the new sink patterns to terminate the analysis loop - Only include patterns you verified with search_pattern",
+)
+
+SCAN_TOOLS = [
+    READ_SCHEMA,
+    TRACE_SCHEMA,
+    FUNC_SCHEMA,
+    CALLER_SCHEMA,
+    SCAN_VERDICT,
+]
+
+AUDIT_TOOLS = [
+    READ_SCHEMA,
+    TRACE_SCHEMA,
+    FUNC_SCHEMA,
+    CALLER_SCHEMA,
+    SEARCH_SCHEMA,
+    AUDIT_VERDICT,
+]
+
+FIX_TOOLS = [
+    READ_SCHEMA,
+    SEARCH_SCHEMA,
+    FUNC_SCHEMA,
+    FIX_VERDICT,
+]
+
+VERIFY_TOOLS = [
+    READ_SCHEMA,
+    SEARCH_SCHEMA,
+    FUNC_SCHEMA,
+    CALLER_SCHEMA,
+    VERIFY_VERDICT,
+]
+
+EXPAND_TOOLS = [
+    SEARCH_SCHEMA,
+    EXPAND_VERDICT,
+]
+

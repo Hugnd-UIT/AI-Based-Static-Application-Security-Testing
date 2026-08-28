@@ -1,4 +1,4 @@
-import os
+﻿import os
 import json
 import time
 import textwrap
@@ -157,10 +157,10 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
             # Cắt tỉa dương tính giả bằng hai câu hỏi riêng về source và sink
             prune = ""
 
-            if verdict.get("source_is_false_positive"):
+            if verdict.get("fp_source"):
                 prune = "source is not attacker controlled"
 
-            elif verdict.get("sink_is_false_positive"):
+            elif verdict.get("fp_sink"):
                 prune = "sink is not dangerous in this call"
 
             if prune and verdict_str == "VULNERABLE":
@@ -246,3 +246,4 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
                 console.print(f"  └─ [bold red]✖ Fixer Agent failed: {e}[/bold red]")
 
         logger.blank()
+
