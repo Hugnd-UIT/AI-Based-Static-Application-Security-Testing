@@ -51,7 +51,7 @@ def gen_cache(target: str) -> str:
     if target in IMPORTS:
         return IMPORTS[target]
 
-    lines = []
+    chunks = []
 
     for root, dirs, files in os.walk(target):
         dirs[:] = [d for d in dirs if d not in SKIPS and not d.startswith(".")]
@@ -59,18 +59,11 @@ def gen_cache(target: str) -> str:
         for name in files:
             try:
                 with open(os.path.join(root, name), "r", encoding="utf-8", errors="ignore") as fp:
-                    body = fp.read()
+                    chunks.append(flat(fp.read()))
             except Exception:
                 continue
 
-            for line in body.splitlines():
-                if len(line) > 400:
-                    continue
-
-                if HEAD.search(line) or BARE.match(line):
-                    lines.append(flat(line))
-
-    IMPORTS[target] = "\n".join(lines)
+    IMPORTS[target] = "\n".join(chunks)
     return IMPORTS[target]
 
 # Check if imported

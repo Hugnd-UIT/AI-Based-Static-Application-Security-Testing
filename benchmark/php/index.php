@@ -3,6 +3,12 @@ require_once 'controllers/UserController.php';
 require_once 'controllers/OrderController.php';
 require_once 'utils/Helper.php';
 
+use GuzzleHttp\Client;
+use Twig\Environment;
+use PHPMailer\PHPMailer\PHPMailer;
+use Smarty;
+use Symfony\Component\HttpFoundation\Request;
+
 $route = $_GET['route'] ?? 'home';
 
 switch ($route) {

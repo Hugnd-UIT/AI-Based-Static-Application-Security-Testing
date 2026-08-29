@@ -1,5 +1,10 @@
 using Microsoft.AspNetCore.Mvc;
 using Benchmark.CSharp.Services;
+using Newtonsoft.Json;
+using log4net;
+using System.Data.SqlClient;
+using System.Text.Encodings.Web;
+using System.Net.Http;
 
 namespace Benchmark.CSharp.Controllers
 {
