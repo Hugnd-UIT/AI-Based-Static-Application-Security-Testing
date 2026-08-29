@@ -127,23 +127,15 @@ def run_scan(path, rules=None, model=None, fix=False):
     
     final_flaws = []
     exploitable_cve = []
-    seen_lines = set()
     
     for f in flaws:
         if f.get("is_duplicate"):
             continue
         if f.get("verdict", "").upper() == "VULNERABLE":
-
-            # Strict Deduplication by Path and Line
-            dup_key = (f.get("path"), f.get("start_line"))
-            if dup_key in seen_lines:
-                continue
-            seen_lines.add(dup_key)
             
             if "cve_info" in f:
                 cve_data = f["cve_info"]
             
-                # Avoid duplicates in the sca list
                 if cve_data not in exploitable_cve:
                     exploitable_cve.append(cve_data)
                 del f["cve_info"]
@@ -173,6 +165,7 @@ def run_scan(path, rules=None, model=None, fix=False):
     cdeps = len(res.get("dependencies", []))
     dur = logger.get_time()
     cfinds = len(flaws)
+    csca = len(exploitable_cve)
 
     # Count by AI-determined severity, normalizing non-standard values
     _SEV_MAP = {"CRITICAL": "CRITICAL", "HIGH": "HIGH", "MEDIUM": "MEDIUM", "LOW": "LOW",
@@ -202,7 +195,10 @@ def run_scan(path, rules=None, model=None, fix=False):
     table.add_row("Languages", f"[cyan]{langs}[/cyan]", "Files", f"[cyan]{files}[/cyan]")
     table.add_row("Dependencies", f"[cyan]{cdeps}[/cyan]", "Duration", f"{dur}s")
     table.add_row("", "")
-    table.add_row("Vulnerabilities", f"[bold]{cfinds}[/bold]")
+    table.add_row("Total Findings", f"[bold]{cfinds}[/bold]")
+    table.add_row("  SAST", f"{cfinds - csca}")
+    table.add_row("  SCA", f"{csca}")
+    table.add_row("", "")
 
     if scrit > 0:
         table.add_row("[bold red]✖ CRITICAL[/bold red]", str(scrit))
