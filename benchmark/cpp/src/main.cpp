@@ -1,17 +1,10 @@
 #include <iostream>
 #include <string>
-#include <Poco/Net/HTTPClientSession.h>
-#include <spdlog/spdlog.h>
-#include <tinyxml2.h>
-#include <google/protobuf/message.h>
-#include <yaml-cpp/yaml.h>
-#include <Poco/UTF32Encoding.h>
-#include <spdlog/pattern_formatter.h>
-extern "C" {
-    #include <lua.h>
-    #include <lualib.h>
-    #include <lauxlib.h>
-}
+#include <openssl/ssl.h>
+#include <libxml/parser.h>
+#include <curl/curl.h>
+#include <sqlite3.h>
+#include <zlib.h>
 
 #include "../include/db.h"
 #include "../include/system.h"
@@ -51,21 +44,28 @@ int main(int argc, char* argv[]) {
         encryptData(payload.c_str());
     } else if (action == "null") {
         dereferenceNull();
-    } else if (action == "poco") {
-        Poco::UTF32Encoding utf32;
-        unsigned char out[1024];
-        utf32.convert((const unsigned char*)payload.c_str(), out, payload.length());
-    } else if (action == "spdlog") {
-        auto formatter = std::make_shared<spdlog::pattern_formatter>(payload);
-        spdlog::set_formatter(formatter);
-    } else if (action == "tinyxml2") {
-        tinyxml2::XMLDocument doc;
-        doc.Parse(payload.c_str());
-    } else if (action == "lua") {
-        lua_State *L = luaL_newstate();
-        luaL_dostring(L, payload.c_str());
-    } else if (action == "yaml") {
-        YAML::Node node = YAML::Load(payload);
+    } else if (action == "openssl") {
+        SSL_CTX* ctx = SSL_CTX_new(TLS_method());
+        SSL* ssl = SSL_new(ctx);
+        SSL_read(ssl, (void*)payload.c_str(), payload.length());
+    } else if (action == "libxml2") {
+        xmlDocPtr doc = xmlReadMemory(payload.c_str(), payload.length(), "noname.xml", NULL, XML_PARSE_NOENT | XML_PARSE_DTDLOAD);
+        xmlFreeDoc(doc);
+    } else if (action == "curl") {
+        CURL *curl = curl_easy_init();
+        curl_easy_setopt(curl, CURLOPT_URL, payload.c_str());
+        curl_easy_perform(curl);
+        curl_easy_cleanup(curl);
+    } else if (action == "sqlite3") {
+        sqlite3 *db;
+        sqlite3_open(":memory:", &db);
+        sqlite3_exec(db, payload.c_str(), 0, 0, 0);
+        sqlite3_close(db);
+    } else if (action == "zlib") {
+        z_stream strm;
+        deflateInit(&strm, Z_DEFAULT_COMPRESSION);
+        deflate(&strm, Z_FINISH);
+        deflateEnd(&strm);
     } else {
         std::cout << "Unknown action\n";
     }

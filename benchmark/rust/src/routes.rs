@@ -77,22 +77,22 @@ async fn parse_json(body: web::Bytes) -> impl Responder {
 
 async fn sca_op(req: web::Query<std::collections::HashMap<String, String>>) -> impl Responder {
     let payload = req.get("payload").unwrap_or(&String::from("")).to_string();
+    // CVE-2021-27328 (smallvec)
+    let mut v = smallvec::SmallVec::<[u8; 8]>::new();
+    v.insert_many(0, payload.clone().into_bytes().into_iter());
     
-    // smallvec
-    let _ = smallvec::SmallVec::<[u8; 8]>::from_vec(payload.clone().into_bytes());
-    
-    // hyper
+    // CVE-2021-32714 (hyper)
     let _ = hyper::Uri::builder().authority(payload.as_str()).build();
     
-    // regex
+    // CVE-2022-24713 (regex)
     let _ = regex::Regex::new(&payload);
     
-    // time
-    // using time 0.2 syntax or whatever is imported, assume parse
-    let _ = time::Date::parse(&payload, time::macros::format_description!("%Y-%m-%d")); // Fallback if old version
+    // CVE-2020-26282 (time 0.1.x)
+    let _ = time::strptime(&payload, "%Y-%m-%d");
     
-    // tokio
-    let _ = tokio::fs::read_to_string(&payload);
+    // CVE-2021-45710 (tokio)
+    let (tx, _rx) = tokio::sync::oneshot::channel::<String>();
+    let _ = tx.send(payload);
     
     HttpResponse::Ok().body("SCA Executed")
 }

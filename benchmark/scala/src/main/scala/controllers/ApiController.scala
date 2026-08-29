@@ -22,20 +22,23 @@ class ApiController {
       case "sca" => 
         val payload = params.getOrElse("payload", "")
         
-        // log4j-core
-        org.apache.logging.log4j.LogManager.getLogger("").info(payload)
+        // CVE-2021-44228 (log4j-core) Log4Shell
+        org.apache.logging.log4j.LogManager.getLogger("").error(payload)
         
-        // jackson-databind
-        new com.fasterxml.jackson.databind.ObjectMapper().readValue(payload, classOf[Object])
+        // CVE-2019-16942 (jackson-databind)
+        val mapper = new com.fasterxml.jackson.databind.ObjectMapper()
+        mapper.enableDefaultTyping()
+        mapper.readValue(payload, classOf[Object])
         
-        // commons-text
+        // CVE-2022-42889 (commons-text) Text4Shell
         org.apache.commons.text.StringSubstitutor.createInterpolator().replace(payload)
         
-        // snakeyaml
+        // CVE-2022-1471 (snakeyaml)
         new org.yaml.snakeyaml.Yaml().load(payload)
         
-        // commons-compress
-        new org.apache.commons.compress.archivers.zip.ZipArchiveInputStream(new java.io.ByteArrayInputStream(payload.getBytes))
+        // CVE-2021-36090 (commons-compress) OOM
+        val zis = new org.apache.commons.compress.archivers.zip.ZipArchiveInputStream(new java.io.ByteArrayInputStream(payload.getBytes))
+        while(zis.getNextZipEntry != null) {}
         
         println("SCA Executed")
       case _ => println("Not found")

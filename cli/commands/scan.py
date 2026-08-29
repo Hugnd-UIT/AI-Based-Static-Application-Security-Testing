@@ -166,9 +166,9 @@ def execute_scan(path: str, fix: bool = False):
     
     rdir = os.path.join(os.getcwd(), "reports")
     try:
-        json = report_json(res, rdir)
+        json = report_json(data, rdir)
         sarif = report_sarif(finds, path, rdir)
-        html = report_html(res, path, rdir)
+        html = report_html(data, path, rdir)
         
         logger.blank_line()
         logger.log_success("Reports saved to:")

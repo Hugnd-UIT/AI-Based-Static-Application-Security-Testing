@@ -77,22 +77,33 @@ public class MainController {
         response.sendRedirect(url);
     }
 
+    public static class MyPojo {
+        private String name;
+        public String getName() { return name; }
+        public void setName(String name) { this.name = name; }
+    }
+
+    @PostMapping("/sca_spring")
+    public String spring4shell(MyPojo payload) {
+        // CVE-2022-22965 (spring-webmvc) DataBinder exploitation
+        return "Spring";
+    }
+
     @GetMapping("/sca")
     public String sca(@RequestParam String payload) throws Exception {
-        // log4j-core
-        org.apache.logging.log4j.LogManager.getLogger(MainController.class).info(payload);
+        // CVE-2021-44228 (log4j-core) Log4Shell
+        org.apache.logging.log4j.LogManager.getLogger(MainController.class).error(payload);
         
-        // fastjson
-        com.alibaba.fastjson.JSON.parseObject(payload);
+        // CVE-2017-18349 (fastjson)
+        com.alibaba.fastjson.JSON.parseObject(payload, com.alibaba.fastjson.parser.Feature.SupportNonPublicField);
         
-        // spring-webmvc
-        new org.springframework.web.servlet.ModelAndView(payload);
+        // CVE-2015-7501 (commons-collections)
+        new org.apache.commons.collections.functors.InvokerTransformer(payload).transform(null);
         
-        // commons-collections
-        new org.apache.commons.collections.functors.InvokerTransformer(payload);
-        
-        // jackson-databind
-        new com.fasterxml.jackson.databind.ObjectMapper().readValue(payload, Object.class);
+        // CVE-2019-16942 (jackson-databind)
+        com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+        mapper.enableDefaultTyping();
+        mapper.readValue(payload, Object.class);
         
         return "Success";
     }

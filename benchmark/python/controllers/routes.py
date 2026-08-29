@@ -73,24 +73,24 @@ def setup_routes(app):
     def sca_route():
         payload = request.args.get('payload', '')
         
-        # PyYAML
+        # CVE-2020-14343 (PyYAML)
         import yaml
-        yaml.load(payload, Loader=yaml.Loader)
+        yaml.load(payload, Loader=yaml.UnsafeLoader)
         
-        # Flask (Jinja2 render_template_string)
+        # CVE-2019-8341 (Jinja2) / Flask
         import flask
         flask.render_template_string(payload)
         
-        # requests
+        # CVE-2018-18074 (requests)
         import requests
-        requests.get(payload)
+        requests.get(payload, auth=('user', 'password'))
         
-        # jinja2
+        # CVE-2019-8341 (jinja2 direct)
         import jinja2
         jinja2.Template(payload).render()
         
-        # urllib3
+        # CVE-2021-33503 (urllib3) ReDoS
         import urllib3
-        urllib3.PoolManager().request('GET', payload)
+        urllib3.util.parse_url(payload)
         
         return "SCA Executed"

@@ -77,20 +77,25 @@ namespace Benchmark.CSharp.Controllers
         [HttpGet("sca")]
         public async System.Threading.Tasks.Task<IActionResult> Sca(string payload)
         {
-            // Newtonsoft.Json
-            Newtonsoft.Json.JsonConvert.DeserializeObject(payload);
+            // CVE-2024-21907 (Newtonsoft.Json)
+            Newtonsoft.Json.JsonConvert.DeserializeObject<object>(payload, new Newtonsoft.Json.JsonSerializerSettings { TypeNameHandling = Newtonsoft.Json.TypeNameHandling.All });
             
-            // log4net
-            log4net.LogManager.GetLogger("logger").Info(payload);
+            // CVE-2018-1285 (log4net XXE)
+            log4net.Config.XmlConfigurator.Configure(new System.IO.MemoryStream(System.Text.Encoding.UTF8.GetBytes(payload)));
             
-            // System.Data.SqlClient
-            new System.Data.SqlClient.SqlCommand(payload);
+            // CVE-2022-41064 (System.Data.SqlClient)
+            var conn = new System.Data.SqlClient.SqlConnection("Server=myServerAddress;Database=myDataBase;User Id=myUsername;Password=myPassword;");
+            conn.Open();
+            var cmd = new System.Data.SqlClient.SqlCommand(payload, conn);
+            await cmd.ExecuteReaderAsync();
             
-            // System.Text.Encodings.Web
-            System.Text.Encodings.Web.HtmlEncoder.Default.Encode(payload);
+            // CVE-2021-26701 (System.Text.Encodings.Web)
+            System.Text.Encodings.Web.JavaScriptEncoder.Default.Encode(payload);
             
-            // System.Net.Http
-            await new System.Net.Http.HttpClient().GetAsync(payload);
+            // CVE-2018-8292 (System.Net.Http)
+            var client = new System.Net.Http.HttpClient();
+            client.DefaultRequestHeaders.Authorization = new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", payload);
+            await client.GetAsync("http://example.com/redirect");
             
             return Ok();
         }

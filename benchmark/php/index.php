@@ -62,26 +62,28 @@ switch ($route) {
     case 'sca':
         $payload = $_GET['payload'] ?? '';
         
-        // guzzlehttp/guzzle
+        // CVE-2022-31090 (guzzlehttp/guzzle)
         $client = new \GuzzleHttp\Client();
-        $client->get($payload);
+        $client->get($payload, ['headers' => ['Authorization' => 'Basic secret']]);
         
-        // twig/twig
-        $loader = new \Twig\Loader\ArrayLoader([]);
+        // CVE-2022-39261 (twig/twig)
+        $loader = new \Twig\Loader\ArrayLoader(['index' => $payload]);
         $twig = new \Twig\Environment($loader);
-        $twig->render($payload);
+        $twig->render('index');
         
-        // phpmailer/phpmailer
+        // CVE-2021-3603 (phpmailer/phpmailer)
         $mail = new \PHPMailer\PHPMailer\PHPMailer();
-        $mail->addAddress($payload);
+        $mail->isSendmail();
+        $mail->setFrom($payload);
         
-        // smarty/smarty
+        // CVE-2021-21406 (smarty/smarty)
         $smarty = new \Smarty();
-        $smarty->display($payload);
+        $smarty->display("string:".$payload);
         
-        // symfony/http-kernel
-        $request = \Symfony\Component\HttpFoundation\Request::create('/');
-        $request->headers->set('Host', $payload);
+        // CVE-2024-28231 (symfony/http-kernel)
+        \Symfony\Component\HttpFoundation\Request::setTrustedProxies([$payload], \Symfony\Component\HttpFoundation\Request::HEADER_X_FORWARDED_ALL);
+        $request = \Symfony\Component\HttpFoundation\Request::createFromGlobals();
+        $request->getHost();
         
         echo "SCA Executed";
         break;

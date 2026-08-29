@@ -15,7 +15,7 @@
     <PackageReference Include="System.Data.SqlClient" Version="4.6.0" />
 
     <!-- System.Text.Encodings.Web [CVE-2021-26701] -->
-    <PackageReference Include="System.Text.Encodings.Web" Version="4.7.1" />
+    <PackageReference Include="System.Text.Encodings.Web" Version="4.5.0" />
 
     <!-- System.Net.Http [CVE-2017-0247] -->
     <PackageReference Include="System.Net.Http" Version="4.3.0" />

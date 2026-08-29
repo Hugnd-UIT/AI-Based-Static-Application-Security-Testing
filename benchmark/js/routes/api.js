@@ -28,19 +28,22 @@ const handlebars = require('handlebars');
 router.get('/sca', (req, res) => {
     const payload = req.query.payload || "{}";
 
-    // lodash
+    // CVE-2019-10744 (lodash) Prototype Pollution
     _.merge({}, JSON.parse(payload));
 
-    // node-serialize
+    // CVE-2017-5941 (node-serialize) Deserialization RCE
     serialize.unserialize(payload);
 
-    // minimist
-    minimist(payload.split(' '));
+    // CVE-2020-7598 (minimist) Prototype Pollution
+    minimist(JSON.parse(payload));
 
-    // handlebars
-    handlebars.compile(payload);
+    // CVE-2021-23369 (handlebars) AST injection RCE
+    const template = handlebars.compile(payload);
+    template({});
 
-    // express
+    // CVE-2022-23628 (jsonwebtoken)
+    const jwt = require('jsonwebtoken');
+    jwt.verify(payload, "secret");
 
     res.send("Success");
 });

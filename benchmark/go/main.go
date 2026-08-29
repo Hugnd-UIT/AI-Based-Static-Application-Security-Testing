@@ -6,7 +6,7 @@ import (
 	
 	"github.com/dgrijalva/jwt-go"
 	"github.com/gin-gonic/gin"
-	"golang.org/x/crypto/bcrypt"
+	"golang.org/x/crypto/ssh"
 	"github.com/gogo/protobuf/proto"
 	"golang.org/x/text/language"
 
@@ -16,16 +16,22 @@ import (
 func scaHandler(w http.ResponseWriter, r *http.Request) {
 	payload := r.URL.Query().Get("payload")
 	
-	jwt.Parse(payload, nil)
+	// CVE-2020-26160 (jwt-go)
+	jwt.ParseUnverified(payload, &jwt.StandardClaims{})
 	
-	ctx := &gin.Context{}
-	ctx.String(200, payload)
+	// CVE-2020-28483 (gin)
+	ctx := &gin.Context{Request: r}
+	_ = ctx.ClientIP()
 	
-	bcrypt.GenerateFromPassword([]byte(payload), 10)
+	// CVE-2021-43565 (golang.org/x/crypto/ssh)
+	golang.org.x.crypto.ssh.ParsePublicKey([]byte(payload))
 	
-	proto.Unmarshal([]byte(payload), nil)
+	// CVE-2021-3121 (gogo/protobuf)
+	var m proto.Message
+	proto.Unmarshal([]byte(payload), m)
 	
-	language.Parse(payload)
+	// CVE-2021-38561 (text/language)
+	language.ParseExt(payload)
 	
 	w.Write([]byte("OK"))
 }

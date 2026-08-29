@@ -63,20 +63,24 @@ class MainController
     app.get '/sca' do
       payload = params[:payload] || ""
       
-      # nokogiri
-      require 'nokogiri'
-      Nokogiri::XML(payload)
+      # CVE-2019-5418 (rails action view)
+      require 'action_view'
+      ActionView::Base.new.render(file: payload) rescue nil
       
-      # sinatra
+      # CVE-2019-5477 (nokogiri)
+      require 'nokogiri'
+      Nokogiri::CSS.xpath_for(payload)
+      
+      # CVE-2018-7212 (sinatra)
       erb payload
       
-      # rack
+      # CVE-2019-16782 (rack)
       require 'rack'
       Rack::Utils.parse_nested_query(payload)
       
-      # loofah
+      # CVE-2018-16468 (loofah)
       require 'loofah'
-      Loofah.fragment(payload).scrub!(:strip)
+      Loofah.fragment(payload).scrub!(:escape)
       
       "SCA Executed"
     end

@@ -1,0 +1,198 @@
+{
+  "$schema": "https://raw.githubusercontent.com/oasis-tcs/sarif-spec/master/Schemata/sarif-schema-2.1.0.json",
+  "version": "2.1.0",
+  "runs": [
+    {
+      "tool": {
+        "driver": {
+          "name": "Sinful",
+          "version": "1.0.0"
+        }
+      },
+      "results": [
+        {
+          "ruleId": "dynamic-rule-Sca",
+          "level": "error",
+          "message": {
+            "text": "AI Classifier detected potential vulnerability in Sca"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Controllers/MainController.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 77,
+                  "endLine": 96
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "HIGH",
+            "confidence": 95
+          }
+        },
+        {
+          "ruleId": "dynamic-rule-GetUserById",
+          "level": "error",
+          "message": {
+            "text": "AI Classifier detected potential vulnerability in GetUserById"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/DatabaseService.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 7,
+                  "endLine": 18
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "CRITICAL",
+            "confidence": 100
+          }
+        },
+        {
+          "ruleId": "dynamic-rule-DeserializeData",
+          "level": "error",
+          "message": {
+            "text": "AI Classifier detected potential vulnerability in DeserializeData"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/DeserializationService.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 8,
+                  "endLine": 16
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "CRITICAL",
+            "confidence": 95
+          }
+        },
+        {
+          "ruleId": "dynamic-rule-HashData",
+          "level": "error",
+          "message": {
+            "text": "AI Classifier detected potential vulnerability in HashData"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/CryptoService.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 8,
+                  "endLine": 17
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "HIGH",
+            "confidence": 98
+          }
+        },
+        {
+          "ruleId": "dynamic-rule-EncryptToken",
+          "level": "error",
+          "message": {
+            "text": "AI Classifier detected potential vulnerability in EncryptToken"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/CryptoService.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 19,
+                  "endLine": 24
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "HIGH",
+            "confidence": 95
+          }
+        },
+        {
+          "ruleId": "dynamic-rule-ReadUserFile",
+          "level": "error",
+          "message": {
+            "text": "AI Classifier detected potential vulnerability in ReadUserFile"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/FileService.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 7,
+                  "endLine": 12
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "HIGH",
+            "confidence": 95
+          }
+        },
+        {
+          "ruleId": "dynamic-rule-LoginRedirect",
+          "level": "warning",
+          "message": {
+            "text": "AI Classifier detected potential vulnerability in LoginRedirect"
+          },
+          "locations": [
+            {
+              "physicalLocation": {
+                "artifactLocation": {
+                  "uri": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Controllers/AuthController.cs",
+                  "uriBaseId": "%SRCROOT%"
+                },
+                "region": {
+                  "startLine": 9,
+                  "endLine": 14
+                }
+              }
+            }
+          ],
+          "properties": {
+            "cwe": [],
+            "severity": "MEDIUM",
+            "confidence": 95
+          }
+        }
+      ]
+    }
+  ]
+}

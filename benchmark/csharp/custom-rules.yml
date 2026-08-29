@@ -1,0 +1,249 @@
+rules:
+- id: dynamic-rule-sinful-taint-csharp
+  mode: taint
+  message: 'Potential vulnerability: tainted data flows from user-controlled source
+    to dangerous sink.'
+  severity: WARNING
+  languages: &id001
+  - csharp
+  pattern-sources:
+  - patterns:
+    - pattern-inside: '$RET $FN(..., $T $P, ...) { ... }
+
+        '
+    - pattern: $P
+  - pattern: Request.Query[...]
+  - pattern: Request.Query.ContainsKey(...)
+  - pattern: Request.Form[...]
+  - pattern: Request.Form.TryGetValue(...)
+  - pattern: Request.Cookies[...]
+  - pattern: Request.Headers[...]
+  - pattern: Request.Headers.TryGetValue(...)
+  - pattern: Request.Body
+  - pattern: Request.RouteValues[...]
+  - pattern: Request.QueryString
+  - pattern: '[FromQuery]'
+  - pattern: '[FromBody]'
+  - pattern: '[FromRoute]'
+  - pattern: '[FromForm]'
+  - pattern: '[FromHeader]'
+  - pattern: Request.Params[...]
+  - pattern: Request.QueryString[...]
+  - pattern: Request.Form[...]
+  - pattern: Environment.GetEnvironmentVariable(...)
+  - pattern: Console.ReadLine()
+  - pattern: args[...]
+  - pattern: GetUser(...)
+  - pattern-inside: "public $RET GetUser(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "public static $RET GetUser(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected $RET GetUser(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected static $RET GetUser(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private $RET GetUser(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private static $RET GetUser(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal $RET GetUser(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal static $RET GetUser(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern: Ping(...)
+  - pattern-inside: "public $RET Ping(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "public static $RET Ping(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected $RET Ping(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected static $RET Ping(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private $RET Ping(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private static $RET Ping(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal $RET Ping(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal static $RET Ping(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern: ReadFile(...)
+  - pattern-inside: "public $RET ReadFile(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "public static $RET ReadFile(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected $RET ReadFile(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected static $RET ReadFile(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private $RET ReadFile(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private static $RET ReadFile(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal $RET ReadFile(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal static $RET ReadFile(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern: ParseXml(...)
+  - pattern-inside: "public $RET ParseXml(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "public static $RET ParseXml(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected $RET ParseXml(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected static $RET ParseXml(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private $RET ParseXml(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private static $RET ParseXml(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal $RET ParseXml(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal static $RET ParseXml(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern: Deserialize(...)
+  - pattern-inside: "public $RET Deserialize(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "public static $RET Deserialize(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected $RET Deserialize(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected static $RET Deserialize(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private $RET Deserialize(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private static $RET Deserialize(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal $RET Deserialize(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal static $RET Deserialize(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern: Hash(...)
+  - pattern-inside: "public $RET Hash(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "public static $RET Hash(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected $RET Hash(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected static $RET Hash(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private $RET Hash(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private static $RET Hash(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal $RET Hash(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal static $RET Hash(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern: Fetch(...)
+  - pattern-inside: "public $RET Fetch(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "public static $RET Fetch(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected $RET Fetch(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected static $RET Fetch(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private $RET Fetch(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private static $RET Fetch(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal $RET Fetch(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal static $RET Fetch(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern: SearchLdap(...)
+  - pattern-inside: "public $RET SearchLdap(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "public static $RET SearchLdap(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected $RET SearchLdap(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "protected static $RET SearchLdap(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private $RET SearchLdap(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "private static $RET SearchLdap(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal $RET SearchLdap(...) {\n  ...\n}"
+    pattern: $REQ
+  - pattern-inside: "internal static $RET SearchLdap(...) {\n  ...\n}"
+    pattern: $REQ
+  pattern-sinks:
+  - pattern: $RUN_CMD.ExecuteReader(...)
+  - pattern: $RUN_CMD.ExecuteNonQuery(...)
+  - pattern: $RUN_CMD.ExecuteScalar(...)
+  - pattern: $RUN_CMD.CommandText = ...
+  - pattern: $DBCONTEXT.Database.ExecuteSqlRaw(...)
+  - pattern: $DBCONTEXT.Database.ExecuteSqlCommand(...)
+  - pattern: $DBCONTEXT.Database.ExecuteSqlRawAsync(...)
+  - pattern: SqlCommand($USE_QUERY, ...)
+  - pattern: $USE_CONN.CreateCommand()
+  - pattern: $CTX.FromSqlRaw(...)
+  - pattern: $CTX.FromSqlInterpolated(...)
+  - pattern: Process.Start(...)
+  - pattern: new ProcessStartInfo(...)
+  - pattern: $PROC.StartInfo.Arguments = ...
+  - pattern: $PROC.StartInfo.FileName = ...
+  - pattern: BinaryFormatter().Deserialize(...)
+  - pattern: $FMT.Deserialize(...)
+  - pattern: $FMT.ReadObject(...)
+  - pattern: new MemoryStream(...)
+  - pattern: JavaScriptSerializer().Deserialize(...)
+  - pattern: XmlSerializer(...).Deserialize(...)
+  - pattern: NetDataContractSerializer().ReadObject(...)
+  - pattern: LosFormatter().Deserialize(...)
+  - pattern: ObjectStateFormatter().Deserialize(...)
+  - pattern: JsonConvert.DeserializeObject(...)
+  - pattern: Assembly.Load(...)
+  - pattern: Assembly.LoadFrom(...)
+  - pattern: File.ReadAllText(...)
+  - pattern: File.ReadAllBytes(...)
+  - pattern: File.WriteAllText(...)
+  - pattern: File.Open(...)
+  - pattern: File.Delete(...)
+  - pattern: Path.Combine(...)
+  - pattern: new FileStream(...)
+  - pattern: (new HttpClient()).GetAsync(...)
+  - pattern: (new HttpClient()).PostAsync(...)
+  - pattern: WebRequest.Create(...)
+  - pattern: $CLIENT.GetAsync(...)
+  - pattern: $CLIENT.PostAsync(...)
+  - pattern: Response.Write(...)
+  - pattern: HtmlHelper.Raw(...)
+  - pattern: Response.Redirect(...)
+  - pattern: Redirect(...)
+  - pattern: DirectorySearcher($FILTER)
+  - pattern: DirectoryEntry(..., ..., ...)
+  - pattern: $SEARCHER.Filter = ...
+  - pattern: XDocument.Load(...)
+  - pattern: XmlDocument().Load(...)
+  - pattern: XPathDocument(...)
+  - pattern: XmlReader.Create(...)
+  - pattern: new StringReader(...)
+  - pattern: $DOC.Load(...)
+  - pattern: $DOC.LoadXml(...)
+  - pattern: DeserializeData(...)
+  - pattern: ReadUserFile(...)
+  - pattern: FetchResource(...)
+  pattern-sanitizers:
+  - pattern: new SqlParameter(...)
+  - pattern: $RUN_CMD.Parameters.AddWithValue(...)
+  - pattern: HttpUtility.HtmlEncode(...)
+  - pattern: WebUtility.HtmlEncode(...)
+  - pattern: AntiXssEncoder.HtmlEncode(...)
+  - pattern: Path.GetFileName(...)
+  - pattern: HttpUtility.UrlEncode(...)
+  - pattern: Uri.EscapeDataString(...)
+  - pattern: int.Parse(...)
+  - pattern: Convert.ToInt32(...)
+  - pattern: Convert.ToInt64(...)
+- id: dynamic-rule-csharp
+  mode: search
+  message: 'Potential vulnerability: dangerous function call or defect detected.'
+  severity: WARNING
+  languages: *id001
+  pattern-either:
+  - pattern: DeserializeData(...)
+  - pattern: ReadUserFile(...)
+  - pattern: FetchResource(...)

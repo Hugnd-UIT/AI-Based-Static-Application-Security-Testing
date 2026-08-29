@@ -50,9 +50,3 @@ samples/
 dist/
 output/
 *.spec
-
-# Sinful artifacts
-.sinful/
-reports/
-custom-rules.yml
-results.sarif

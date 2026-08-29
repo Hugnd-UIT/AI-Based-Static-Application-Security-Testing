@@ -1,0 +1,286 @@
+{
+  "status": "success",
+  "data": {
+    "status": "processing",
+    "languages": [
+      {
+        "name": "c#",
+        "files": 10,
+        "version": "Not Installed"
+      }
+    ],
+    "dependencies": [
+      {
+        "ecosystem": "nuget",
+        "package": "Newtonsoft.Json",
+        "version": "12.0.1"
+      },
+      {
+        "ecosystem": "nuget",
+        "package": "log4net",
+        "version": "2.0.8"
+      },
+      {
+        "ecosystem": "nuget",
+        "package": "System.Data.SqlClient",
+        "version": "4.6.0"
+      },
+      {
+        "ecosystem": "nuget",
+        "package": "System.Text.Encodings.Web",
+        "version": "4.7.1"
+      },
+      {
+        "ecosystem": "nuget",
+        "package": "System.Net.Http",
+        "version": "4.3.0"
+      }
+    ],
+    "sast": [
+      {
+        "id": "dynamic-rule-Sca",
+        "message": "AI Classifier detected potential vulnerability in Sca",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Controllers/MainController.cs",
+        "start_line": 77,
+        "end_line": 96,
+        "severity": "HIGH",
+        "verdict": "VULNERABLE",
+        "confidence": 95,
+        "reason": "The `Sca` action is a public HTTP GET endpoint whose `payload` parameter is fully attacker-controlled (confirmed by alias analysis: declared as action parameter at line 77, bound from query string, with no sanitization on any path). The function contains multiple Step-0 vulnerable-by-construction defects: (1) `Newtonsoft.Json.JsonConvert.DeserializeObject(payload)` deserializes caller-supplied text into a dynamic/untyped value, (2) `new System.Data.SqlClient.SqlCommand(payload)` builds a SQL command from a raw interpolated user string (the reported sink) — Step-0 rule explicitly states such a query is vulnerable even if only built here and not executed, and (3) `new HttpClient().GetAsync(payload)` performs SSRF using a caller-supplied URL. None of these is mitigated by the `HtmlEncoder.Encode` call, which does not sanitize the data used in the other sinks. The taint path from source (line 77) to sink (line 87) is unbroken.",
+        "cvss": 9.8,
+        "attack_vector": "HTTP GET parameter `payload` on `/api/MainController/sca` flows unsanitized into SqlCommand construction, dynamic JSON deserialization, and HttpClient URL (SSRF).",
+        "source_variable": "payload",
+        "sink_function": "new System.Data.SqlClient.SqlCommand(payload)",
+        "flow": [
+          {
+            "step": 1,
+            "variable": "payload",
+            "operation": "HTTP GET parameter bound to controller action parameter",
+            "line": 77
+          },
+          {
+            "step": 2,
+            "variable": "payload",
+            "operation": "used directly as argument to SqlCommand constructor without parameterization",
+            "line": 87
+          }
+        ],
+        "fp_source": false,
+        "fp_sink": false
+      },
+      {
+        "id": "dynamic-rule-GetUserById",
+        "message": "AI Classifier detected potential vulnerability in GetUserById",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/DatabaseService.cs",
+        "start_line": 7,
+        "end_line": 18,
+        "severity": "CRITICAL",
+        "verdict": "VULNERABLE",
+        "confidence": 100,
+        "reason": "The method GetUserById takes an untrusted parameter `id` and builds a SQL query by direct string concatenation: \"SELECT * FROM Users WHERE Id = '\" + id + \"'\". The resulting string is passed to SqlCommand and executed via ExecuteReader(). There is no use of SqlParameter/PreparedStatement, no escaping, and no validation of `id`. This is a textbook SQL injection (CWE-89): an attacker controlling `id` can break out of the quoted literal and inject arbitrary SQL (e.g., `' OR '1'='1`). STEP 0 applies directly — a query string assembled by concatenation instead of binding. The fixed directory/prefix rule does not apply; no sanitizer exists on any path. fp_source is false because a public method parameter is attacker-controlled API surface; fp_sink is false because ExecuteReader on a concatenated SQL command is a dangerous sink for tainted data.",
+        "cvss": 9.8,
+        "attack_vector": "Attacker-controlled `id` parameter concatenated into SQL string enables arbitrary SQL command execution against the database.",
+        "source_variable": "id",
+        "sink_function": "ExecuteReader",
+        "flow": [
+          {
+            "step": 1,
+            "variable": "id",
+            "operation": "function parameter - untrusted external input source",
+            "line": 7
+          },
+          {
+            "step": 2,
+            "variable": "query",
+            "operation": "string concatenation: \"SELECT * FROM Users WHERE Id = '\" + id + \"'\"",
+            "line": 12
+          },
+          {
+            "step": 3,
+            "variable": "command",
+            "operation": "SqlCommand constructor receives tainted query",
+            "line": 13
+          },
+          {
+            "step": 4,
+            "variable": "command",
+            "operation": "dangerous sink - ExecuteReader() executes tainted SQL",
+            "line": 16
+          }
+        ],
+        "fp_source": false,
+        "fp_sink": false
+      },
+      {
+        "id": "dynamic-rule-DeserializeData",
+        "message": "AI Classifier detected potential vulnerability in DeserializeData",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/DeserializationService.cs",
+        "start_line": 8,
+        "end_line": 16,
+        "severity": "CRITICAL",
+        "verdict": "VULNERABLE",
+        "confidence": 95,
+        "reason": "STEP 0 applies: the code deserializes caller-supplied bytes into an arbitrary object via BinaryFormatter.Deserialize, which is explicitly listed as vulnerable by construction (CWE-502). The byte[] data parameter of the public method DeserializeData is untrusted API surface; find_callers found no callers, but that does not establish constants at every call site. There is no sanitizer, type whitelist, SerializationBinder, or integrity check between source and sink. This is a textbook .NET insecure deserialization leading to RCE.",
+        "cvss": 9.8,
+        "attack_vector": "A crafted serialized payload passed to DeserializeData is deserialized by BinaryFormatter without a SerializationBinder or type filtering, allowing arbitrary object instantiation and remote code execution.",
+        "source_variable": "data",
+        "sink_function": "BinaryFormatter.Deserialize",
+        "flow": [
+          {
+            "step": 1,
+            "variable": "data",
+            "operation": "parameter declaration (untrusted source)",
+            "line": 8
+          },
+          {
+            "step": 2,
+            "variable": "ms",
+            "operation": "new MemoryStream(data)",
+            "line": 12
+          },
+          {
+            "step": 3,
+            "variable": "ms",
+            "operation": "formatter.Deserialize(ms)",
+            "line": 13
+          }
+        ],
+        "fp_source": false,
+        "fp_sink": false
+      },
+      {
+        "id": "dynamic-rule-HashData",
+        "message": "AI Classifier detected potential vulnerability in HashData",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/CryptoService.cs",
+        "start_line": 8,
+        "end_line": 17,
+        "severity": "HIGH",
+        "verdict": "VULNERABLE",
+        "confidence": 98,
+        "reason": "STEP 0 applies: vulnerable by construction. The file CryptoService.cs contains two independent defects. (1) HashData uses MD5.Create() and md5.ComputeHash() — MD5 is a broken/weak cryptographic algorithm (CWE-327), explicitly listed as vulnerable by construction. (2) EncryptToken hardcodes the encryption key \"S3cr3t_K3y_1234567890\" (CWE-321), also explicitly listed. Both defects require no taint path; the reported sink is irrelevant to the verdict.",
+        "cvss": 7.5,
+        "attack_vector": "Use of broken cryptographic algorithm (MD5) and hardcoded encryption key",
+        "source_variable": "input",
+        "sink_function": "MD5.ComputeHash",
+        "flow": [
+          {
+            "step": 1,
+            "variable": "input",
+            "operation": "passed as argument to HashData",
+            "line": 6
+          },
+          {
+            "step": 2,
+            "variable": "inputBytes",
+            "operation": "Encoding.ASCII.GetBytes(input)",
+            "line": 10
+          },
+          {
+            "step": 3,
+            "variable": "hashBytes",
+            "operation": "md5.ComputeHash(inputBytes) using MD5 algorithm",
+            "line": 11
+          }
+        ],
+        "fp_source": false,
+        "fp_sink": false
+      },
+      {
+        "id": "dynamic-rule-EncryptToken",
+        "message": "AI Classifier detected potential vulnerability in EncryptToken",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/CryptoService.cs",
+        "start_line": 19,
+        "end_line": 24,
+        "severity": "HIGH",
+        "verdict": "VULNERABLE",
+        "confidence": 95,
+        "reason": "STEP 0 applies: the EncryptToken method contains a hardcoded cryptographic key, `string key = \"S3cr3t_K3y_1234567890\";`, assigned at line 22. This is vulnerable by construction (CWE-321: Use of Hard-coded Credentials / CWE-798), independent of any data flow or sink. A hardcoded key directly usable for encryption represents a hardcoded secret, and the name of the variable confirms its intent. The reported sink is irrelevant here; the defect is the code itself. Additionally, the same class uses the broken MD5 algorithm (CWE-327), further confirming insecure crypto.",
+        "cvss": 7.5,
+        "attack_vector": "Hardcoded symmetric encryption key in EncryptToken",
+        "source_variable": "key",
+        "sink_function": "EncryptToken",
+        "flow": [
+          {
+            "step": 1,
+            "variable": "key",
+            "operation": "assignment from string literal",
+            "line": 22
+          }
+        ],
+        "fp_source": false,
+        "fp_sink": false
+      },
+      {
+        "id": "dynamic-rule-ReadUserFile",
+        "message": "AI Classifier detected potential vulnerability in ReadUserFile",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Services/FileService.cs",
+        "start_line": 7,
+        "end_line": 12,
+        "severity": "HIGH",
+        "verdict": "VULNERABLE",
+        "confidence": 95,
+        "reason": "The function ReadUserFile takes a caller-supplied parameter `filename` (public, externally reachable function — attacker controlled) and builds a filesystem path by combining it with a fixed directory prefix via Path.Combine(@\"C:\\app\\uploads\\\", filename), then passes the result to File.ReadAllText. This matches STEP 0: a filesystem path built from a caller-supplied name where the fixed directory prefix is not a defence because a value like `..\\..\\..\\windows\\win.ini` escapes it (Path.Combine does not normalize or block traversal segments). No validation, sanitization, or canonicalization is present on any path between the source and the sink. This is a classic CWE-22 Path Traversal with an unbroken taint path.",
+        "cvss": 7.5,
+        "attack_vector": "Path Traversal (CWE-22) via caller-supplied filename",
+        "source_variable": "filename",
+        "sink_function": "File.ReadAllText",
+        "flow": [
+          {
+            "step": 1,
+            "variable": "filename",
+            "operation": "function parameter (untrusted input)",
+            "line": 7
+          },
+          {
+            "step": 2,
+            "variable": "path",
+            "operation": "assignment from Path.Combine(base, filename)",
+            "line": 10
+          },
+          {
+            "step": 3,
+            "variable": "path",
+            "operation": "passed to File.ReadAllText",
+            "line": 11
+          }
+        ],
+        "fp_source": false,
+        "fp_sink": false
+      },
+      {
+        "id": "dynamic-rule-LoginRedirect",
+        "message": "AI Classifier detected potential vulnerability in LoginRedirect",
+        "path": "C:\\Users\\ASUS\\Documents\\AI-Based SAST\\benchmark\\csharp\\Controllers/AuthController.cs",
+        "start_line": 9,
+        "end_line": 14,
+        "severity": "MEDIUM",
+        "verdict": "VULNERABLE",
+        "confidence": 95,
+        "reason": "The `LoginRedirect` action takes `returnUrl` directly from the HTTP query string (public `[HttpGet(\"login\")]` endpoint, external attacker-controlled source) and passes it unvalidated to `Redirect(returnUrl)`. ASP.NET Core's `Redirect()` will issue a 302 to whatever location the attacker supplies (e.g. `https://evil.com` or `//evil.com`), with no `Url.IsLocalUrl()` check or any other sanitizer between the source and the sink. This is a textbook Open Redirect (CWE-601). Both `fp_source` and `fp_sink` are false: the source is genuinely attacker-controlled, and the sink is genuinely dangerous with this argument.",
+        "cvss": 6.1,
+        "attack_vector": "Attacker crafts a link to the login endpoint with `returnUrl` pointing to a malicious external domain; victims who trust the legitimate site are redirected to the attacker-controlled site, enabling phishing or credential theft.",
+        "source_variable": "returnUrl",
+        "sink_function": "Redirect",
+        "flow": [
+          {
+            "step": 1,
+            "variable": "returnUrl",
+            "operation": "method parameter bound from HTTP request (external untrusted source)",
+            "line": 10
+          },
+          {
+            "step": 2,
+            "variable": "returnUrl",
+            "operation": "passed as argument to Redirect sink",
+            "line": 13
+          }
+        ],
+        "fp_source": false,
+        "fp_sink": false
+      }
+    ],
+    "sca": [],
+    "unverified": 4,
+    "vuln": true
+  }
+}
