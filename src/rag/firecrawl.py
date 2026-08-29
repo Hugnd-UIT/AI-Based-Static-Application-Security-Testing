@@ -55,7 +55,7 @@ def report_firecrawl(stats: list):
         short_url = url if len(url) <= 60 else url[:60] + "..."
         success = stat["success"]
         err = stat.get("error")
-        err_msg = f" \\[[dim]{err}[/dim]\\]" if not success and err else ""
+        err_msg = f" \\[[dim]{err}[/dim]]" if not success and err else ""
         status = "[green]OK[/green]" if success else f"[red]Failed[/red]{err_msg}"
         console.print(f"  {char} {status} [dim]{short_url}[/dim]")
     console.print()

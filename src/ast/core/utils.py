@@ -137,10 +137,15 @@ def get_function_at(path: str, line: int) -> str:
         with open(path, "rb") as f:
             content = f.read()
 
-        match, _ = find_func(parser.parse(content).root_node, line, line, ext, content)
-        if not match: return "Unknown"
+        tree = parser.parse(content)
+        func_nodes = get_func_nodes(tree.root_node, ext, content)
+        
+        idx = line - 1
+        for node, name in func_nodes.items():
+            if node.start_point[0] <= idx and node.end_point[0] >= idx:
+                return name
 
-        return get_node(match, content) or "Unknown"
+        return "Unknown"
 
     except Exception:
         return "Unknown"

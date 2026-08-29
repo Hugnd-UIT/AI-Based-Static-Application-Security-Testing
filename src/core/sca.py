@@ -112,9 +112,23 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
                         base["cvss"] = fnvd[alias]["cvss_v3"]
                     break
 
+        seen_cves = set()
         for base in hot:
             mcve = dict(base)
             aliases = mcve.get("cve", [])
+            
+            # Deduplicate CVE
+            base_cves = [a for a in aliases if str(a).startswith("CVE-")]
+            is_dup = False
+            for bc in base_cves:
+                if bc in seen_cves:
+                    is_dup = True
+                    break
+            if is_dup:
+                continue
+            for bc in base_cves:
+                seen_cves.add(bc)
+                
             for alias in aliases:
                 if alias in fnvd:
                     mcve.update(fnvd[alias])

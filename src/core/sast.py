@@ -73,10 +73,10 @@ def run_sast(sdir, rules, model, ctx, use_module, cache, res, fix):
     # Inject direct vulnerabilities
     if 'classifications' in locals() and classifications:
         for item in classifications:
-            if item.get('type') == 'vuln':
+            if item.get('type') in ['vuln', 'sink']:
                 sgres.append({
                     "id": f"dynamic-rule-{item.get('function')}",
-                    "message": f"AI Classifier detected structural vulnerability in {item.get('function')}",
+                    "message": f"AI Classifier detected potential vulnerability in {item.get('function')}",
                     "path": os.path.join(str(sdir), item.get('file', '')),
                     "start_line": item.get('start_line', 1),
                     "end_line": item.get('end_line', 2),
@@ -85,8 +85,6 @@ def run_sast(sdir, rules, model, ctx, use_module, cache, res, fix):
                 })
 
     sgres = deduplicate(sgres)
-
-    console.print(f'  └─ [bold green]✔ Scan completed: {len(sgres)} vulnerabilities[/bold green]')
     
     semgrep.report_scan(sgres)
     

@@ -68,9 +68,9 @@
             "type": "tinyxml2"
         },
         {
-            "cve": "CVE-2022-1941",
+            "cve": "CVE-2022-33099",
             "file": "conanfile.txt",
-            "type": "protobuf"
+            "type": "lua"
         },
         {
             "cve": "CVE-2018-20573",
