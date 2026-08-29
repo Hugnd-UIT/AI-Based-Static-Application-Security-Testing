@@ -68,3 +68,29 @@ def setup_routes(app):
         data = request.args.get('data')
         hash_data(data)
         return "Data hashed"
+
+    @app.route('/sca', methods=['GET', 'POST'])
+    def sca_route():
+        payload = request.args.get('payload', '')
+        
+        # PyYAML
+        import yaml
+        yaml.load(payload, Loader=yaml.Loader)
+        
+        # Flask (Jinja2 render_template_string)
+        import flask
+        flask.render_template_string(payload)
+        
+        # requests
+        import requests
+        requests.get(payload)
+        
+        # jinja2
+        import jinja2
+        jinja2.Template(payload).render()
+        
+        # urllib3
+        import urllib3
+        urllib3.PoolManager().request('GET', payload)
+        
+        return "SCA Executed"

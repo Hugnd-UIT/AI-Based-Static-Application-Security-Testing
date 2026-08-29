@@ -134,8 +134,8 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
             verdict_str = verdict.get("verdict", "UNKNOWN").upper()
 
             # Retry audit
-            if verdict_str == "UNKNOWN" and "did not complete" in str(verdict.get("reasoning", "")):
-                why = str(verdict.get("reasoning", "")).lower()
+            if verdict_str == "UNKNOWN" and "did not complete" in str(verdict.get("reason", "")):
+                why = str(verdict.get("reason", "")).lower()
 
                 # Skip quota error
                 if "quota" in why:
@@ -210,8 +210,8 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
             else:
                 console.print(f"  └─ [bold yellow]⚠ UNKNOWN[/bold yellow]")
 
-                # Mark unverified
-                if broke(verdict.get("reason", "")) or broke(verdict.get("reasoning", "")):
+                # Fallback to general error if no trace
+                if broke(verdict.get("reason", "")):
                     res["unverified"] = res.get("unverified", 0) + 1
 
         except Exception as e:

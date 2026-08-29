@@ -126,13 +126,32 @@ def run_scan(path, rules=None, model=None, fix=False):
     flaws = sca_flaws + sgres
     
     final_flaws = []
+    exploitable_cve = []
+    seen_lines = set()
+    
     for f in flaws:
         if f.get("is_duplicate"):
             continue
         if f.get("verdict", "").upper() == "VULNERABLE":
+
+            # Strict Deduplication by Path and Line
+            dup_key = (f.get("path"), f.get("start_line"))
+            if dup_key in seen_lines:
+                continue
+            seen_lines.add(dup_key)
+            
+            if "cve_info" in f:
+                cve_data = f["cve_info"]
+            
+                # Avoid duplicates in the sca list
+                if cve_data not in exploitable_cve:
+                    exploitable_cve.append(cve_data)
+                del f["cve_info"]
+                
             final_flaws.append(f)
             
     res['sast'] = final_flaws
+    res['sca'] = exploitable_cve
     flaws = final_flaws
 
     if temp:

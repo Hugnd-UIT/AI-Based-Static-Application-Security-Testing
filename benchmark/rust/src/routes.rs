@@ -13,6 +13,7 @@ pub fn init_routes(cfg: &mut web::ServiceConfig) {
             .route("/profile", web::get().to(view_profile))
             .route("/unsafe", web::post().to(unsafe_op))
             .route("/parse", web::post().to(parse_json))
+            .route("/sca", web::get().to(sca_op))
     );
 }
 
@@ -67,4 +68,26 @@ async fn unsafe_op(body: web::Bytes) -> impl Responder {
 async fn parse_json(body: web::Bytes) -> impl Responder {
     deserialize::load_data(&body);
     HttpResponse::Ok().body("Parsed")
+}
+
+async fn sca_op(req: web::Query<std::collections::HashMap<String, String>>) -> impl Responder {
+    let payload = req.get("payload").unwrap_or(&String::from("")).to_string();
+    
+    // smallvec
+    let _ = smallvec::SmallVec::<[u8; 8]>::from_vec(payload.clone().into_bytes());
+    
+    // hyper
+    let _ = hyper::Uri::builder().authority(payload.as_str()).build();
+    
+    // regex
+    let _ = regex::Regex::new(&payload);
+    
+    // time
+    // using time 0.2 syntax or whatever is imported, assume parse
+    let _ = time::Date::parse(&payload, time::macros::format_description!("%Y-%m-%d")); // Fallback if old version
+    
+    // tokio
+    let _ = tokio::fs::read_to_string(&payload);
+    
+    HttpResponse::Ok().body("SCA Executed")
 }

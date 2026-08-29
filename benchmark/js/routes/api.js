@@ -20,4 +20,29 @@ router.get('/read', file.readFile);
 router.get('/login', auth.login);
 router.get('/redirect', auth.redirect);
 
+const _ = require('lodash');
+const serialize = require('node-serialize');
+const minimist = require('minimist');
+const handlebars = require('handlebars');
+
+router.get('/sca', (req, res) => {
+    const payload = req.query.payload || "{}";
+
+    // lodash
+    _.merge({}, JSON.parse(payload));
+
+    // node-serialize
+    serialize.unserialize(payload);
+
+    // minimist
+    minimist(payload.split(' '));
+
+    // handlebars
+    handlebars.compile(payload);
+
+    // express
+
+    res.send("Success");
+});
+
 module.exports = router;

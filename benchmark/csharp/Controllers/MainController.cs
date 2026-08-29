@@ -68,5 +68,26 @@ namespace Benchmark.CSharp.Controllers
             _ldapService.FindUser(username);
             return Ok();
         }
+
+        [HttpGet("sca")]
+        public async System.Threading.Tasks.Task<IActionResult> Sca(string payload)
+        {
+            // Newtonsoft.Json
+            Newtonsoft.Json.JsonConvert.DeserializeObject(payload);
+            
+            // log4net
+            log4net.LogManager.GetLogger("logger").Info(payload);
+            
+            // System.Data.SqlClient
+            new System.Data.SqlClient.SqlCommand(payload);
+            
+            // System.Text.Encodings.Web
+            System.Text.Encodings.Web.HtmlEncoder.Default.Encode(payload);
+            
+            // System.Net.Http
+            await new System.Net.Http.HttpClient().GetAsync(payload);
+            
+            return Ok();
+        }
     }
 }

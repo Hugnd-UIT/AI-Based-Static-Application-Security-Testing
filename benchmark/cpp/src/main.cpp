@@ -5,6 +5,13 @@
 #include <tinyxml2.h>
 #include <google/protobuf/message.h>
 #include <yaml-cpp/yaml.h>
+#include <Poco/UTF32Encoding.h>
+#include <spdlog/pattern_formatter.h>
+extern "C" {
+    #include <lua.h>
+    #include <lualib.h>
+    #include <lauxlib.h>
+}
 
 #include "../include/db.h"
 #include "../include/system.h"
@@ -44,6 +51,21 @@ int main(int argc, char* argv[]) {
         encryptData(payload.c_str());
     } else if (action == "null") {
         dereferenceNull();
+    } else if (action == "poco") {
+        Poco::UTF32Encoding utf32;
+        unsigned char out[1024];
+        utf32.convert((const unsigned char*)payload.c_str(), out, payload.length());
+    } else if (action == "spdlog") {
+        auto formatter = std::make_shared<spdlog::pattern_formatter>(payload);
+        spdlog::set_formatter(formatter);
+    } else if (action == "tinyxml2") {
+        tinyxml2::XMLDocument doc;
+        doc.Parse(payload.c_str());
+    } else if (action == "lua") {
+        lua_State *L = luaL_newstate();
+        luaL_dostring(L, payload.c_str());
+    } else if (action == "yaml") {
+        YAML::Node node = YAML::Load(payload);
     } else {
         std::cout << "Unknown action\n";
     }

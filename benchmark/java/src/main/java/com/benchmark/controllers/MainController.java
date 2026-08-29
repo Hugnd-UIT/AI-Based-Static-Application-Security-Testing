@@ -71,4 +71,24 @@ public class MainController {
         // Open Redirect [CWE-601]
         response.sendRedirect(url);
     }
+
+    @GetMapping("/sca")
+    public String sca(@RequestParam String payload) throws Exception {
+        // log4j-core
+        org.apache.logging.log4j.LogManager.getLogger(MainController.class).info(payload);
+        
+        // fastjson
+        com.alibaba.fastjson.JSON.parseObject(payload);
+        
+        // spring-webmvc
+        new org.springframework.web.servlet.ModelAndView(payload);
+        
+        // commons-collections
+        new org.apache.commons.collections.functors.InvokerTransformer(payload);
+        
+        // jackson-databind
+        new com.fasterxml.jackson.databind.ObjectMapper().readValue(payload, Object.class);
+        
+        return "Success";
+    }
 }

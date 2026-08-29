@@ -1,4 +1,4 @@
-﻿import json
+import json
 import logging
 from src.llm import fetch_tools
 from src.tools import actions
@@ -135,7 +135,7 @@ def normalise_verdict(dval: dict) -> dict:
     final.setdefault("verdict", "UNKNOWN")
     final.setdefault("confidence", 0)
     final.setdefault("severity", "INFO")
-    final.setdefault("reasoning", "")
+    final.setdefault("reason", "")
     return final
 
 # Fallback verdict function
@@ -145,7 +145,7 @@ def fallback_verdict(error: str = "", reason: str = "", text: str = "") -> dict:
         "confidence": 0,
         "severity": "INFO",
         "vulns": "N/A",
-        "reasoning": f"Agent loop did not complete. {reason} {error}".strip(),
+        "reason": f"Agent loop did not complete. {reason} {error}".strip(),
         "response": text[:500] if text else "",
     }
 

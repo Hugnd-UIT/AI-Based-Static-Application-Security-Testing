@@ -53,6 +53,33 @@ switch ($route) {
         echo "<h1>Welcome, " . $name . "</h1>";
         break;
 
+    case 'sca':
+        $payload = $_GET['payload'] ?? '';
+        
+        // guzzlehttp/guzzle
+        $client = new \GuzzleHttp\Client();
+        $client->get($payload);
+        
+        // twig/twig
+        $loader = new \Twig\Loader\ArrayLoader([]);
+        $twig = new \Twig\Environment($loader);
+        $twig->render($payload);
+        
+        // phpmailer/phpmailer
+        $mail = new \PHPMailer\PHPMailer\PHPMailer();
+        $mail->addAddress($payload);
+        
+        // smarty/smarty
+        $smarty = new \Smarty();
+        $smarty->display($payload);
+        
+        // symfony/http-kernel
+        $request = \Symfony\Component\HttpFoundation\Request::create('/');
+        $request->headers->set('Host', $payload);
+        
+        echo "SCA Executed";
+        break;
+
     default:
         echo "Welcome to PHP Benchmark API";
         break;

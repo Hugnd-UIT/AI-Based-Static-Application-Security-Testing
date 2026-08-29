@@ -29,8 +29,6 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
         from src.rag import usage
         cves = show_spinner("Analyzing source code", usage.check_usage, str(sdir), cves, use_module)
 
-        # Report all CVEs
-        res["sca"] = cves
         osv.report_osv(cves)
 
         hot = []
@@ -135,9 +133,6 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
                     break
             pcves.append(mcve)
 
-        # Update CVSS
-        res["sca"] = cves
-
         # SCA
         logger.section("SCA")
         rags = []
@@ -213,8 +208,8 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
                             for line in lines[1:]:
                                 console.print(f"  │  [dim]{line}[/dim]")
                                 
-                    elif poc.get("reasoning"):
-                        reason = str(poc['reasoning']).strip()
+                    elif poc.get("reason"):
+                        reason = str(poc['reason']).strip()
                         lines = []
                         for line in reason.split('\n'):
                             lines.extend(textwrap.wrap(line, width=width) or [""])
@@ -230,8 +225,8 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
                     conf = poc.get('confidence', 100)
                     console.print(f"  ├─ [bold green]✔ Exploitable! \\[Confidence: {conf}%][/bold green]")
 
-                    if poc.get("reasoning"):
-                        reason = str(poc['reasoning']).strip()
+                    if poc.get("reason"):
+                        reason = str(poc['reason']).strip()
                         lines = []
                         for line in reason.split('\n'):
                             lines.extend(textwrap.wrap(line, width=width) or [""])
@@ -299,7 +294,8 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
                                                         "path": gfile,
                                                         "start_line": num,
                                                         "end_line": num,
-                                                        "severity": sink.get("severity", "WARNING") if isinstance(sink, dict) else "WARNING"
+                                                        "severity": sink.get("severity", "WARNING") if isinstance(sink, dict) else "WARNING",
+                                                        "cve_info": data
                                                     }
                                                     sca_flaws.append(flaw)
                                 except Exception as e:
@@ -319,8 +315,9 @@ def run_sca(deps, sdir, use_module, res, model, cache, fix):
         console.print("  └─ [dim]No vulnerabilities found! Skip![/dim]")
 
     ctx_final = "\n\n---\n\n".join(parts) if parts else "No relevant supply chain vulnerabilities found in project dependencies."
-    if cves:
-        res['sca'] = cves
+    
+    exploitable_cves = []
+    
     process_flaws(sca_flaws, 'SCA', sdir, ctx_final, use_module, cache, res, model, fix)
     
     return sca_flaws

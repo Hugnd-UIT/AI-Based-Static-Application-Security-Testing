@@ -5,7 +5,7 @@ from openai import OpenAI
 
 
 MODELS = [
-    "deepseek/deepseek-v4-pro:free",
+    "deepseek/deepseek-v4-pro",
     "qwen/qwen3.8-max:free",
     "qwen/qwen3-coder-plus:free",
     "mistralai/ministral-8b",

@@ -59,5 +59,26 @@ class MainController
       LogicService.update_profile(params[:user_data])
       "Profile updated"
     end
+
+    app.get '/sca' do
+      payload = params[:payload] || ""
+      
+      # nokogiri
+      require 'nokogiri'
+      Nokogiri::XML(payload)
+      
+      # sinatra
+      erb payload
+      
+      # rack
+      require 'rack'
+      Rack::Utils.parse_nested_query(payload)
+      
+      # loofah
+      require 'loofah'
+      Loofah.fragment(payload).scrub!(:strip)
+      
+      "SCA Executed"
+    end
   end
 end
