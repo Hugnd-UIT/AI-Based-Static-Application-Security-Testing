@@ -47,11 +47,6 @@ def verify_manually(expected_vuln, finding, is_sca_finding, target_path, target_
     finding_path     = str(finding.get("path", "")).replace("\\", "/")
     finding_basename = Path(finding_path).name.lower()
 
-    # Check if the vulnerability is in the same file
-    same_file = target_path in finding_path or target_basename == finding_basename
-    if not same_file:
-        return False
-
     # SCA: match by CVE ID or package name
     if is_sca_finding:
         expected_cve    = expected_vuln.get("cve", "").upper()
@@ -59,11 +54,17 @@ def verify_manually(expected_vuln, finding, is_sca_finding, target_path, target_
         finding_cves    = [str(cve).upper() for cve in finding.get("cve", [])]
         return expected_cve in finding_cves or vuln_type.lower() == finding_package
 
-    # SAST: match by CWE, rule ID, title, or message
+    # Check if the vulnerability is in the same file
+    same_file = target_path in finding_path or target_basename == finding_basename
+    if not same_file:
+        return False
+
+    # SAST: match by CWE, rule ID, title, message, or reason
     expected_cwe    = expected_vuln.get("cwe", "").upper()
     finding_rule_id = str(finding.get("id", "")).upper()
     finding_title   = str(finding.get("title", "")).upper()
     finding_message = str(finding.get("message", "")).upper()
+    finding_reason  = str(finding.get("reason", "")).upper()
 
     finding_cwes = finding.get("cwe", [])
     cwe_matched = any(expected_cwe in str(cwe).upper() for cwe in finding_cwes)
@@ -72,7 +73,10 @@ def verify_manually(expected_vuln, finding, is_sca_finding, target_path, target_
         expected_cwe in finding_rule_id
         or expected_cwe in finding_title
         or expected_cwe in finding_message
+        or expected_cwe in finding_reason
         or vuln_type.upper() in finding_title
+        or vuln_type.upper() in finding_message
+        or vuln_type.upper() in finding_reason
         or cwe_matched
     )
 
@@ -122,6 +126,7 @@ def main():
 
     # Load global report if exists
     global_sast_findings = []
+    global_sca_findings = []
     global_reports_dir   = benchmark_dir.parent / "reports"
     if global_reports_dir.exists():
         global_report_files = glob.glob(str(global_reports_dir / "sinful_report_*.json"))
@@ -134,6 +139,11 @@ def main():
                         global_scan.get("data", {}).get("sast", [])
                         if "data" in global_scan
                         else global_scan.get("sast", [])
+                    )
+                    global_sca_findings = (
+                        global_scan.get("data", {}).get("sca", [])
+                        if "data" in global_scan
+                        else global_scan.get("sca", [])
                     )
             except Exception:
                 pass
@@ -198,16 +208,23 @@ def main():
                 pass
 
         # Filter results from global report by project reports
-        elif global_sast_findings:
-            project_path_marker = f"/benchmark/{project_dir.name}/"
-            project_name_lower  = project_dir.name.lower()
-            matched_global = []
-            for global_finding in global_sast_findings:
-                normalized_path = str(global_finding.get("path", "")).replace("\\", "/")
-                if project_path_marker in normalized_path or project_name_lower in normalized_path.lower():
-                    matched_global.append(global_finding)
-                    report_found = True
-            all_findings = matched_global
+        elif global_sast_findings or global_sca_findings:
+            # We assume global report applies to this project if we're evaluating it
+            report_found = True
+            all_findings.extend(global_sast_findings)
+            seen_packages = set()
+            for sca_entry in global_sca_findings:
+                package_name = sca_entry.get("package", "")
+                if package_name in seen_packages:
+                    continue
+                seen_packages.add(package_name)
+                all_findings.append({
+                    "path":        sca_entry.get("manifest_file", ""),
+                    "id":          sca_entry.get("vuln_id", ""),
+                    "title":       package_name,
+                    "sca_package": package_name,
+                    "cve":         sca_entry.get("cve", []),
+                })
 
         # No report found
         if not report_found:

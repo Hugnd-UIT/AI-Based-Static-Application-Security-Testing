@@ -36,11 +36,11 @@ def get_parser(ext: str):
 def get_func_nodes(root_node, ext: str, code: bytes) -> dict:
     from src.ast.rule.queries import QUERIES
     from src.ast.rule.langs import EXT, LANG
-    from tree_sitter import Language
+    from tree_sitter import Language, Query, QueryCursor
 
     lang_name = EXT.get(ext)
     if not lang_name: return {}
-    
+
     query_src = QUERIES.get(lang_name, "")
     if not query_src.strip(): return {}
 
@@ -48,8 +48,9 @@ def get_func_nodes(root_node, ext: str, code: bytes) -> dict:
         lang_obj = LANG.get(ext)
         if not lang_obj: return {}
         language = Language(lang_obj)
-        query = language.query(query_src)
-        captures = query.captures(root_node)
+        query = Query(language, query_src)
+        cursor = QueryCursor(query)
+        captures = cursor.captures(root_node)
     except Exception:
         return {}
 
@@ -64,7 +65,7 @@ def get_func_nodes(root_node, ext: str, code: bytes) -> dict:
                 name = code[nnode.start_byte:nnode.end_byte].decode("utf-8", errors="ignore")
                 break
         if not name:
-            name = f"[anonymous:{node.start_point[0]+1}]"
+            name = "[anonymous:%d]" % (node.start_point[0] + 1)
         funcs[node] = name
 
     return funcs

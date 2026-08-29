@@ -157,12 +157,15 @@ def process_flaws(flaws, agent_name, sdir, ctx, use_module, cache, res, model, f
 
             # Prune FP
             prune = ""
+            
+            def is_true(v):
+                return v if isinstance(v, bool) else str(v).lower() in ("true", "yes", "1")
 
-            if verdict.get("fp_source"):
-                prune = "source is not attacker controlled"
+            if is_true(verdict.get("fp_source")):
+                prune = "source is not dangerous"
 
-            elif verdict.get("fp_sink"):
-                prune = "sink is not dangerous in this call"
+            elif is_true(verdict.get("fp_sink")):
+                prune = "sink is not dangerous"
 
             if prune and verdict_str == "VULNERABLE":
                 verdict["verdict"] = "SAFE"
